@@ -28,9 +28,7 @@ Application de visualisation et d'analyse de données halieutiques.
 ## 🐛 Bugs connus
  
 | Bug | Sévérité | État |
-
 |-----|----------|------|
-
 | Exemple de bug | Moyen | 🔄 En cours |
  
 ---
