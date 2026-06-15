@@ -31,7 +31,7 @@ Application de visualisation et d'analyse de données halieutiques.
 - Harmonisation des fonctions d'import à travers les onglets
 - Amélioration de l'ergonomie et de l'esthétique de certains espaces
 
-*Amélioration de l'onglet Représentation des données
+*Amélioration de l'onglet Représentation des données*
 - Changement des caractéristiques du graphique L + points (lignes en somme et points en données brutes)
 - Changement des caractéristiques du graphique points (points en donnée brute par défaut)
 - Harmonisation de l'export des graphiques. Correction des graphiques Aires, Lollipop, Boxplot (et d'autres) qui exportaient des graphes en barre.
