@@ -58,10 +58,12 @@ Application de visualisation et d'analyse de données halieutiques.
 ## 🐛 Bugs connus
  
 | Bug | Sévérité | État |
+|------|----------|------|
 | Problème de tri des données dans le suivi des quotas | Faible | En cours (secondaire) |
 | Nombreux problèmes de prise en main dans l'onglet suivi des quotas | Faible | En cours (secondaire) |
 | Patchwork non installé dans le premier .exe d'installation | Moyen | En cours (secondaire) |
 | Erreur de rendu graphique lors de l'ajout du groupe | Majeur | Prioritaire |
+
 ---
  
 ## 📦 Versions précédentes
