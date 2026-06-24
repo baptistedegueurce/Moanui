@@ -7,7 +7,7 @@ Application de visualisation et d'analyse de données halieutiques.
  
 ## 📥 Télécharger la dernière version
  
-👉 [Télécharger v0.0.1](../../releases/latest)
+👉 [Télécharger v0.0.2](../../releases/latest)
  
 ---
  
