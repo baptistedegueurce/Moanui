@@ -12,7 +12,29 @@ Application de visualisation et d'analyse de données halieutiques.
 ---
  
 ## 📋 Patch notes
+### v0.0.2 — 24/06/2026
+
+**Nouveautés**
+
+- Nouvelle section "Composition" permettant de gérer plusieurs graphiques sur un seul pannel.
+  --> Composez des graphiques avec légendes via le cache de l'application et les images présentes sur votre PC.
+- Ajout d'un sous-onglet "valeurs uniques" dans l'onglet gestion de la donnée : donne pour la colonne de votre choix les valeurs uniques et leur effectif/ratio sur la donnée totale.
+- Refonte des filtres avec une visibilité et un contrôle accru sur les filtres appliqués (vision de tous les filtres actifs et suppression facilitée)
+- Ajout en test d'un outil de correction qui détecte les incohérences et permet via une base de donnée interne à l'application de corriger votre donnée en ajoutant une colonne "engin_sug" avec des corrections par bateau.
  
+**Corrections**
+
+*Améliorations générales*
+- Optimisation majeure de la VMS (95% de gain sur le temps d'exécution pour une perte mineure de qualité)
+  
+---
+ 
+## 🐛 Bugs connus
+ 
+| Bug | Sévérité | État |
+|------|----------|------|
+| AUCUN | BUG | RECENSE |
+
 ### v0.0.1 — 12/06/2026
 
 **Nouveautés**
