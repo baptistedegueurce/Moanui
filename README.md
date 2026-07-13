@@ -7,10 +7,34 @@ Application de visualisation et d'analyse de données halieutiques.
  
 ## 📥 Télécharger la dernière version
  
-👉 [Télécharger v0.0.2](../../releases/latest)
+👉 [Télécharger v0.1.0](../../releases/latest)
  
 ---
+## 📋 Patch notes
+### v0.1.0 — 13/07/2026
+
+**Nouveautés**
+
+- Nouvelle section "Pêche à pied" permettant de traiter les données relatives à cette activité.
+  --> Traitez les données de captures selon plusieurs paramètres, graphiques et analyses statistiques pré-enregistrées
+  --> Traitez les données d'échantillonage des gisements pour obtenir des cartes de densité et des données biologiques et économiques sur l'état des gisements.
+
+- Nouveau traitement automatisé des données : Pêche à pied. Permet suivant les scripts envoyés par le CDP22 de passer des données brutes aux données traitées de pêche à pied (pour les captures).
+- Nouveau traitement automatisé des données : Données SACROIS. Remplace l'ancien "Traitement halieutique" qui permet de passer des données SACROIS brutes à des données prête à traiter.
+
+**Fix** 
+
+- Fix d'un problème d'identifiant qui empêchait les exports automatisés de fonctionner
+- Fix d'un problème dans le nom des colonnes détectées qui empêchait la limitation par semestre de fonctionner
+
+## 🐛 Bugs connus
  
+| Bug | Sévérité | État |
+|------|----------|------|
+| Retours par mail automatique non fonctionnel | Normale | Traité aux prochains patchs |
+| Soucis dans l'interface graphique (boutons non cliquables ...) | Normale | Fixé, en attente de publication |
+
+
 ## 📋 Patch notes
 ### v0.0.2 — 24/06/2026
 
