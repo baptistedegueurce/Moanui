@@ -5,8 +5,15 @@ name: Exécutable Windows
 # Version : pousser une étiquette vX.Y.Z publie le zip dans une Release GitHub.
 on:
   workflow_dispatch:
+  pull_request:
   push:
     tags: ["v*"]
+    # reconstruit aussi quand l'empaquetage ou les dépendances changent
+    paths:
+      - "packaging/**"
+      - ".github/workflows/windows.yml"
+      - "backend/pyproject.toml"
+      - "frontend/package.json"
 
 permissions:
   contents: write
