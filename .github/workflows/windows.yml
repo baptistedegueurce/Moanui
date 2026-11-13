@@ -1,7 +1,7 @@
 name: Exécutable Windows
 
 # Construit Moanui-windows.zip (aucune installation ni droit administrateur requis).
-# Manuel : onglet Actions > « Exécutable Windows » > Run workflow (zip dans les artefacts).
+# Chaque push construit le zip (onglet Actions > « Exécutable Windows » > artefact Moanui-windows).
 # Version : pousser une étiquette vX.Y.Z publie le zip dans une Release GitHub.
 on:
   workflow_dispatch:
@@ -9,12 +9,6 @@ on:
   push:
     tags: ["v*"]
     branches: ["**"]
-    # sur une branche : reconstruit aussi quand l'empaquetage ou les dépendances changent
-    paths:
-      - "packaging/**"
-      - ".github/workflows/windows.yml"
-      - "backend/pyproject.toml"
-      - "frontend/package.json"
 
 permissions:
   contents: write

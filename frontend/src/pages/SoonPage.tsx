@@ -7,13 +7,6 @@ const PLANS: Record<string, string[]> = {
     'VMS : harmonisation des formats (Agiltech, CLS…), carroyage, zones d’activité, suivi de zones',
     'Fond de carte hors ligne de secours',
   ],
-  Statistiques: [
-    'Assistant « quelle est ma question ? » qui oriente vers le bon test ou modèle',
-    'Vérification automatique des conditions (normalité, variances, surdispersion, résidus) avec blocage contournable',
-    'Tests, corrélations, régressions (LM, GLM, GLMM, GAM), séries temporelles, ACP, classification',
-    'Aide à l’interprétation et fiche méthode Markdown générée',
-    'Moteur R utilisé s’il est installé, sinon Python',
-  ],
 };
 
 export default function SoonPage({ title }: { title: string }) {

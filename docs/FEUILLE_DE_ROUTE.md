@@ -17,15 +17,17 @@
   tonnages), référentiels intégrés, cohérence engin/espèce avec corrections importables en CSV,
   secret statistique dans les regroupements, conversions d'unités
 - Exécutable Windows autonome construit et testé par GitHub Actions
+- Statistiques guidées : comparaison de groupes, lien entre catégories, corrélation, régression
+  linéaire ; conditions vérifiées, blocage contournable avec justification, interprétation,
+  graphiques, fiches méthode, historique
 
 ## Prochaines étapes
 
 1. **SACROIS (suite)** : référentiels espèces / ports / rectangles CIEM, référentiels et corrections
    d'engins propres à chaque structure (base partagée), recettes enregistrables comme modèles,
    alignement sur les traitements CDP22 / DGAMPA.
-2. **Statistiques** : assistant de choix du test, vérification des conditions avec blocage
-   contournable, tests, régressions (LM, GLM, GLMM, GAM), séries temporelles, ACP ; guides
-   pas à pas, aide à l'interprétation, fiche méthode. Moteur R si installé, sinon Python.
+2. **Statistiques (suite)** : GLM (Poisson, binomiale négative), GLMM, GAM, séries temporelles,
+   ACP / classification ; moteur R utilisé s'il est installé.
 3. **Cartographie** : import SHP / GeoJSON / GeoPackage converti en GeoParquet + tuiles
    vectorielles (MapLibre), couches de contexte (CIEM, ZEE, 3/12 milles, AMP, Natura 2000,
    gisements), VMS (harmonisation Agiltech / CLS, carroyage, zones d'activité), fond hors ligne.
