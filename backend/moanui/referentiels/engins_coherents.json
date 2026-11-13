@@ -1,48 +1,1259 @@
 {
  "nom": "Engins cohérents par espèce",
- "description": "Engins attendus pour chaque espèce (repris de Moanui 0.1, à compléter).",
+ "description": "Engins attendus pour 26 espèces (20 principales Manche / golfe de Gascogne + 6 complémentaires), codes FAO ISSCFG 2016. Liste de départ issue de la littérature, à adapter par chaque structure.",
+ "version": "2026-11",
+ "methode": "Les classements par comité / navires hors OP ne sont pas publics : sélection des espèces sur les principales espèces débarquées en valeur par les navires français en Manche et golfe de Gascogne (Ifremer SIH, FranceAgriMer), en privilégiant celles de la petite pêche côtière. Pour chaque espèce : « principaux » = engins ciblant l'espèce ; « coherents » = principaux + engins où elle est une prise accessoire régulière. Les codes génériques (« non spécifiés ») sont acceptés si un engin précis de leur groupe est cohérent ; MIS et NK ne sont jamais signalés.",
+ "sources": [
+  "FAO CWP (2016). Handbook of Fishery Statistical Standards, Annex M : International Standard Classification of Fishing Gears (ISSCFG Rev.1).",
+  "He P., Chopin F., Suuronen P., Ferro R.S.T., Lansley J. (2021). Classification and illustrated definition of fishing gears. FAO Fisheries and Aquaculture Technical Paper 672.",
+  "Commission européenne — DCF / EU-MAP : codification des métiers (niveaux 4 à 6), liste de référence des RCG.",
+  "Ifremer, Système d'Informations Halieutiques : synthèses annuelles des flottilles de pêche et activité des navires par façade.",
+  "CIEM (ICES) : rapports WGBIE et WGCSE (sole, merlu, cardines, baudroies, langoustine, raies), WGBASS / WGCSE (bar), WGWIDE (maquereau).",
+  "Quéro J.-C., Vayne J.-J. (1997). Les poissons de mer des pêches françaises. Delachaux et Niestlé."
+ ],
+ "generiques": {
+  "SUX": [
+   "PS",
+   "LA"
+  ],
+  "SX": [
+   "SB",
+   "SV",
+   "SDN",
+   "SSC",
+   "SPR"
+  ],
+  "SV": [
+   "SDN",
+   "SSC",
+   "SPR"
+  ],
+  "TB": [
+   "TBB",
+   "OTB",
+   "OTT",
+   "OTP",
+   "PTB",
+   "TBN",
+   "TBS"
+  ],
+  "TM": [
+   "OTM",
+   "PTM"
+  ],
+  "OT": [
+   "OTB",
+   "OTT",
+   "OTP",
+   "OTM"
+  ],
+  "PT": [
+   "PTB",
+   "PTM"
+  ],
+  "TX": [
+   "TBB",
+   "OTB",
+   "OTT",
+   "OTP",
+   "PTB",
+   "TBN",
+   "TBS",
+   "OTM",
+   "PTM",
+   "TSP"
+  ],
+  "DRX": [
+   "DRB",
+   "DRH",
+   "DRM",
+   "HMD"
+  ],
+  "LN": [
+   "LNP",
+   "LNB",
+   "LNS"
+  ],
+  "FG": [
+   "FCN",
+   "FCO"
+  ],
+  "GEN": [
+   "GNS",
+   "GND",
+   "GNC",
+   "GNF",
+   "GTR",
+   "GTN"
+  ],
+  "GN": [
+   "GNS",
+   "GND",
+   "GNC",
+   "GNF",
+   "GTR",
+   "GTN"
+  ],
+  "FIX": [
+   "FPN",
+   "FPO",
+   "FYK",
+   "FSN",
+   "FWR",
+   "FAR"
+  ],
+  "LL": [
+   "LLS",
+   "LLD"
+  ],
+  "LX": [
+   "LHP",
+   "LHM",
+   "LLS",
+   "LLD",
+   "LVT",
+   "LTL"
+  ]
+ },
+ "non_controlables": [
+  "MIS",
+  "NK"
+ ],
  "especes": {
-  "MAC": {
-   "nom": "Maquereau commun",
-   "coherents": [
-    "PTM",
-    "OTM",
-    "PS",
-    "LLS",
-    "FPO",
-    "LHP",
-    "DRB",
-    "SDN"
-   ]
-  },
-  "POL": {
-   "nom": "Lieu jaune",
-   "coherents": [
+  "SOL": {
+   "nom": "Sole commune",
+   "nom_latin": "Solea solea",
+   "principaux": [
+    "GTR",
+    "GNS",
+    "GTN",
     "OTB",
     "OTT",
+    "TBB"
+   ],
+   "coherents": [
+    "GNS",
+    "GTN",
+    "GTR",
+    "OTB",
+    "OTP",
+    "OTT",
     "PTB",
+    "SDN",
+    "SPR",
+    "SSC",
+    "TBB"
+   ],
+   "note": "Espèce benthique : filets (trémail en tête) et chaluts de fond ; prises à l'hameçon ou au casier marginales.",
+   "groupe": "20 principales"
+  },
+  "HKE": {
+   "nom": "Merlu européen",
+   "nom_latin": "Merluccius merluccius",
+   "principaux": [
+    "GNS",
+    "LLS",
+    "OTB",
+    "OTT",
+    "PTB"
+   ],
+   "coherents": [
+    "GND",
+    "GNS",
+    "GTN",
+    "GTR",
+    "LHM",
+    "LHP",
+    "LLS",
+    "OTB",
+    "OTM",
+    "OTP",
+    "OTT",
+    "PTB",
+    "PTM",
+    "SDN",
+    "SPR",
+    "SSC",
+    "TBB"
+   ],
+   "note": "",
+   "groupe": "20 principales"
+  },
+  "NEP": {
+   "nom": "Langoustine",
+   "nom_latin": "Nephrops norvegicus",
+   "principaux": [
+    "OTB",
+    "OTT",
+    "TBN"
+   ],
+   "coherents": [
+    "FPO",
+    "OTB",
+    "OTP",
+    "OTT",
+    "PTB",
+    "TBB",
+    "TBN"
+   ],
+   "note": "Casier (creel) rare en France mais réglementaire.",
+   "groupe": "20 principales"
+  },
+  "ANF": {
+   "nom": "Baudroies",
+   "nom_latin": "Lophius piscatorius, L. budegassa",
+   "principaux": [
+    "OTB",
+    "OTT",
+    "GNS",
+    "GTR"
+   ],
+   "coherents": [
+    "DRB",
     "GNS",
     "GTN",
     "GTR",
     "LLS",
-    "LHP",
-    "LHM",
-    "FPO",
-    "SDN",
-    "DRB"
-   ]
-  },
-  "SOL": {
-   "nom": "Sole commune",
-   "coherents": [
     "OTB",
+    "OTP",
+    "OTT",
     "PTB",
     "SDN",
+    "SPR",
     "SSC",
+    "TBB"
+   ],
+   "note": "Prise accessoire connue des dragues à coquille en Manche.",
+   "groupe": "20 principales",
+   "codes_associes": [
+    "ANF",
+    "MON",
+    "MNZ"
+   ]
+  },
+  "MON": {
+   "nom": "Baudroies",
+   "nom_latin": "Lophius piscatorius, L. budegassa",
+   "principaux": [
+    "OTB",
+    "OTT",
+    "GNS",
+    "GTR"
+   ],
+   "coherents": [
+    "DRB",
+    "GNS",
+    "GTN",
+    "GTR",
+    "LLS",
+    "OTB",
+    "OTP",
+    "OTT",
+    "PTB",
+    "SDN",
+    "SPR",
+    "SSC",
+    "TBB"
+   ],
+   "note": "Prise accessoire connue des dragues à coquille en Manche.",
+   "groupe": "20 principales",
+   "codes_associes": [
+    "ANF",
+    "MON",
+    "MNZ"
+   ]
+  },
+  "MNZ": {
+   "nom": "Baudroies",
+   "nom_latin": "Lophius piscatorius, L. budegassa",
+   "principaux": [
+    "OTB",
+    "OTT",
+    "GNS",
+    "GTR"
+   ],
+   "coherents": [
+    "DRB",
+    "GNS",
+    "GTN",
+    "GTR",
+    "LLS",
+    "OTB",
+    "OTP",
+    "OTT",
+    "PTB",
+    "SDN",
+    "SPR",
+    "SSC",
+    "TBB"
+   ],
+   "note": "Prise accessoire connue des dragues à coquille en Manche.",
+   "groupe": "20 principales",
+   "codes_associes": [
+    "ANF",
+    "MON",
+    "MNZ"
+   ]
+  },
+  "SCE": {
+   "nom": "Coquille Saint-Jacques",
+   "nom_latin": "Pecten maximus",
+   "principaux": [
+    "DRB"
+   ],
+   "coherents": [
+    "DRB",
+    "DRH",
+    "DRM",
+    "HMD",
+    "MDV"
+   ],
+   "note": "Pêche quasi exclusive à la drague ; plongée autorisée localement.",
+   "groupe": "20 principales"
+  },
+  "BSS": {
+   "nom": "Bar européen",
+   "nom_latin": "Dicentrarchus labrax",
+   "principaux": [
+    "LHP",
+    "LHM",
+    "LLS",
+    "LTL",
+    "GNS",
+    "OTM",
+    "PTM"
+   ],
+   "coherents": [
+    "GNS",
+    "GTN",
+    "GTR",
+    "LHM",
+    "LHP",
+    "LLS",
+    "LTL",
+    "OTB",
+    "OTM",
+    "OTT",
+    "PS",
+    "PTB",
+    "PTM",
+    "SB",
+    "SDN",
+    "SPR",
+    "SSC"
+   ],
+   "note": "",
+   "groupe": "20 principales"
+  },
+  "CTC": {
+   "nom": "Seiche commune",
+   "nom_latin": "Sepia officinalis",
+   "principaux": [
+    "OTB",
+    "OTT",
+    "FPO",
+    "GTR"
+   ],
+   "coherents": [
+    "FPO",
+    "GNS",
+    "GTN",
+    "GTR",
+    "OTB",
+    "OTP",
+    "OTT",
+    "PTB",
+    "SDN",
+    "SPR",
+    "SSC",
+    "TBB"
+   ],
+   "note": "Casiers à seiche au printemps sur la côte.",
+   "groupe": "20 principales"
+  },
+  "SQR": {
+   "nom": "Encornets (calmars)",
+   "nom_latin": "Loligo spp.",
+   "principaux": [
+    "OTB",
+    "OTT",
+    "LHP",
+    "LHM"
+   ],
+   "coherents": [
+    "GNS",
+    "LHM",
+    "LHP",
+    "LVT",
+    "OTB",
+    "OTM",
+    "OTP",
+    "OTT",
+    "PTB",
+    "PTM",
+    "SDN",
+    "SPR",
+    "SSC",
+    "TBB"
+   ],
+   "note": "Turlutte = ligne (LHP/LHM).",
+   "groupe": "20 principales",
+   "codes_associes": [
+    "SQR",
+    "SQZ"
+   ]
+  },
+  "SQZ": {
+   "nom": "Encornets (calmars)",
+   "nom_latin": "Loligo spp.",
+   "principaux": [
+    "OTB",
+    "OTT",
+    "LHP",
+    "LHM"
+   ],
+   "coherents": [
+    "GNS",
+    "LHM",
+    "LHP",
+    "LVT",
+    "OTB",
+    "OTM",
+    "OTP",
+    "OTT",
+    "PTB",
+    "PTM",
+    "SDN",
+    "SPR",
+    "SSC",
+    "TBB"
+   ],
+   "note": "Turlutte = ligne (LHP/LHM).",
+   "groupe": "20 principales",
+   "codes_associes": [
+    "SQR",
+    "SQZ"
+   ]
+  },
+  "MAC": {
+   "nom": "Maquereau commun",
+   "nom_latin": "Scomber scombrus",
+   "principaux": [
+    "OTM",
+    "PTM",
+    "PS",
+    "LHP",
+    "LHM",
+    "LTL"
+   ],
+   "coherents": [
+    "GND",
+    "GNS",
+    "LA",
+    "LHM",
+    "LHP",
+    "LTL",
+    "OTB",
+    "OTM",
+    "OTT",
+    "PS",
+    "PTB",
+    "PTM",
+    "SB",
+    "SDN",
+    "SPR",
+    "SSC"
+   ],
+   "note": "",
+   "groupe": "20 principales"
+  },
+  "LEZ": {
+   "nom": "Cardines",
+   "nom_latin": "Lepidorhombus spp.",
+   "principaux": [
+    "OTB",
+    "OTT"
+   ],
+   "coherents": [
+    "GNS",
+    "GTN",
+    "GTR",
+    "OTB",
+    "OTP",
+    "OTT",
+    "PTB",
+    "SDN",
+    "SPR",
+    "SSC",
+    "TBB"
+   ],
+   "note": "",
+   "groupe": "20 principales",
+   "codes_associes": [
+    "LEZ",
+    "MEG",
+    "LDB"
+   ]
+  },
+  "MEG": {
+   "nom": "Cardines",
+   "nom_latin": "Lepidorhombus spp.",
+   "principaux": [
+    "OTB",
+    "OTT"
+   ],
+   "coherents": [
+    "GNS",
+    "GTN",
+    "GTR",
+    "OTB",
+    "OTP",
+    "OTT",
+    "PTB",
+    "SDN",
+    "SPR",
+    "SSC",
+    "TBB"
+   ],
+   "note": "",
+   "groupe": "20 principales",
+   "codes_associes": [
+    "LEZ",
+    "MEG",
+    "LDB"
+   ]
+  },
+  "LDB": {
+   "nom": "Cardines",
+   "nom_latin": "Lepidorhombus spp.",
+   "principaux": [
+    "OTB",
+    "OTT"
+   ],
+   "coherents": [
+    "GNS",
+    "GTN",
+    "GTR",
+    "OTB",
+    "OTP",
+    "OTT",
+    "PTB",
+    "SDN",
+    "SPR",
+    "SSC",
+    "TBB"
+   ],
+   "note": "",
+   "groupe": "20 principales",
+   "codes_associes": [
+    "LEZ",
+    "MEG",
+    "LDB"
+   ]
+  },
+  "POL": {
+   "nom": "Lieu jaune",
+   "nom_latin": "Pollachius pollachius",
+   "principaux": [
+    "LHP",
+    "LHM",
+    "LTL",
+    "GNS",
+    "LLS"
+   ],
+   "coherents": [
+    "GNS",
+    "GTN",
+    "GTR",
+    "LHM",
+    "LHP",
+    "LLS",
+    "LTL",
+    "OTB",
+    "OTM",
+    "OTT",
+    "PTB",
+    "PTM",
+    "SDN",
+    "SPR",
+    "SSC"
+   ],
+   "note": "",
+   "groupe": "20 principales"
+  },
+  "WHG": {
+   "nom": "Merlan",
+   "nom_latin": "Merlangius merlangus",
+   "principaux": [
+    "OTB",
+    "OTT",
+    "PTB"
+   ],
+   "coherents": [
+    "GNS",
+    "GTN",
+    "GTR",
+    "LHP",
+    "LLS",
+    "OTB",
+    "OTM",
+    "OTP",
+    "OTT",
+    "PTB",
+    "PTM",
+    "SDN",
+    "SPR",
+    "SSC",
+    "TBB"
+   ],
+   "note": "",
+   "groupe": "20 principales"
+  },
+  "RJC": {
+   "nom": "Raies",
+   "nom_latin": "Rajidae",
+   "principaux": [
+    "OTB",
+    "OTT",
+    "GTR",
+    "GNS"
+   ],
+   "coherents": [
+    "DRB",
+    "GNS",
+    "GTN",
+    "GTR",
+    "LLS",
+    "OTB",
+    "OTP",
+    "OTT",
+    "PTB",
+    "SDN",
+    "SPR",
+    "SSC",
+    "TBB"
+   ],
+   "note": "Raie brunette (RJU) : pêche encadrée, vérifier la réglementation en vigueur.",
+   "groupe": "20 principales",
+   "codes_associes": [
+    "RJC",
+    "RJU",
+    "RJN",
+    "RJH",
+    "RJM",
+    "RJE",
+    "SKA"
+   ]
+  },
+  "RJU": {
+   "nom": "Raies",
+   "nom_latin": "Rajidae",
+   "principaux": [
+    "OTB",
+    "OTT",
+    "GTR",
+    "GNS"
+   ],
+   "coherents": [
+    "DRB",
+    "GNS",
+    "GTN",
+    "GTR",
+    "LLS",
+    "OTB",
+    "OTP",
+    "OTT",
+    "PTB",
+    "SDN",
+    "SPR",
+    "SSC",
+    "TBB"
+   ],
+   "note": "Raie brunette (RJU) : pêche encadrée, vérifier la réglementation en vigueur.",
+   "groupe": "20 principales",
+   "codes_associes": [
+    "RJC",
+    "RJU",
+    "RJN",
+    "RJH",
+    "RJM",
+    "RJE",
+    "SKA"
+   ]
+  },
+  "RJN": {
+   "nom": "Raies",
+   "nom_latin": "Rajidae",
+   "principaux": [
+    "OTB",
+    "OTT",
+    "GTR",
+    "GNS"
+   ],
+   "coherents": [
+    "DRB",
+    "GNS",
+    "GTN",
+    "GTR",
+    "LLS",
+    "OTB",
+    "OTP",
+    "OTT",
+    "PTB",
+    "SDN",
+    "SPR",
+    "SSC",
+    "TBB"
+   ],
+   "note": "Raie brunette (RJU) : pêche encadrée, vérifier la réglementation en vigueur.",
+   "groupe": "20 principales",
+   "codes_associes": [
+    "RJC",
+    "RJU",
+    "RJN",
+    "RJH",
+    "RJM",
+    "RJE",
+    "SKA"
+   ]
+  },
+  "RJH": {
+   "nom": "Raies",
+   "nom_latin": "Rajidae",
+   "principaux": [
+    "OTB",
+    "OTT",
+    "GTR",
+    "GNS"
+   ],
+   "coherents": [
+    "DRB",
+    "GNS",
+    "GTN",
+    "GTR",
+    "LLS",
+    "OTB",
+    "OTP",
+    "OTT",
+    "PTB",
+    "SDN",
+    "SPR",
+    "SSC",
+    "TBB"
+   ],
+   "note": "Raie brunette (RJU) : pêche encadrée, vérifier la réglementation en vigueur.",
+   "groupe": "20 principales",
+   "codes_associes": [
+    "RJC",
+    "RJU",
+    "RJN",
+    "RJH",
+    "RJM",
+    "RJE",
+    "SKA"
+   ]
+  },
+  "RJM": {
+   "nom": "Raies",
+   "nom_latin": "Rajidae",
+   "principaux": [
+    "OTB",
+    "OTT",
+    "GTR",
+    "GNS"
+   ],
+   "coherents": [
+    "DRB",
+    "GNS",
+    "GTN",
+    "GTR",
+    "LLS",
+    "OTB",
+    "OTP",
+    "OTT",
+    "PTB",
+    "SDN",
+    "SPR",
+    "SSC",
+    "TBB"
+   ],
+   "note": "Raie brunette (RJU) : pêche encadrée, vérifier la réglementation en vigueur.",
+   "groupe": "20 principales",
+   "codes_associes": [
+    "RJC",
+    "RJU",
+    "RJN",
+    "RJH",
+    "RJM",
+    "RJE",
+    "SKA"
+   ]
+  },
+  "RJE": {
+   "nom": "Raies",
+   "nom_latin": "Rajidae",
+   "principaux": [
+    "OTB",
+    "OTT",
+    "GTR",
+    "GNS"
+   ],
+   "coherents": [
+    "DRB",
+    "GNS",
+    "GTN",
+    "GTR",
+    "LLS",
+    "OTB",
+    "OTP",
+    "OTT",
+    "PTB",
+    "SDN",
+    "SPR",
+    "SSC",
+    "TBB"
+   ],
+   "note": "Raie brunette (RJU) : pêche encadrée, vérifier la réglementation en vigueur.",
+   "groupe": "20 principales",
+   "codes_associes": [
+    "RJC",
+    "RJU",
+    "RJN",
+    "RJH",
+    "RJM",
+    "RJE",
+    "SKA"
+   ]
+  },
+  "SKA": {
+   "nom": "Raies",
+   "nom_latin": "Rajidae",
+   "principaux": [
+    "OTB",
+    "OTT",
+    "GTR",
+    "GNS"
+   ],
+   "coherents": [
+    "DRB",
+    "GNS",
+    "GTN",
+    "GTR",
+    "LLS",
+    "OTB",
+    "OTP",
+    "OTT",
+    "PTB",
+    "SDN",
+    "SPR",
+    "SSC",
+    "TBB"
+   ],
+   "note": "Raie brunette (RJU) : pêche encadrée, vérifier la réglementation en vigueur.",
+   "groupe": "20 principales",
+   "codes_associes": [
+    "RJC",
+    "RJU",
+    "RJN",
+    "RJH",
+    "RJM",
+    "RJE",
+    "SKA"
+   ]
+  },
+  "CRE": {
+   "nom": "Tourteau",
+   "nom_latin": "Cancer pagurus",
+   "principaux": [
+    "FPO"
+   ],
+   "coherents": [
+    "DRB",
+    "FPO",
+    "GNS",
+    "GTN",
+    "GTR",
+    "OTB",
+    "OTT",
+    "TBB"
+   ],
+   "note": "",
+   "groupe": "20 principales"
+  },
+  "LBE": {
+   "nom": "Homard européen",
+   "nom_latin": "Homarus gammarus",
+   "principaux": [
+    "FPO"
+   ],
+   "coherents": [
+    "FPO",
+    "GNS",
+    "GTN",
+    "GTR"
+   ],
+   "note": "Captures au chalut ou à la drague très rares : à vérifier.",
+   "groupe": "20 principales"
+  },
+  "SCR": {
+   "nom": "Araignée de mer",
+   "nom_latin": "Maja brachydactyla",
+   "principaux": [
+    "FPO",
+    "GTR",
+    "GNS"
+   ],
+   "coherents": [
+    "DRB",
+    "FPO",
+    "GNS",
+    "GTN",
+    "GTR",
+    "OTB",
+    "OTT",
+    "TBB"
+   ],
+   "note": "",
+   "groupe": "20 principales"
+  },
+  "WHE": {
+   "nom": "Bulot",
+   "nom_latin": "Buccinum undatum",
+   "principaux": [
+    "FPO"
+   ],
+   "coherents": [
+    "DRB",
+    "FPO",
+    "OTB",
+    "TBB"
+   ],
+   "note": "",
+   "groupe": "20 principales"
+  },
+  "JOD": {
+   "nom": "Saint-Pierre",
+   "nom_latin": "Zeus faber",
+   "principaux": [
+    "OTB",
+    "OTT",
+    "PTB"
+   ],
+   "coherents": [
+    "GNS",
+    "GTN",
+    "GTR",
+    "LHP",
+    "LLS",
+    "OTB",
+    "OTM",
+    "OTP",
+    "OTT",
+    "PTB",
+    "PTM",
+    "SDN",
+    "SPR",
+    "SSC",
+    "TBB"
+   ],
+   "note": "",
+   "groupe": "20 principales"
+  },
+  "MUR": {
+   "nom": "Rouget barbet de roche",
+   "nom_latin": "Mullus surmuletus",
+   "principaux": [
+    "OTB",
+    "OTT",
+    "GTR",
+    "GNS"
+   ],
+   "coherents": [
+    "GNS",
+    "GTN",
+    "GTR",
+    "OTB",
+    "OTM",
+    "OTP",
+    "OTT",
+    "PTB",
+    "PTM",
+    "SDN",
+    "SPR",
+    "SSC",
+    "TBB"
+   ],
+   "note": "",
+   "groupe": "20 principales"
+  },
+  "BRB": {
+   "nom": "Dorade grise",
+   "nom_latin": "Spondyliosoma cantharus",
+   "principaux": [
+    "OTB",
+    "OTT",
+    "PTB",
+    "OTM",
+    "PTM",
+    "LHP",
+    "LHM"
+   ],
+   "coherents": [
+    "FPO",
+    "GNS",
+    "GTN",
+    "GTR",
+    "LHM",
+    "LHP",
+    "LLS",
+    "OTB",
+    "OTM",
+    "OTT",
+    "PTB",
+    "PTM",
+    "SDN",
+    "SPR",
+    "SSC"
+   ],
+   "note": "",
+   "groupe": "20 principales"
+  },
+  "PIL": {
+   "nom": "Sardine",
+   "nom_latin": "Sardina pilchardus",
+   "principaux": [
+    "PS",
+    "OTM",
+    "PTM"
+   ],
+   "coherents": [
+    "GND",
+    "GNS",
+    "LA",
+    "OTM",
+    "PS",
+    "PTM"
+   ],
+   "note": "",
+   "groupe": "complémentaire"
+  },
+  "ANE": {
+   "nom": "Anchois",
+   "nom_latin": "Engraulis encrasicolus",
+   "principaux": [
+    "PS",
+    "OTM",
+    "PTM"
+   ],
+   "coherents": [
+    "LA",
+    "OTM",
+    "PS",
+    "PTM"
+   ],
+   "note": "",
+   "groupe": "complémentaire"
+  },
+  "PLE": {
+   "nom": "Plie",
+   "nom_latin": "Pleuronectes platessa",
+   "principaux": [
+    "OTB",
+    "OTT",
+    "TBB",
+    "GTR"
+   ],
+   "coherents": [
+    "GNS",
+    "GTN",
+    "GTR",
+    "OTB",
+    "OTP",
+    "OTT",
+    "PTB",
+    "SDN",
+    "SPR",
+    "SSC",
+    "TBB"
+   ],
+   "note": "",
+   "groupe": "complémentaire"
+  },
+  "TUR": {
+   "nom": "Turbot, barbue",
+   "nom_latin": "Scophthalmus maximus, S. rhombus",
+   "principaux": [
     "GTR",
     "GNS",
-    "FPO"
+    "OTB",
+    "OTT"
+   ],
+   "coherents": [
+    "DRB",
+    "GNS",
+    "GTN",
+    "GTR",
+    "LLS",
+    "OTB",
+    "OTP",
+    "OTT",
+    "PTB",
+    "SDN",
+    "SPR",
+    "SSC",
+    "TBB"
+   ],
+   "note": "",
+   "groupe": "complémentaire",
+   "codes_associes": [
+    "TUR",
+    "BLL"
    ]
+  },
+  "BLL": {
+   "nom": "Turbot, barbue",
+   "nom_latin": "Scophthalmus maximus, S. rhombus",
+   "principaux": [
+    "GTR",
+    "GNS",
+    "OTB",
+    "OTT"
+   ],
+   "coherents": [
+    "DRB",
+    "GNS",
+    "GTN",
+    "GTR",
+    "LLS",
+    "OTB",
+    "OTP",
+    "OTT",
+    "PTB",
+    "SDN",
+    "SPR",
+    "SSC",
+    "TBB"
+   ],
+   "note": "",
+   "groupe": "complémentaire",
+   "codes_associes": [
+    "TUR",
+    "BLL"
+   ]
+  },
+  "GUU": {
+   "nom": "Grondins",
+   "nom_latin": "Triglidae",
+   "principaux": [
+    "OTB",
+    "OTT"
+   ],
+   "coherents": [
+    "GNS",
+    "GTN",
+    "GTR",
+    "LHP",
+    "OTB",
+    "OTM",
+    "OTP",
+    "OTT",
+    "PTB",
+    "PTM",
+    "SDN",
+    "SPR",
+    "SSC",
+    "TBB"
+   ],
+   "note": "",
+   "groupe": "complémentaire",
+   "codes_associes": [
+    "GUU",
+    "GUR",
+    "GUX"
+   ]
+  },
+  "GUR": {
+   "nom": "Grondins",
+   "nom_latin": "Triglidae",
+   "principaux": [
+    "OTB",
+    "OTT"
+   ],
+   "coherents": [
+    "GNS",
+    "GTN",
+    "GTR",
+    "LHP",
+    "OTB",
+    "OTM",
+    "OTP",
+    "OTT",
+    "PTB",
+    "PTM",
+    "SDN",
+    "SPR",
+    "SSC",
+    "TBB"
+   ],
+   "note": "",
+   "groupe": "complémentaire",
+   "codes_associes": [
+    "GUU",
+    "GUR",
+    "GUX"
+   ]
+  },
+  "GUX": {
+   "nom": "Grondins",
+   "nom_latin": "Triglidae",
+   "principaux": [
+    "OTB",
+    "OTT"
+   ],
+   "coherents": [
+    "GNS",
+    "GTN",
+    "GTR",
+    "LHP",
+    "OTB",
+    "OTM",
+    "OTP",
+    "OTT",
+    "PTB",
+    "PTM",
+    "SDN",
+    "SPR",
+    "SSC",
+    "TBB"
+   ],
+   "note": "",
+   "groupe": "complémentaire",
+   "codes_associes": [
+    "GUU",
+    "GUR",
+    "GUX"
+   ]
+  },
+  "LIN": {
+   "nom": "Lingue franche",
+   "nom_latin": "Molva molva",
+   "principaux": [
+    "LLS",
+    "OTB",
+    "OTT"
+   ],
+   "coherents": [
+    "GNS",
+    "GTN",
+    "GTR",
+    "LHM",
+    "LLS",
+    "OTB",
+    "OTT",
+    "PTB"
+   ],
+   "note": "",
+   "groupe": "complémentaire"
   }
  }
 }

@@ -1,0 +1,496 @@
+{
+ "nom": "Engins FAO (ISSCFG 2016)",
+ "description": "Libellé français, famille et code ISSCFG des codes engins FAO (+ codes DCF et historiques vus dans SACROIS).",
+ "cle": "engin_cod",
+ "colonnes": [
+  "engin_lib",
+  "engin_famille",
+  "isscfg",
+  "engin_statut"
+ ],
+ "lignes": [
+  {
+   "engin_cod": "PS",
+   "engin_lib": "Sennes coulissantes",
+   "engin_famille": "Filets tournants",
+   "isscfg": "01.1",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "LA",
+   "engin_lib": "Filets tournants sans coulisse (lamparo)",
+   "engin_famille": "Filets tournants",
+   "isscfg": "01.2",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "SUX",
+   "engin_lib": "Filets tournants (non spécifiés)",
+   "engin_famille": "Filets tournants",
+   "isscfg": "01.9",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "SB",
+   "engin_lib": "Sennes de plage",
+   "engin_famille": "Sennes",
+   "isscfg": "02.1",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "SV",
+   "engin_lib": "Sennes de bateau",
+   "engin_famille": "Sennes",
+   "isscfg": "02.2",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "SDN",
+   "engin_lib": "Sennes danoises",
+   "engin_famille": "Sennes",
+   "isscfg": "02.2",
+   "engin_statut": "DCF (sous-catégorie de SV)"
+  },
+  {
+   "engin_cod": "SSC",
+   "engin_lib": "Sennes écossaises",
+   "engin_famille": "Sennes",
+   "isscfg": "02.2",
+   "engin_statut": "DCF (sous-catégorie de SV)"
+  },
+  {
+   "engin_cod": "SPR",
+   "engin_lib": "Sennes manœuvrées par deux bateaux",
+   "engin_famille": "Sennes",
+   "isscfg": "02.2",
+   "engin_statut": "DCF (sous-catégorie de SV)"
+  },
+  {
+   "engin_cod": "SX",
+   "engin_lib": "Sennes (non spécifiées)",
+   "engin_famille": "Sennes",
+   "isscfg": "02.9",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "TBB",
+   "engin_lib": "Chaluts à perche",
+   "engin_famille": "Chaluts de fond",
+   "isscfg": "03.11",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "OTB",
+   "engin_lib": "Chaluts de fond à panneaux",
+   "engin_famille": "Chaluts de fond",
+   "isscfg": "03.12",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "OTT",
+   "engin_lib": "Chaluts jumeaux à panneaux",
+   "engin_famille": "Chaluts de fond",
+   "isscfg": "03.13",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "OTP",
+   "engin_lib": "Chaluts multiples à panneaux",
+   "engin_famille": "Chaluts de fond",
+   "isscfg": "03.14",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "PTB",
+   "engin_lib": "Chaluts bœufs de fond",
+   "engin_famille": "Chaluts de fond",
+   "isscfg": "03.15",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "TB",
+   "engin_lib": "Chaluts de fond (non spécifiés)",
+   "engin_famille": "Chaluts de fond",
+   "isscfg": "03.19",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "TBN",
+   "engin_lib": "Chaluts à langoustine",
+   "engin_famille": "Chaluts de fond",
+   "isscfg": "03.19",
+   "engin_statut": "Historique (ISSCFG 1980)"
+  },
+  {
+   "engin_cod": "TBS",
+   "engin_lib": "Chaluts à crevette",
+   "engin_famille": "Chaluts de fond",
+   "isscfg": "03.19",
+   "engin_statut": "Historique (ISSCFG 1980)"
+  },
+  {
+   "engin_cod": "OTM",
+   "engin_lib": "Chaluts pélagiques à panneaux",
+   "engin_famille": "Chaluts pélagiques",
+   "isscfg": "03.21",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "PTM",
+   "engin_lib": "Chaluts bœufs pélagiques",
+   "engin_famille": "Chaluts pélagiques",
+   "isscfg": "03.22",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "TM",
+   "engin_lib": "Chaluts pélagiques (non spécifiés)",
+   "engin_famille": "Chaluts pélagiques",
+   "isscfg": "03.29",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "TSP",
+   "engin_lib": "Chaluts semi-pélagiques",
+   "engin_famille": "Chaluts",
+   "isscfg": "03.3",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "OT",
+   "engin_lib": "Chaluts à panneaux (non spécifiés)",
+   "engin_famille": "Chaluts",
+   "isscfg": "03.9",
+   "engin_statut": "Historique (ISSCFG 1980)"
+  },
+  {
+   "engin_cod": "PT",
+   "engin_lib": "Chaluts bœufs (non spécifiés)",
+   "engin_famille": "Chaluts",
+   "isscfg": "03.9",
+   "engin_statut": "Historique (ISSCFG 1980)"
+  },
+  {
+   "engin_cod": "TX",
+   "engin_lib": "Chaluts (non spécifiés)",
+   "engin_famille": "Chaluts",
+   "isscfg": "03.9",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "DRB",
+   "engin_lib": "Dragues remorquées",
+   "engin_famille": "Dragues",
+   "isscfg": "04.1",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "DRH",
+   "engin_lib": "Dragues à main",
+   "engin_famille": "Dragues",
+   "isscfg": "04.2",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "DRM",
+   "engin_lib": "Dragues mécanisées",
+   "engin_famille": "Dragues",
+   "isscfg": "04.3",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "HMD",
+   "engin_lib": "Dragues mécanisées (dont hydrauliques)",
+   "engin_famille": "Dragues",
+   "isscfg": "04.3",
+   "engin_statut": "DCF"
+  },
+  {
+   "engin_cod": "DRX",
+   "engin_lib": "Dragues (non spécifiées)",
+   "engin_famille": "Dragues",
+   "isscfg": "04.9",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "LNP",
+   "engin_lib": "Filets soulevés portatifs",
+   "engin_famille": "Filets soulevés",
+   "isscfg": "05.1",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "LNB",
+   "engin_lib": "Filets soulevés manœuvrés du bateau",
+   "engin_famille": "Filets soulevés",
+   "isscfg": "05.2",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "LNS",
+   "engin_lib": "Filets soulevés fixes manœuvrés du rivage",
+   "engin_famille": "Filets soulevés",
+   "isscfg": "05.3",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "LN",
+   "engin_lib": "Filets soulevés (non spécifiés)",
+   "engin_famille": "Filets soulevés",
+   "isscfg": "05.9",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "FCN",
+   "engin_lib": "Éperviers",
+   "engin_famille": "Filets retombants",
+   "isscfg": "06.1",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "FCO",
+   "engin_lib": "Nasses à couvercle / filets lanternes",
+   "engin_famille": "Filets retombants",
+   "isscfg": "06.2",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "FG",
+   "engin_lib": "Filets retombants (non spécifiés)",
+   "engin_famille": "Filets retombants",
+   "isscfg": "06.9",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "GNS",
+   "engin_lib": "Filets maillants calés (ancrés)",
+   "engin_famille": "Filets maillants",
+   "isscfg": "07.1",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "GND",
+   "engin_lib": "Filets maillants dérivants",
+   "engin_famille": "Filets maillants",
+   "isscfg": "07.2",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "GNC",
+   "engin_lib": "Filets maillants encerclants",
+   "engin_famille": "Filets maillants",
+   "isscfg": "07.3",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "GNF",
+   "engin_lib": "Filets maillants fixes (sur piquets)",
+   "engin_famille": "Filets maillants",
+   "isscfg": "07.4",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "GTR",
+   "engin_lib": "Trémails",
+   "engin_famille": "Filets maillants",
+   "isscfg": "07.5",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "GTN",
+   "engin_lib": "Filets combinés maillant-trémail",
+   "engin_famille": "Filets maillants",
+   "isscfg": "07.6",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "GEN",
+   "engin_lib": "Filets maillants et emmêlants (non spécifiés)",
+   "engin_famille": "Filets maillants",
+   "isscfg": "07.9",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "GN",
+   "engin_lib": "Filets maillants (non spécifiés)",
+   "engin_famille": "Filets maillants",
+   "isscfg": "07.9",
+   "engin_statut": "Historique (ISSCFG 1980)"
+  },
+  {
+   "engin_cod": "FPN",
+   "engin_lib": "Filets-pièges fixes non couverts (parcs)",
+   "engin_famille": "Pièges",
+   "isscfg": "08.1",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "FPO",
+   "engin_lib": "Casiers et nasses",
+   "engin_famille": "Pièges",
+   "isscfg": "08.2",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "FYK",
+   "engin_lib": "Verveux",
+   "engin_famille": "Pièges",
+   "isscfg": "08.3",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "FSN",
+   "engin_lib": "Filets à l'étalage (diables)",
+   "engin_famille": "Pièges",
+   "isscfg": "08.4",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "FWR",
+   "engin_lib": "Barrages, bordigues, écluses",
+   "engin_famille": "Pièges",
+   "isscfg": "08.5",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "FAR",
+   "engin_lib": "Pièges aériens",
+   "engin_famille": "Pièges",
+   "isscfg": "08.6",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "FIX",
+   "engin_lib": "Pièges (non spécifiés)",
+   "engin_famille": "Pièges",
+   "isscfg": "08.9",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "LHP",
+   "engin_lib": "Lignes à main et cannes manœuvrées à la main",
+   "engin_famille": "Lignes et hameçons",
+   "isscfg": "09.1",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "LHM",
+   "engin_lib": "Lignes et cannes mécanisées",
+   "engin_famille": "Lignes et hameçons",
+   "isscfg": "09.2",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "LLS",
+   "engin_lib": "Palangres calées",
+   "engin_famille": "Lignes et hameçons",
+   "isscfg": "09.31",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "LLD",
+   "engin_lib": "Palangres dérivantes",
+   "engin_famille": "Lignes et hameçons",
+   "isscfg": "09.32",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "LL",
+   "engin_lib": "Palangres (non spécifiées)",
+   "engin_famille": "Lignes et hameçons",
+   "isscfg": "09.39",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "LVT",
+   "engin_lib": "Lignes verticales",
+   "engin_famille": "Lignes et hameçons",
+   "isscfg": "09.4",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "LTL",
+   "engin_lib": "Lignes de traîne",
+   "engin_famille": "Lignes et hameçons",
+   "isscfg": "09.5",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "LX",
+   "engin_lib": "Lignes et hameçons (non spécifiés)",
+   "engin_famille": "Lignes et hameçons",
+   "isscfg": "09.9",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "HAR",
+   "engin_lib": "Harpons",
+   "engin_famille": "Divers",
+   "isscfg": "10.1",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "MHI",
+   "engin_lib": "Outils à main (râteaux, pinces, foënes…)",
+   "engin_famille": "Divers",
+   "isscfg": "10.2",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "MPM",
+   "engin_lib": "Pompes",
+   "engin_famille": "Divers",
+   "isscfg": "10.3",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "MEL",
+   "engin_lib": "Pêche électrique",
+   "engin_famille": "Divers",
+   "isscfg": "10.4",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "MPN",
+   "engin_lib": "Haveneaux poussés",
+   "engin_famille": "Divers",
+   "isscfg": "10.5",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "MSP",
+   "engin_lib": "Épuisettes",
+   "engin_famille": "Divers",
+   "isscfg": "10.6",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "MDR",
+   "engin_lib": "Filets rabattants",
+   "engin_famille": "Divers",
+   "isscfg": "10.7",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "MDV",
+   "engin_lib": "Plongée",
+   "engin_famille": "Divers",
+   "isscfg": "10.8",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "MIS",
+   "engin_lib": "Engins divers (non spécifiés)",
+   "engin_famille": "Divers",
+   "isscfg": "10.9",
+   "engin_statut": "ISSCFG 2016"
+  },
+  {
+   "engin_cod": "NK",
+   "engin_lib": "Engin inconnu",
+   "engin_famille": "Inconnu",
+   "isscfg": "99.9",
+   "engin_statut": "ISSCFG 2016"
+  }
+ ]
+}

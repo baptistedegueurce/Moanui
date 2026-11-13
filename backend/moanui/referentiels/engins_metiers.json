@@ -1,6 +1,6 @@
 {
  "nom": "Engins → métiers",
- "description": "Regroupement des codes engins FAO en métiers (repris de Moanui 0.1, à valider par chaque structure).",
+ "description": "Regroupement des codes engins FAO en métiers (repris de Moanui 0.1, complété avec l'ISSCFG 2016 ; à valider par chaque structure).",
  "cle": "engin_cod",
  "colonnes": [
   "metier",
@@ -241,6 +241,166 @@
    "engin_cod": "FID",
    "metier": "Divers",
    "metier_detail": "Divers"
+  },
+  {
+   "engin_cod": "LA",
+   "metier": "Sennes",
+   "metier_detail": "Senne coulissante"
+  },
+  {
+   "engin_cod": "SUX",
+   "metier": "Sennes",
+   "metier_detail": "Senne coulissante"
+  },
+  {
+   "engin_cod": "OTP",
+   "metier": "Chaluts",
+   "metier_detail": "Chaluts à panneaux"
+  },
+  {
+   "engin_cod": "TM",
+   "metier": "Chaluts",
+   "metier_detail": "Chaluts pélagiques"
+  },
+  {
+   "engin_cod": "TSP",
+   "metier": "Chaluts",
+   "metier_detail": "Chaluts"
+  },
+  {
+   "engin_cod": "PT",
+   "metier": "Chaluts",
+   "metier_detail": "Chaluts"
+  },
+  {
+   "engin_cod": "TX",
+   "metier": "Chaluts",
+   "metier_detail": "Chaluts"
+  },
+  {
+   "engin_cod": "DRH",
+   "metier": "Dragues",
+   "metier_detail": "Dragues"
+  },
+  {
+   "engin_cod": "DRM",
+   "metier": "Dragues",
+   "metier_detail": "Dragues"
+  },
+  {
+   "engin_cod": "HMD",
+   "metier": "Dragues",
+   "metier_detail": "Dragues"
+  },
+  {
+   "engin_cod": "DRX",
+   "metier": "Dragues",
+   "metier_detail": "Dragues"
+  },
+  {
+   "engin_cod": "LNP",
+   "metier": "Filets",
+   "metier_detail": "Filets soulevés"
+  },
+  {
+   "engin_cod": "FCN",
+   "metier": "Divers",
+   "metier_detail": "Divers"
+  },
+  {
+   "engin_cod": "FCO",
+   "metier": "Divers",
+   "metier_detail": "Divers"
+  },
+  {
+   "engin_cod": "FG",
+   "metier": "Divers",
+   "metier_detail": "Divers"
+  },
+  {
+   "engin_cod": "GNF",
+   "metier": "Filets",
+   "metier_detail": "Filets maillants"
+  },
+  {
+   "engin_cod": "FPN",
+   "metier": "Casiers",
+   "metier_detail": "Casiers et nasses"
+  },
+  {
+   "engin_cod": "FSN",
+   "metier": "Casiers",
+   "metier_detail": "Casiers et nasses"
+  },
+  {
+   "engin_cod": "FWR",
+   "metier": "Casiers",
+   "metier_detail": "Casiers et nasses"
+  },
+  {
+   "engin_cod": "FAR",
+   "metier": "Casiers",
+   "metier_detail": "Casiers et nasses"
+  },
+  {
+   "engin_cod": "FIX",
+   "metier": "Casiers",
+   "metier_detail": "Casiers et nasses"
+  },
+  {
+   "engin_cod": "LVT",
+   "metier": "Hameçons",
+   "metier_detail": "Lignes à main"
+  },
+  {
+   "engin_cod": "HAR",
+   "metier": "Divers",
+   "metier_detail": "Divers"
+  },
+  {
+   "engin_cod": "MHI",
+   "metier": "Divers",
+   "metier_detail": "Divers"
+  },
+  {
+   "engin_cod": "MPM",
+   "metier": "Divers",
+   "metier_detail": "Divers"
+  },
+  {
+   "engin_cod": "MEL",
+   "metier": "Divers",
+   "metier_detail": "Divers"
+  },
+  {
+   "engin_cod": "MPN",
+   "metier": "Divers",
+   "metier_detail": "Divers"
+  },
+  {
+   "engin_cod": "MSP",
+   "metier": "Divers",
+   "metier_detail": "Divers"
+  },
+  {
+   "engin_cod": "MDR",
+   "metier": "Divers",
+   "metier_detail": "Divers"
+  },
+  {
+   "engin_cod": "MDV",
+   "metier": "Divers",
+   "metier_detail": "Plongée"
+  },
+  {
+   "engin_cod": "MIS",
+   "metier": "Divers",
+   "metier_detail": "Divers"
+  },
+  {
+   "engin_cod": "NK",
+   "metier": "Autres",
+   "metier_detail": "Inconnu"
   }
  ]
 }

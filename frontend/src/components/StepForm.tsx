@@ -17,6 +17,7 @@ import {
   Paper,
   Code,
   ScrollArea,
+  Tooltip,
   Popover,
   FileButton,
 } from '@mantine/core';
@@ -678,6 +679,7 @@ function UnitForm({ params, set, columns }: FormProps) {
 function GearCheckForm({ params, set, columns, datasetId }: FormProps) {
   const { meta } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [filtre, setFiltre] = useState('');
   const ref = meta?.referentiels.engins_coherents?.especes || {};
   const corrections: any[] = params.corrections || [];
   const coh: Record<string, string[]> = params.coherents || Object.fromEntries(Object.entries(ref).map(([k, v]) => [k, v.coherents]));
@@ -705,26 +707,51 @@ function GearCheckForm({ params, set, columns, datasetId }: FormProps) {
       </Group>
       <TextInput label="Nom de la colonne résultat" value={params.name || 'engin_sug'} onChange={(e) => set({ ...params, name: e.currentTarget.value })} />
       <Paper withBorder p="xs">
-        <Text size="sm" fw={600} mb={4}>
-          Engins cohérents par espèce
+        <Group justify="space-between" mb={4}>
+          <Text size="sm" fw={600}>
+            Engins cohérents par espèce ({Object.keys(coh).length} codes)
+          </Text>
+          <Group gap={6}>
+            <TextInput size="xs" placeholder="Filtrer (code ou nom)" value={filtre} onChange={(e) => setFiltre(e.currentTarget.value)} />
+            {params.coherents && (
+              <Button size="xs" variant="subtle" onClick={() => { const { coherents: _c, ...rest } = params; set(rest); }}>
+                Revenir au référentiel
+              </Button>
+            )}
+          </Group>
+        </Group>
+        <Text size="xs" c="dimmed" mb={4}>
+          Liste issue de la littérature (FAO ISSCFG 2016, CIEM, Ifremer), à adapter. En gras au survol : engins ciblant l'espèce. Les codes génériques (TX, GEN, LX…) sont acceptés si un engin précis du groupe est cohérent ; MIS et NK ne sont jamais signalés.
         </Text>
+        <ScrollArea.Autosize mah={260} type="auto">
         <Stack gap={4}>
-          {Object.entries(coh).map(([sp, gears]) => (
+          {Object.entries(coh)
+            .filter(([sp]) => !filtre || sp.toLowerCase().includes(filtre.toLowerCase()) || (ref[sp]?.nom || '').toLowerCase().includes(filtre.toLowerCase()))
+            .map(([sp, gears]) => (
             <Group key={sp} gap={6} wrap="nowrap">
-              <Text size="xs" w={60} fw={600}>
-                {sp}
-              </Text>
+              <Tooltip
+                multiline
+                w={320}
+                label={ref[sp] ? `${ref[sp].nom} (${ref[sp].nom_latin}) — engins ciblants : ${(ref[sp].principaux || []).join(', ')}${ref[sp].note ? '. ' + ref[sp].note : ''}` : 'Espèce ajoutée à la main'}
+              >
+                <Text size="xs" w={150} truncate>
+                  <b>{sp}</b> {ref[sp]?.nom || ''}
+                </Text>
+              </Tooltip>
               <TextInput
                 size="xs"
                 style={{ flex: 1 }}
                 value={gears.join(', ')}
                 onChange={(e) => set({ ...params, coherents: { ...coh, [sp]: e.currentTarget.value.split(/[\s,;]+/).filter(Boolean) } })}
               />
-              <ActionIcon size="sm" variant="subtle" color="red" onClick={() => { const c = { ...coh }; delete c[sp]; set({ ...params, coherents: c }); }}>
+              <ActionIcon size="sm" variant="subtle" color="red" aria-label={`Retirer ${sp}`} onClick={() => { const c = { ...coh }; delete c[sp]; set({ ...params, coherents: c }); }}>
                 <IconTrash size={14} />
               </ActionIcon>
             </Group>
           ))}
+        </Stack>
+        </ScrollArea.Autosize>
+        <Stack gap={4} mt={4}>
           <Button
             size="xs"
             variant="light"

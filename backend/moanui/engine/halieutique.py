@@ -110,9 +110,22 @@ def _(p):
 
 
 def coherent_gears(p: dict) -> dict[str, list[str]]:
+    """Engins cohérents par espèce, tels que saisis (ou le référentiel par défaut)."""
     if p.get("coherents"):
         return {k.upper(): [g.upper() for g in v] for k, v in p["coherents"].items()}
     return {k: v["coherents"] for k, v in referentiels()["engins_coherents"]["especes"].items()}
+
+
+def _with_generics(gears: list[str]) -> list[str]:
+    """Ajoute les codes « non spécifiés » (TX, GEN, LX…) dont un engin précis est cohérent."""
+    gen = referentiels()["engins_coherents"].get("generiques", {})
+    out = set(gears)
+    out |= {g for g, members in gen.items() if out & set(members)}
+    return sorted(out)
+
+
+def non_controlables() -> list[str]:
+    return referentiels()["engins_coherents"].get("non_controlables", [])
 
 
 def gear_check_expr(p: dict, schema) -> str:
@@ -137,11 +150,13 @@ def gear_check_expr(p: dict, schema) -> str:
         target = c.get("corrected")
         whens.append(f"WHEN {cond} THEN {string_lit(target) if target else g + ' || ' + string_lit('*')}")
     coh_sql = " OR ".join(
-        f"({s} = {string_lit(k)} AND {g} IN ({', '.join(string_lit(x) for x in v)}))" for k, v in coh.items())
+        f"({s} = {string_lit(k)} AND {g} IN ({', '.join(string_lit(x) for x in _with_generics(v))}))"
+        for k, v in coh.items() if v)
+    unk = ", ".join(string_lit(x) for x in non_controlables()) or "''"
     known = ", ".join(string_lit(k) for k in coh)
     return (f"(CASE WHEN {ident(gear)} IS NULL THEN NULL "
-            f"WHEN {s} NOT IN ({known}) THEN {g} "
-            f"WHEN {coh_sql} THEN {g} "
+            f"WHEN {s} NOT IN ({known}) OR {g} IN ({unk}) THEN {g} "
+            f"WHEN {coh_sql or 'FALSE'} THEN {g} "
             f"{' '.join(whens)} "
             f"ELSE {g} || '*' END)")
 
@@ -158,10 +173,12 @@ def _gear(prev, p, schema):
 @_gear
 def _(p):
     n = len([c for c in p.get("corrections") or [] if c.get("species")])
-    especes = ", ".join(coherent_gears(p))
+    codes = list(coherent_gears(p))
+    especes = ", ".join(codes) if len(codes) <= 8 else f"{len(codes)} codes espèces du référentiel"
     return (f"Créer « {p.get('name') or 'engin_sug'} » : engin de « {p.get('gear_column')} » vérifié selon l'espèce "
             f"« {p.get('species_column')} » (espèces contrôlées : {especes}). Engin cohérent : inchangé ; "
-            f"incohérent : suffixé « * » ; {n} correction(s) connue(s) appliquée(s). La colonne d'origine est conservée.")
+            f"incohérent : suffixé « * » ; codes génériques (TX, GEN, LX…) acceptés si un engin précis du groupe est "
+            f"cohérent ; MIS / NK non contrôlés ; {n} correction(s) connue(s) appliquée(s). La colonne d'origine est conservée.")
 
 
 def gear_inconsistencies(con, plan_sql: str, p: dict, schema, limit: int = 500) -> list[dict]:
