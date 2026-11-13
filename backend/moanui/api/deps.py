@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from fastapi import Depends, HTTPException, Request
 
 from ..db import Database
-from ..engine import pipeline
+from ..engine import geo, pipeline
 from ..engine.recipe import RESOLVER
 from ..engine.sql import RecipeError
 from ..engine.store import parquet_path
@@ -114,9 +114,11 @@ class Workspace:
         self.con = pipeline.connect()
         self._stack: list[str] = []
         self._token = RESOLVER.set(self._resolve)
+        self._ltoken = geo.LAYER_RESOLVER.set(lambda lid: layer_source(db, settings, user, lid))
 
     def close(self):
         RESOLVER.reset(self._token)
+        geo.LAYER_RESOLVER.reset(self._ltoken)
         self.con.close()
 
     def __enter__(self):
@@ -169,3 +171,37 @@ class Workspace:
             raise RecipeError(f"Le jeu associé « {other['name']} » contient une erreur (étape {p.error['index']}) : "
                               f"{p.error['message']}")
         return p.sql, p.schema, other["name"]
+
+
+# --------------------------------------------------------------------------- couches cartographiques
+
+BUILTIN_PREFIX = "ctx:"
+
+
+def layer_access(db: Database, user: User, layer_id: str, write: bool = False) -> dict:
+    """Couche importée accessible (structure de l'utilisateur, ou publique en lecture)."""
+    row = db.one("SELECT * FROM layers WHERE id = ?", (layer_id,))
+    if not row:
+        raise HTTPException(404, "Couche introuvable.")
+    role = user.role_in(row["structure_id"])
+    if write:
+        if role is None or ROLE_RANK[role] < ROLE_RANK["analyste"]:
+            raise HTTPException(403, "Droits insuffisants sur cette couche.")
+    elif role is None and not row["public"]:
+        raise HTTPException(404, "Couche introuvable.")
+    return row
+
+
+def layer_source(db: Database, settings, user: User, layer_id: str):
+    """(chemin Parquet, colonnes, nom) d'une couche intégrée ou importée accessible."""
+    if layer_id.startswith(BUILTIN_PREFIX):
+        meta = geo.builtin_layers().get(layer_id[len(BUILTIN_PREFIX):])
+        if not meta:
+            raise RecipeError("Couche de contexte inconnue.")
+        return geo.BUILTIN_DIR / meta["fichier"], [c["name"] for c in meta["columns"]], meta["nom"]
+    try:
+        row = layer_access(db, user, layer_id)
+    except HTTPException as e:
+        raise RecipeError("La couche est introuvable ou inaccessible.") from e
+    info = json.loads(row["info"])
+    return settings.layers_dir / row["id"] / "couche.parquet", [c["name"] for c in info["columns"]], row["name"]

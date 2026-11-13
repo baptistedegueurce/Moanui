@@ -769,4 +769,4 @@ def _(p):
 
 
 # étapes métier (référentiels, unités, cohérence engin / espèce) : enregistrées à l'import
-from . import halieutique  # noqa: E402,F401
+from . import geo_steps, halieutique  # noqa: E402,F401

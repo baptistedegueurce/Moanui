@@ -108,6 +108,29 @@ CREATE TABLE IF NOT EXISTS analyses (
     created_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS layers (
+    id TEXT PRIMARY KEY,
+    structure_id TEXT NOT NULL REFERENCES structures(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    source_name TEXT NOT NULL,
+    info TEXT NOT NULL,
+    style TEXT NOT NULL DEFAULT '{}',
+    public INTEGER NOT NULL DEFAULT 0,
+    created_by TEXT NOT NULL REFERENCES users(id),
+    created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS maps (
+    id TEXT PRIMARY KEY,
+    structure_id TEXT NOT NULL REFERENCES structures(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    spec TEXT NOT NULL,
+    created_by TEXT NOT NULL REFERENCES users(id),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS charts (
     id TEXT PRIMARY KEY,
     dataset_id TEXT NOT NULL REFERENCES datasets(id) ON DELETE CASCADE,

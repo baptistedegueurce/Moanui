@@ -10,7 +10,12 @@ datas = [
     (os.path.join(PKG, "static"), "moanui/static"),
     (os.path.join(PKG, "themes"), "moanui/themes"),
     (os.path.join(PKG, "referentiels"), "moanui/referentiels"),
+    (os.path.join(PKG, "couches"), "moanui/couches"),
 ]
+# extension spatiale DuckDB (cartographie) : copiée par le workflow avant la construction
+_ext = os.path.join(SPECPATH, "duckdb_ext", "spatial.duckdb_extension")
+if os.path.exists(_ext):
+    datas.append((_ext, "duckdb_ext"))
 datas += collect_data_files("openpyxl")
 
 hiddenimports = (

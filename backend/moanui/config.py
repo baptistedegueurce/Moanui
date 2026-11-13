@@ -35,8 +35,16 @@ class Settings:
     def exports_dir(self) -> Path:
         return self.home / "exports"
 
+    @property
+    def layers_dir(self) -> Path:
+        return self.home / "couches"
+
+    @property
+    def cache_dir(self) -> Path:
+        return self.home / "cache"
+
     def ensure(self) -> None:
-        for d in (self.home, self.raw_dir, self.assets_dir, self.exports_dir):
+        for d in (self.home, self.raw_dir, self.assets_dir, self.exports_dir, self.layers_dir, self.cache_dir):
             d.mkdir(parents=True, exist_ok=True)
 
 

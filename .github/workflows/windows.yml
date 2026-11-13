@@ -39,20 +39,27 @@ jobs:
         working-directory: backend
         run: python -m pytest -q
 
+      - name: Extension spatiale DuckDB (cartographie, embarquée pour fonctionner hors ligne)
+        run: python packaging/extension_spatiale.py
+
       - name: Exécutable
         run: pyinstaller packaging/moanui.spec --noconfirm --distpath dist --workpath build
 
       - name: Vérification au démarrage
         shell: pwsh
         run: |
+          # sans l'extension installée dans le profil : seule la copie embarquée doit servir
+          Remove-Item -Recurse -Force "$env:USERPROFILE\.duckdb" -ErrorAction SilentlyContinue
           $p = Start-Process -FilePath "dist\Moanui\Moanui.exe" -ArgumentList "--no-browser","--port","8799","--home","$env:RUNNER_TEMP\moanui-test" -PassThru
           $ok = $false
           for ($i = 0; $i -lt 30; $i++) {
             Start-Sleep -Seconds 2
-            try { $r = Invoke-RestMethod "http://127.0.0.1:8799/api/health"; if ($r.ok) { $ok = $true; break } } catch {}
+            try { $r = Invoke-RestMethod "http://127.0.0.1:8799/api/health"; if ($r.ok) { $ok = $true; $health = $r; break } } catch {}
           }
           Stop-Process -Id $p.Id -Force
           if (-not $ok) { throw "Moanui.exe ne répond pas" }
+          $health | ConvertTo-Json
+          if ($health.cartographie -ne "embarquee") { throw "Extension spatiale embarquée introuvable" }
 
       - name: Archive
         shell: pwsh

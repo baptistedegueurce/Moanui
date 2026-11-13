@@ -29,8 +29,17 @@ def connect(threads: int | None = None) -> duckdb.DuckDBPyConnection:
     return con
 
 
+def ensure_spatial(con, steps: list[dict]) -> None:
+    """Charge l'extension spatiale si une étape géographique est présente."""
+    from .geo import load_spatial
+    from .geo_steps import SPATIAL_STEPS
+    if any(s.get("type") in SPATIAL_STEPS and s.get("enabled", True) for s in steps):
+        load_spatial(con)
+
+
 def build(con, parquet: Path | str, recipe: list[dict], upto: int | None = None) -> Plan:
     """Compile la recette ; s'arrête à la première étape invalide (signalée, pas levée)."""
+    ensure_spatial(con, recipe)
     base = f"SELECT * FROM read_parquet({string_lit(str(parquet))})"
     ctes = [f"s0 AS ({base})"]
     schema = _describe(con, ctes, "s0")
@@ -73,6 +82,7 @@ def build(con, parquet: Path | str, recipe: list[dict], upto: int | None = None)
 
 def check_step(con, parquet, recipe: list[dict], new_step: dict) -> Schema:
     """Valide une étape avant de l'ajouter ; lève RecipeError si elle est invalide."""
+    ensure_spatial(con, [new_step])
     plan = build(con, parquet, recipe)
     if plan.error:
         raise RecipeError(f"La recette contient déjà une erreur à l'étape {plan.error['index']} : "

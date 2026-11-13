@@ -257,11 +257,54 @@ def sacrois_template(schema: dict) -> list[dict]:
     return steps
 
 
+def vms_template(schema: dict) -> list[dict]:
+    """Harmonise un fichier VMS (Agiltech, CLS ou autre) puis identifie l'activité et le rectangle CIEM."""
+    steps: list[dict] = []
+    lat = _find(schema, "lat", "latitude", "LT", "LAT", "y")
+    lon = _find(schema, "lon", "longitude", "LG", "LON", "lng", "x")
+    speed = _find(schema, "vitesse_nds", "vitesse", "SP", "speed", "vit")
+    when = _find(schema, "date_heure", "col_date", "date", "datetime", "horodatage", "DATE_POS")
+    vessel = _find(schema, "navire", "OP", "cfr", "cfr_cod", "navs_cod", "immatriculation")
+    if not (lat and lon and when and vessel):
+        return []
+    std = {lat: "lat", lon: "lon", when: "date_heure", vessel: "navire"}
+    if speed:
+        std[speed] = "vitesse_nds"
+    mapping = {k: v for k, v in std.items() if k != v and v not in schema}
+    if mapping:
+        steps.append({"type": "rename", "params": {"mapping": mapping},
+                      "why": "Noms de colonnes harmonisés (lat, lon, date_heure, navire, vitesse_nds) : les fichiers "
+                             "Agiltech et CLS deviennent empilables."})
+    name = {k: mapping.get(k, k) for k in std}
+    if not schema[when].upper().startswith(("TIMESTAMP", "DATE")):
+        steps.append({"type": "cast", "params": {"column": name[when], "to": "dateheure", "format": "%d/%m/%Y %H:%M"},
+                      "why": "La date-heure doit être reconnue comme telle (format à vérifier)."})
+    unit = "noeud"
+    if speed and speed.upper() == "SP":
+        steps.append({"type": "unit_convert", "params": {"column": name[speed], "from": "dixieme_noeud", "to": "noeud"},
+                      "why": "Format CLS : la vitesse SP est en dixièmes de nœud (0–100) ; convertie en nœuds comme "
+                             "chez Agiltech."})
+    steps.append({"type": "vms_activity", "params": {
+        "vessel": name[vessel], "datetime": name[when], "lon": name[lon], "lat": name[lat],
+        "speed": name[speed] if speed else None, "speed_unit": unit, "preset": "chalut_fond", "min": 2.0, "max": 5.0,
+        "max_gap_min": 120},
+        "why": "Activité de pêche déduite de la vitesse (seuils du chalut de fond par défaut : à adapter à l'engin)."})
+    steps.append({"type": "ciem_rect", "params": {"lon": name[lon], "lat": name[lat], "name": "rectangle_ciem"},
+                  "why": "Rectangle statistique de chaque position, pour croiser avec SACROIS."})
+    return steps
+
+
 TEMPLATES = {
     "sacrois": {
         "nom": "Préparation SACROIS / marées standard",
         "description": "Nettoyage des codes, périodes, secteur Nord/Sud, métiers, cohérence engin/espèce, prix moyen, "
                        "CPUE et tonnages. Chaque étape reste modifiable.",
         "build": sacrois_template,
+    },
+    "vms": {
+        "nom": "Préparation VMS (Agiltech, CLS…)",
+        "description": "Harmonisation des colonnes et des unités, écarts de temps, distances et vitesses entre positions, "
+                       "activité de pêche (seuils de vitesse) et rectangle CIEM. Chaque étape reste modifiable.",
+        "build": vms_template,
     },
 }

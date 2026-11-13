@@ -7,6 +7,7 @@ import os
 import socket
 import threading
 import webbrowser
+from functools import lru_cache
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -15,7 +16,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 
 from . import __version__
-from .api import admin, analyses, auth, charts, datasets
+from .api import admin, analyses, auth, charts, datasets, geo
 from .config import Settings, load_settings
 from .db import Database
 from .engine.sql import RecipeError
@@ -55,12 +56,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             msgs.append(f"{loc} : {e.get('msg')}" if loc else e.get("msg"))
         return JSONResponse({"detail": "Données envoyées invalides : " + " ; ".join(msgs)}, status_code=422)
 
-    for r in (auth.router, admin.router, datasets.router, charts.router, analyses.router):
+    for r in (auth.router, admin.router, datasets.router, charts.router, analyses.router, geo.router):
         app.include_router(r)
 
     @app.get("/api/health")
     def health():
-        return {"ok": True, "version": __version__, "home": str(settings.home)}
+        st = _spatial()
+        return {"ok": True, "version": __version__, "home": str(settings.home),
+                "cartographie": st.get("source") if st["ok"] else "indisponible"}
 
     if STATIC_DIR.exists():
         @app.get("/{path:path}", include_in_schema=False)
@@ -73,6 +76,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return FileResponse(STATIC_DIR / "index.html", headers={"Cache-Control": "no-cache"})
 
     return app
+
+
+@lru_cache(maxsize=1)
+def _spatial() -> dict:
+    from .engine.geo import spatial_status
+    return spatial_status()
 
 
 def _free_port(preferred: int) -> int:

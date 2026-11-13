@@ -12,3 +12,4 @@ build/*.spec
 .DS_Store
 *.egg-info/
 *.tsbuildinfo
+packaging/duckdb_ext/

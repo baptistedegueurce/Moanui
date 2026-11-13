@@ -1,0 +1,424 @@
+{
+ "genere_le": "2026-11-13",
+ "couches": [
+  {
+   "id": "ciem_rectangles",
+   "nom": "Rectangles statistiques CIEM",
+   "groupe": "Référentiels",
+   "description": "Grille des rectangles statistiques CIEM (1° × 0,5°), calculée.",
+   "source": "Calcul Moanui selon la définition CIEM",
+   "licence": "—",
+   "url": "https://www.ices.dk",
+   "date": "2026-11-13",
+   "style": {
+    "couleur": "#7a7a7a",
+    "epaisseur": 0.6,
+    "remplissage": 0,
+    "etiquette": "rectangle"
+   },
+   "kind": "polygone",
+   "n_features": 11286,
+   "bbox": [
+    -44.0,
+    36.0,
+    70.0,
+    85.5
+   ],
+   "columns": [
+    {
+     "name": "rectangle",
+     "type": "VARCHAR"
+    }
+   ],
+   "fichier": "ciem_rectangles.parquet"
+  },
+  {
+   "id": "lignes_base",
+   "nom": "Lignes de base droites",
+   "groupe": "Limites maritimes",
+   "description": "Lignes de base droites — Shom.",
+   "source": "Shom — Délimitations maritimes (DELMAR)",
+   "licence": "Licence Ouverte Etalab 2.0",
+   "url": "https://www.data.gouv.fr/datasets/delimitations-maritimes",
+   "date": "2026-11-13",
+   "style": {
+    "couleur": "#5b5b5b",
+    "epaisseur": 1.5
+   },
+   "kind": "ligne",
+   "n_features": 707,
+   "bbox": [
+    -178.1308958,
+    -49.7359761,
+    168.1130556,
+    49.7002473
+   ],
+   "columns": [
+    {
+     "name": "nature",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "type",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "description",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "reference",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "territoire",
+     "type": "VARCHAR"
+    }
+   ],
+   "fichier": "lignes_base.parquet"
+  },
+  {
+   "id": "mer_territoriale_12m",
+   "nom": "Limite des 12 milles (mer territoriale)",
+   "groupe": "Limites maritimes",
+   "description": "Limite des 12 milles (mer territoriale) — Shom.",
+   "source": "Shom — Délimitations maritimes (DELMAR)",
+   "licence": "Licence Ouverte Etalab 2.0",
+   "url": "https://www.data.gouv.fr/datasets/delimitations-maritimes",
+   "date": "2026-11-13",
+   "style": {
+    "couleur": "#2a78d6",
+    "epaisseur": 1.5
+   },
+   "kind": "ligne",
+   "n_features": 99,
+   "bbox": [
+    -178.3901809,
+    -50.2275101,
+    172.3062126,
+    51.3055723
+   ],
+   "columns": [
+    {
+     "name": "nature",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "type",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "description",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "reference",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "territoire",
+     "type": "VARCHAR"
+    }
+   ],
+   "fichier": "mer_territoriale_12m.parquet"
+  },
+  {
+   "id": "zone_contigue_24m",
+   "nom": "Limite des 24 milles (zone contiguë)",
+   "groupe": "Limites maritimes",
+   "description": "Limite des 24 milles (zone contiguë) — Shom.",
+   "source": "Shom — Délimitations maritimes (DELMAR)",
+   "licence": "Licence Ouverte Etalab 2.0",
+   "url": "https://www.data.gouv.fr/datasets/delimitations-maritimes",
+   "date": "2026-11-13",
+   "style": {
+    "couleur": "#6250d6",
+    "epaisseur": 1.5
+   },
+   "kind": "ligne",
+   "n_features": 56,
+   "bbox": [
+    -178.5961109,
+    -50.4273166,
+    172.5220351,
+    51.5020389
+   ],
+   "columns": [
+    {
+     "name": "nature",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "type",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "description",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "reference",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "territoire",
+     "type": "VARCHAR"
+    }
+   ],
+   "fichier": "zone_contigue_24m.parquet"
+  },
+  {
+   "id": "zee_200m",
+   "nom": "Limite de la ZEE (200 milles)",
+   "groupe": "Limites maritimes",
+   "description": "Limite de la ZEE (200 milles) — Shom.",
+   "source": "Shom — Délimitations maritimes (DELMAR)",
+   "licence": "Licence Ouverte Etalab 2.0",
+   "url": "https://www.data.gouv.fr/datasets/delimitations-maritimes",
+   "date": "2026-11-13",
+   "style": {
+    "couleur": "#e34948",
+    "epaisseur": 1.5
+   },
+   "kind": "ligne",
+   "n_features": 18,
+   "bbox": [
+    -176.7858333,
+    -53.225867,
+    174.2757104,
+    47.4356847
+   ],
+   "columns": [
+    {
+     "name": "nature",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "type",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "description",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "reference",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "territoire",
+     "type": "VARCHAR"
+    }
+   ],
+   "fichier": "zee_200m.parquet"
+  },
+  {
+   "id": "delimitations",
+   "nom": "Délimitations avec les États voisins",
+   "groupe": "Limites maritimes",
+   "description": "Délimitations avec accord et limites sans accord — Shom.",
+   "source": "Shom — Délimitations maritimes (DELMAR)",
+   "licence": "Licence Ouverte Etalab 2.0",
+   "url": "https://www.data.gouv.fr/datasets/delimitations-maritimes",
+   "date": "2026-11-13",
+   "style": {
+    "couleur": "#eb6834",
+    "epaisseur": 1.5,
+    "pointilles": true
+   },
+   "kind": "ligne",
+   "n_features": 90,
+   "bbox": [
+    -180.0,
+    -53.225867,
+    180.0,
+    51.5569444
+   ],
+   "columns": [
+    {
+     "name": "nature",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "type",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "description",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "reference",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "territoire",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "statut",
+     "type": "VARCHAR"
+    }
+   ],
+   "fichier": "delimitations.parquet"
+  },
+  {
+   "id": "aires_marines_protegees",
+   "nom": "Aires marines protégées (toutes)",
+   "groupe": "Environnement",
+   "description": "Aires marines protégées françaises (Natura 2000, parcs, réserves, OSPAR…) — OFB.",
+   "source": "OFB — Aires marines protégées françaises",
+   "licence": "Licence Ouverte Etalab 2.0",
+   "url": "https://www.data.gouv.fr/datasets/aires-marines-protegees-francaises-2",
+   "date": "2026-11-13",
+   "style": {
+    "couleur": "#1baf7a",
+    "epaisseur": 1,
+    "remplissage": 0.25,
+    "etiquette": "nom"
+   },
+   "kind": "polygone",
+   "n_features": 719,
+   "bbox": [
+    -158.128056,
+    -66.674251,
+    174.27571,
+    51.312721
+   ],
+   "columns": [
+    {
+     "name": "nom",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "categorie",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "statut",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "annee",
+     "type": "INTEGER"
+    },
+    {
+     "name": "id_mnhn",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "region",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "territoire",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "lien",
+     "type": "VARCHAR"
+    }
+   ],
+   "fichier": "aires_marines_protegees.parquet"
+  },
+  {
+   "id": "natura2000_mer",
+   "nom": "Natura 2000 en mer",
+   "groupe": "Environnement",
+   "description": "Sites Natura 2000 (ZSC, ZPS, SIC) ayant une partie marine — OFB.",
+   "source": "OFB — Aires marines protégées françaises",
+   "licence": "Licence Ouverte Etalab 2.0",
+   "url": "https://www.data.gouv.fr/datasets/aires-marines-protegees-francaises-2",
+   "date": "2026-11-13",
+   "style": {
+    "couleur": "#008300",
+    "epaisseur": 1,
+    "remplissage": 0.2,
+    "etiquette": "nom"
+   },
+   "kind": "polygone",
+   "n_features": 255,
+   "bbox": [
+    -10.0,
+    41.257639,
+    9.620755,
+    51.312721
+   ],
+   "columns": [
+    {
+     "name": "nom",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "categorie",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "statut",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "annee",
+     "type": "INTEGER"
+    },
+    {
+     "name": "id_mnhn",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "region",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "territoire",
+     "type": "VARCHAR"
+    },
+    {
+     "name": "lien",
+     "type": "VARCHAR"
+    }
+   ],
+   "fichier": "natura2000_mer.parquet"
+  },
+  {
+   "id": "terres",
+   "nom": "Terres (fond hors ligne)",
+   "groupe": "Fond de carte",
+   "description": "Terres émergées au 1/10 000 000 (Atlantique Nord-Est et Méditerranée) — fond utilisable sans internet.",
+   "source": "Natural Earth",
+   "licence": "Domaine public",
+   "url": "https://www.naturalearthdata.com",
+   "date": "2026-11-13",
+   "style": {
+    "couleur": "#d9d4c7",
+    "epaisseur": 0.5,
+    "remplissage": 1
+   },
+   "kind": "polygone",
+   "n_features": 3023,
+   "bbox": [
+    -35.0,
+    24.0,
+    32.0,
+    72.0
+   ],
+   "columns": [
+    {
+     "name": "type",
+     "type": "VARCHAR"
+    }
+   ],
+   "fichier": "terres.parquet"
+  }
+ ],
+ "manquantes": [
+  {
+   "nom": "Bande des 3 milles",
+   "conseil": "Importer la couche « Réglementation de la pêche aux arts traînants dans la bande des 3 milles » (OFB / CNSP) depuis data.gouv.fr."
+  },
+  {
+   "nom": "Zones de frayère / ZFP, gisements",
+   "conseil": "Couches propres à chaque structure : à importer (SHP, GeoPackage, GeoJSON)."
+  }
+ ]
+}
