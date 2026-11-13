@@ -1,118 +1,57 @@
 # Moanui
-# Data App — Releases
- 
-Application de visualisation et d'analyse de données halieutiques.
- 
----
- 
-## 📥 Télécharger la dernière version
- 
-👉 [Télécharger v0.1.0](../../releases/latest)
- 
----
-## 📋 Patch notes
-### v0.1.0 — 13/07/2026
 
-**Nouveautés**
+Application locale de traitement, d'analyse et de visualisation de données halieutiques
+(SACROIS, marées, VMS, quotas, référentiels…), pensée pour les comités des pêches,
+organisations de producteurs et structures du secteur.
 
-- Nouvelle section "Pêche à pied" permettant de traiter les données relatives à cette activité.
-  --> Traitez les données de captures selon plusieurs paramètres, graphiques et analyses statistiques pré-enregistrées
-  --> Traitez les données d'échantillonage des gisements pour obtenir des cartes de densité et des données biologiques et économiques sur l'état des gisements.
+**L'idée : la puissance de R, la prise en main d'Excel, et les bonnes pratiques imposées par défaut.**
 
-- Nouveau traitement automatisé des données : Pêche à pied. Permet suivant les scripts envoyés par le CDP22 de passer des données brutes aux données traitées de pêche à pied (pour les captures).
-- Nouveau traitement automatisé des données : Données SACROIS. Remplace l'ancien "Traitement halieutique" qui permet de passer des données SACROIS brutes à des données prête à traiter.
+- **Le fichier brut n'est jamais modifié.** Il est copié en lecture seule avec son empreinte SHA-256 ;
+  toutes les corrections sont des étapes de *recette*, réversibles et justifiées.
+- **Chaque traitement est documenté.** Une fiche méthode Markdown (source, étapes, lignes à chaque étape,
+  auteur, requête pour tout refaire) accompagne chaque export et chaque graphique.
+- **Les erreurs classiques sont détectées** : dates impossibles, `NA` textuels, codes à zéros initiaux,
+  rectangles CIEM pris pour des nombres, jointures qui dupliquent les lignes, fichiers empilés
+  dont les unités diffèrent (t / kg), codes avec plusieurs libellés, noms de navire non uniques…
+- **Multi-structures** : comptes, rôles (admin / analyste / lecteur), données cloisonnées
+  avec partage explicite, charte graphique et logo par structure.
 
-**Fix** 
+Tout tourne sur le poste de l'utilisateur (serveur local `127.0.0.1`, aucune donnée envoyée à l'extérieur).
 
-- Fix d'un problème d'identifiant qui empêchait les exports automatisés de fonctionner
-- Fix d'un problème dans le nom des colonnes détectées qui empêchait la limitation par semestre de fonctionner
+## Lancer Moanui
 
-## 🐛 Bugs connus
- 
-| Bug | Sévérité | État |
-|------|----------|------|
-| Retours par mail automatique non fonctionnel | Normale | Traité aux prochains patchs |
-| Soucis dans l'interface graphique (boutons non cliquables ...) | Normale | Fixé, en attente de publication |
+### Utilisateur (Windows / macOS, sans droits administrateur)
 
+Depuis une archive de version (interface déjà construite) :
 
-## 📋 Patch notes
-### v0.0.2 — 24/06/2026
+1. Installer [uv](https://docs.astral.sh/uv/getting-started/installation/) (installation utilisateur, pas d'admin) ;
+2. double-cliquer sur `lancer_moanui.bat` (Windows) ou `lancer_moanui.command` (macOS).
 
-**Nouveautés**
+uv télécharge Python et les dépendances la première fois, puis Moanui s'ouvre dans le navigateur.
+Les données sont stockées dans le dossier utilisateur (`%LOCALAPPDATA%\Moanui` sous Windows,
+`~/Library/Application Support/Moanui` sous macOS), modifiable avec `--home` ou `MOANUI_HOME`.
 
-- Nouvelle section "Composition" permettant de gérer plusieurs graphiques sur un seul pannel.
-  --> Composez des graphiques avec légendes via le cache de l'application et les images présentes sur votre PC.
-- Ajout d'un sous-onglet "valeurs uniques" dans l'onglet gestion de la donnée : donne pour la colonne de votre choix les valeurs uniques et leur effectif/ratio sur la donnée totale.
-- Refonte des filtres avec une visibilité et un contrôle accru sur les filtres appliqués (vision de tous les filtres actifs et suppression facilitée)
-- Ajout en test d'un outil de correction qui détecte les incohérences et permet via une base de donnée interne à l'application de corriger votre donnée en ajoutant une colonne "engin_sug" avec des corrections par bateau.
- 
-**Corrections**
+> Depuis le dépôt git, l'interface doit d'abord être construite (voir « Développement »).
+> Un exécutable autonome (sans uv) est prévu : voir la feuille de route.
 
-*Améliorations générales*
-- Optimisation majeure de la VMS (95% de gain sur le temps d'exécution pour une perte mineure de qualité)
-  
----
- 
-## 🐛 Bugs connus
- 
-| Bug | Sévérité | État |
-|------|----------|------|
-| AUCUN | BUG | RECENSE |
+### Développement
 
-### v0.0.1 — 12/06/2026
+```bash
+cd frontend && npm install && npm run build   # construit l'interface dans backend/moanui/static
+cd ../backend && uv venv && uv pip install -e ".[dev]"
+uv run moanui                                  # http://127.0.0.1:8765
+uv run pytest                                  # tests
+```
 
-**Nouveautés**
+Pour développer l'interface avec rechargement à chaud : `uv run moanui --no-browser` d'un côté,
+`npm run dev` de l'autre (http://localhost:5173, l'API est relayée).
 
-- Première version publique
-- Nouvelle section "Composition" permettant de gérer plusieurs graphiques sur un seul pannel.
-- Ajout d'une fonctionnalité "zone de contexte" dans la partie cartographie
-- Ajout de l'export en format ".shp" dans la partie VMS et Cartographie
-- Ajout d'une option de création de colonne "case_when" qui permet de donner des conditions sur les valeurs pour coder une colonne
-- Ajout d'une option de regroupement des données par catégorie dans le sous onglet "Colonnes" de gestion de la donnée
-- Ajout d'une option de filtre "Est dans la liste" qui permet de voir tous les intitulés d'une colonne et de créer par clic une liste de variables à garder.
- 
-**Corrections**
+## Documentation
 
-*Améliorations générales*
-- Harmonisation des fonctions d'import à travers les onglets
-- Amélioration de l'ergonomie et de l'esthétique de certains espaces
+- [Architecture](docs/ARCHITECTURE.md)
+- [Feuille de route](docs/FEUILLE_DE_ROUTE.md)
 
-*Amélioration de l'onglet Représentation des données*
-- Changement des caractéristiques du graphique L + points (lignes en somme et points en données brutes)
-- Changement des caractéristiques du graphique points (points en donnée brute par défaut)
-- Harmonisation de l'export des graphiques. Correction des graphiques Aires, Lollipop, Boxplot (et d'autres) qui exportaient des graphes en barre.
-- Gestion plus ergonomique des axes. Ajout et correction sur le tri des données sur l'axe X
-- Correction des dimensions d'export qui entrainaient un arrêt complet de l'application
-- Correction des fonctions de Titrage et Sous-titrage sur la représentation des données
-- Correction du facetting dans la représentation des données qui n'exportait qu'un seul graphique
+## Historique
 
-*Amélioration de l'onglet Cartographie*
-- Correction du code pour l'affichage des frontières
-
-*Amélioration de l'onglet VMS*
-- Optimisation du script de traitement automatisé des données VMS (gain de 5 à 15% selon la version et l'ordinateur)
-
-**Poursuites**
-
-- Ajout d'une option interne de correction (sans écrasement) de la donnée SACROIS
-- Correction des problèmes liés à l'ajout de l'onglet "Composition"
-- Gestion des légendes plus ergonomique (titres et axes parfois chevauchant)
-- Ajout d'une option pour visualiser les valeurs uniques d'une colonne
-
----
- 
-## 🐛 Bugs connus
- 
-| Bug | Sévérité | État |
-|------|----------|------|
-| Problème de tri des données dans le suivi des quotas | Faible | En cours (secondaire) |
-| Nombreux problèmes de prise en main dans l'onglet suivi des quotas | Faible | En cours (secondaire) |
-| Patchwork non installé dans le premier .exe d'installation | Moyen | En cours (secondaire) |
-| Erreur de rendu graphique lors de l'ajout du groupe | Majeur | Prioritaire |
-
----
- 
-## 📦 Versions précédentes
- 
-👉 [Voir toutes les releases](../../releases)
- 
+Les versions 0.0.x – 0.1.x (application R Shiny) sont sur la branche `script` et dans les
+[releases](../../releases). La version 0.2 est une réécriture complète.

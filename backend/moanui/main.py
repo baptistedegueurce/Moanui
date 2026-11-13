@@ -78,6 +78,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 def _free_port(preferred: int) -> int:
     for port in [preferred] + list(range(preferred + 1, preferred + 20)):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # comme uvicorn : ignore TIME_WAIT
             try:
                 s.bind(("127.0.0.1", port))
                 return port

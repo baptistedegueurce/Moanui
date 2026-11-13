@@ -79,6 +79,8 @@ def dataset_method(ds: dict, raw: dict, structure: dict, users: dict[str, str], 
         who = users.get(s.get("author"), "?")
         L.append(f"{n}. {describe_step(s)}")
         meta = f"   *{who}, {_fmt_date(s.get('at'))}*"
+        if st.get("n_rows") is not None:
+            meta += f" · {st['n_rows']:,} lignes après l'étape".replace(",", " ")
         if st.get("added"):
             meta += f" · colonnes créées : {', '.join(st['added'])}"
         L.append(meta)

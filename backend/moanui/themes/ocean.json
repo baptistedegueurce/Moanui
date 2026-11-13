@@ -10,9 +10,40 @@
     "muted": "#557080",
     "border": "#D3E2EA"
   },
-  "palette": ["#0B4F6C", "#01BAEF", "#20BF55", "#F4A259", "#BC4B51", "#5B8E7D", "#8CB369", "#757BC8"],
-  "sequential": ["#E6F6FB", "#B3E5F5", "#66CBEB", "#1FA4D6", "#0B6E99", "#063F5A"],
-  "diverging": ["#9E2A2B", "#E09F3E", "#FFF3B0", "#F7F7F7", "#BEE3F8", "#3A9BDC", "#0B4F6C"],
+  "palette": [
+    "#2a78d6",
+    "#eb6834",
+    "#1baf7a",
+    "#eda100",
+    "#e87ba4",
+    "#008300",
+    "#6250d6",
+    "#e34948"
+  ],
+  "sequential": [
+    "#cde2fb",
+    "#9ec5f4",
+    "#6da7ec",
+    "#3987e5",
+    "#256abf",
+    "#184f95",
+    "#0d366b"
+  ],
+  "diverging": [
+    "#184f95",
+    "#3987e5",
+    "#9ec5f4",
+    "#f0efec",
+    "#f2a3a2",
+    "#e34948",
+    "#a32f2f"
+  ],
   "font": "Inter, 'Segoe UI', system-ui, -apple-system, sans-serif",
-  "chart": {"show_logo": true, "logo_position": "bas-droite", "default_source": "", "background": "#FFFFFF", "grid": "#E3ECF0"}
+  "chart": {
+    "show_logo": true,
+    "logo_position": "bas-droite",
+    "default_source": "",
+    "background": "#FFFFFF",
+    "grid": "#E3ECF0"
+  }
 }

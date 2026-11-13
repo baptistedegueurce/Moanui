@@ -1,0 +1,35 @@
+{
+  "name": "moanui-frontend",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "typecheck": "tsc -b"
+  },
+  "dependencies": {
+    "@mantine/core": "7.17.8",
+    "@mantine/dropzone": "7.17.8",
+    "@mantine/hooks": "7.17.8",
+    "@mantine/notifications": "7.17.8",
+    "@tabler/icons-react": "3.31.0",
+    "ag-grid-community": "33.3.2",
+    "ag-grid-react": "33.3.2",
+    "dompurify": "^3.2.6",
+    "marked": "^12.0.2",
+    "plotly.js-dist-min": "2.35.3",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-router-dom": "6.30.1"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.23",
+    "@types/react-dom": "18.3.7",
+    "@vitejs/plugin-react": "4.5.2",
+    "postcss": "8.5.6",
+    "postcss-preset-mantine": "1.17.0",
+    "typescript": "5.8.3",
+    "vite": "6.3.5"
+  }
+}

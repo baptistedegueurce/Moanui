@@ -10,3 +10,5 @@ dist/
 *.spec
 .moanui-dev/
 .DS_Store
+*.egg-info/
+*.tsbuildinfo

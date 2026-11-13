@@ -9,10 +9,10 @@ from __future__ import annotations
 import re
 
 PATTERNS = [
-    (r"navs?_?cod|^cfr$|immat|navire|bateau|vessel|^nav_", "identifiant de navire"),
+    (r"navs?_?cod|(^|_)cfr(_|$)|immat|navire|bateau|vessel|^nav_", "identifiant de navire"),
     (r"patron|armateur|propri[eé]taire|^nom($|_)|pr[eé]nom|marin|p[eê]cheur", "nom de personne"),
     (r"siret|siren|num_?pmp|licence", "identifiant administratif"),
-    (r"t[eé]l[eé]phone|mail|adresse", "coordonnées"),
+    (r"t[eé]l[eé]phone|(^|_)e?_?mail($|_)|courriel|adresse", "coordonnées"),
 ]
 
 

@@ -1,0 +1,502 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import {
+  Accordion,
+  ActionIcon,
+  Alert,
+  Button,
+  Group,
+  Menu,
+  NumberInput,
+  Paper,
+  ScrollArea,
+  SegmentedControl,
+  Select,
+  Stack,
+  Switch,
+  Table,
+  Text,
+  TextInput,
+  Textarea,
+  Title,
+  Tooltip,
+  Loader,
+  Center,
+  Modal,
+} from '@mantine/core';
+import { IconPlus, IconTrash, IconPhoto, IconFileText, IconDeviceFloppy, IconTable, IconBulb, IconVectorBezier } from '@tabler/icons-react';
+import { api, saveText } from '../lib/api';
+import { useAuth } from '../lib/auth';
+import { buildFigure, CHART_TYPES, chartAdvice, ChartSpec, dataRequest, defaultSpec, measureLabel, RAW_TYPES } from '../lib/chart';
+import { fmtNumber, isNumericType } from '../lib/format';
+import { fail, ok } from '../lib/notify';
+import { NEUTRAL } from '../lib/theme';
+import type { Column, DatasetSummary } from '../lib/types';
+import { AGGS, Conditions } from '../components/StepForm';
+
+let plotlyPromise: Promise<any> | null = null;
+const loadPlotly = () => (plotlyPromise ??= import('plotly.js-dist-min').then((m) => m.default || m));
+
+interface Saved {
+  id: string;
+  name: string;
+  spec: ChartSpec;
+}
+
+export default function ChartsPage() {
+  const { me, structure } = useAuth();
+  const theme = structure?.theme || NEUTRAL;
+  const [params, setParams] = useSearchParams();
+  const [datasets, setDatasets] = useState<DatasetSummary[]>([]);
+  const dsId = params.get('dataset');
+  const [columns, setColumns] = useState<Column[]>([]);
+  const [spec, setSpec] = useState<ChartSpec>(() => defaultSpec(me?.display_name || '', theme.chart.default_source));
+  const [data, setData] = useState<any>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [saved, setSaved] = useState<Saved[]>([]);
+  const [current, setCurrent] = useState<Saved | null>(null);
+  const [showTable, setShowTable] = useState(false);
+  const plotRef = useRef<HTMLDivElement>(null);
+  const canWrite = datasets.find((d) => d.id === dsId)?.mode === 'ecriture';
+
+  useEffect(() => {
+    api.get<DatasetSummary[]>('/api/datasets').then(setDatasets).catch(fail);
+  }, [structure?.id]);
+
+  useEffect(() => {
+    if (!dsId) return;
+    api.get(`/api/datasets/${dsId}`).then((d) => setColumns(d.schema.filter((c: Column) => !c.name.startsWith('__')))).catch(fail);
+    api.get<Saved[]>(`/api/datasets/${dsId}/charts`).then(setSaved).catch(() => setSaved([]));
+    setCurrent(null);
+  }, [dsId]);
+
+  const set = (patch: Partial<ChartSpec>) => setSpec((s) => ({ ...s, ...patch }));
+  const setT = (patch: Partial<ChartSpec['template']>) => setSpec((s) => ({ ...s, template: { ...s.template, ...patch } }));
+
+  const raw = RAW_TYPES.includes(spec.type);
+  const ready = useMemo(() => {
+    if (!dsId) return false;
+    switch (spec.type) {
+      case 'nuage':
+      case 'bulles':
+      case 'nuage3d':
+        return !!spec.x && !!spec.y && (spec.type !== 'nuage3d' || !!spec.z) && (spec.type !== 'bulles' || !!spec.size);
+      case 'boites':
+      case 'violons':
+        return !!spec.y;
+      case 'histogramme':
+        return !!spec.x;
+      case 'chaleur':
+      case 'surface3d':
+        return !!spec.x && !!spec.series && spec.measures.length > 0 && spec.measures.every((m) => m.agg === 'nombre_lignes' || m.column);
+      default:
+        return !!spec.x && spec.measures.length > 0 && spec.measures.every((m) => m.agg === 'nombre_lignes' || m.column);
+    }
+  }, [spec, dsId]);
+
+  // données (agrégées côté serveur) : uniquement quand la requête change
+  const reqKey = JSON.stringify(ready ? dataRequest(spec) : null);
+  useEffect(() => {
+    if (!ready || !dsId) return setData(null);
+    const t = setTimeout(async () => {
+      setLoading(true);
+      setErr(null);
+      try {
+        setData(await api.post(`/api/datasets/${dsId}/chart-data`, JSON.parse(reqKey)));
+      } catch (e: any) {
+        setErr(e.message);
+        setData(null);
+      } finally {
+        setLoading(false);
+      }
+    }, 300);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reqKey, dsId]);
+
+  const logoUrl = structure?.has_logo ? `/api/structures/${structure.id}/logo` : null;
+  const figure = useMemo(() => (data ? buildFigure(spec, data, theme, { logoUrl, structureName: structure?.short_name }) : null), [data, spec, theme, logoUrl, structure]);
+
+  useEffect(() => {
+    if (!figure || !plotRef.current) return;
+    let cancelled = false;
+    loadPlotly().then((Plotly) => {
+      if (cancelled || !plotRef.current) return;
+      Plotly.react(plotRef.current, figure.data, figure.layout, {
+        displaylogo: false,
+        responsive: false,
+        locale: 'fr',
+        modeBarButtonsToRemove: ['select2d', 'lasso2d', 'toImage'],
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [figure]);
+
+  const exportImage = async (format: 'png' | 'svg') => {
+    const Plotly = await loadPlotly();
+    if (!plotRef.current) return;
+    const url = await Plotly.toImage(plotRef.current, { format, width: spec.template.width, height: spec.template.height, scale: format === 'png' ? 3 : 1 });
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${(spec.template.title || 'graphique').replace(/[^\w\- ]+/g, '_')}.${format}`;
+    a.click();
+  };
+
+  const exportMethod = async () => {
+    try {
+      const md = await api.post<string>(`/api/datasets/${dsId}/charts/method.md`, { name: spec.template.title || 'graphique', spec });
+      saveText(md, `${spec.template.title || 'graphique'}_methode.md`);
+    } catch (e) {
+      fail(e);
+    }
+  };
+
+  const save = async () => {
+    const name = spec.template.title || prompt('Nom du graphique') || 'Graphique';
+    try {
+      if (current) {
+        await api.put(`/api/charts/${current.id}`, { name, spec });
+      } else {
+        const r = await api.post(`/api/datasets/${dsId}/charts`, { name, spec });
+        setCurrent({ id: r.id, name, spec });
+      }
+      setSaved(await api.get(`/api/datasets/${dsId}/charts`));
+      ok('Graphique enregistré');
+    } catch (e) {
+      fail(e);
+    }
+  };
+
+  const cols = columns.map((c) => c.name);
+  const numCols = columns.filter((c) => isNumericType(c.type)).map((c) => c.name);
+  const advice = chartAdvice(spec, data);
+  const typeInfo = CHART_TYPES.find((t) => t.value === spec.type);
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '360px minmax(0, 1fr)', gap: 16, height: 'calc(100vh - 88px)' }}>
+      <Paper withBorder p="sm" style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+        <ScrollArea style={{ flex: 1 }} offsetScrollbars>
+          <Stack gap="sm">
+            <Title order={4}>Graphique</Title>
+            <Select
+              label="Jeu de données"
+              searchable
+              data={datasets.map((d) => ({ value: d.id, label: d.name }))}
+              value={dsId}
+              onChange={(v) => v && setParams({ dataset: v })}
+            />
+            {saved.length > 0 && (
+              <Select
+                label="Graphiques enregistrés"
+                placeholder="Nouveau graphique"
+                clearable
+                data={saved.map((s) => ({ value: s.id, label: s.name }))}
+                value={current?.id || null}
+                onChange={(v) => {
+                  const s = saved.find((x) => x.id === v) || null;
+                  setCurrent(s);
+                  if (s) setSpec(s.spec);
+                }}
+              />
+            )}
+            <Select
+              label="Type"
+              description={typeInfo?.hint}
+              data={CHART_TYPES.map((t) => ({ value: t.value, label: t.label }))}
+              value={spec.type}
+              onChange={(v) => v && set({ type: v as any })}
+              allowDeselect={false}
+            />
+            <Accordion multiple defaultValue={['donnees', 'gabarit']} variant="contained">
+              <Accordion.Item value="donnees">
+                <Accordion.Control>Données représentées</Accordion.Control>
+                <Accordion.Panel>
+                  <Stack gap="xs">
+                    {spec.type !== 'boites' && spec.type !== 'violons' && (
+                      <Select
+                        label={spec.type === 'histogramme' ? 'Variable' : spec.type === 'secteurs' ? 'Catégories' : 'Axe horizontal (X)'}
+                        searchable
+                        clearable
+                        data={raw && spec.type !== 'histogramme' ? numCols.concat(cols.filter((c) => !numCols.includes(c))) : cols}
+                        value={spec.x || null}
+                        onChange={(v) => set({ x: v || undefined })}
+                      />
+                    )}
+                    {(spec.type === 'boites' || spec.type === 'violons') && (
+                      <Select label="Groupes (X, facultatif)" searchable clearable data={cols} value={spec.x || null} onChange={(v) => set({ x: v || undefined })} />
+                    )}
+                    {raw && spec.type !== 'histogramme' && (
+                      <Select label="Axe vertical (Y)" searchable data={numCols} value={spec.y || null} onChange={(v) => set({ y: v || undefined })} />
+                    )}
+                    {spec.type === 'nuage3d' && <Select label="Profondeur (Z)" searchable data={numCols} value={spec.z || null} onChange={(v) => set({ z: v || undefined })} />}
+                    {spec.type === 'bulles' && <Select label="Taille des bulles" searchable data={numCols} value={spec.size || null} onChange={(v) => set({ size: v || undefined })} />}
+                    {!raw && (
+                      <>
+                        <Text size="sm" fw={500}>
+                          {spec.type === 'chaleur' || spec.type === 'surface3d' ? 'Valeur (couleur / hauteur)' : 'Mesures'}
+                        </Text>
+                        {spec.measures.map((m, i) => (
+                          <Paper key={i} withBorder p={6}>
+                            <Group gap={4} wrap="nowrap">
+                              <Select size="xs" w={130} data={AGGS.filter((a) => a.value !== 'premier')} value={m.agg} onChange={(v) => set({ measures: spec.measures.map((x, j) => (j === i ? { ...x, agg: v || 'somme' } : x)) })} />
+                              {m.agg !== 'nombre_lignes' && (
+                                <Select
+                                  size="xs"
+                                  style={{ flex: 1 }}
+                                  searchable
+                                  placeholder="Colonne"
+                                  data={['nombre', 'nombre_distinct'].includes(m.agg) ? cols : numCols}
+                                  value={m.column || null}
+                                  onChange={(v) => set({ measures: spec.measures.map((x, j) => (j === i ? { ...x, column: v || undefined } : x)) })}
+                                />
+                              )}
+                              {spec.measures.length > 1 && (
+                                <ActionIcon variant="subtle" color="red" onClick={() => set({ measures: spec.measures.filter((_, j) => j !== i) })}>
+                                  <IconTrash size={14} />
+                                </ActionIcon>
+                              )}
+                            </Group>
+                            {['barres', 'lignes', 'combine', 'aires'].includes(spec.type) && (
+                              <Group gap={6} mt={4}>
+                                {spec.type === 'combine' && (
+                                  <SegmentedControl
+                                    size="xs"
+                                    value={m.mark || 'barres'}
+                                    onChange={(v) => set({ measures: spec.measures.map((x, j) => (j === i ? { ...x, mark: v as any } : x)) })}
+                                    data={[
+                                      { value: 'barres', label: 'Barres' },
+                                      { value: 'lignes', label: 'Courbe' },
+                                    ]}
+                                  />
+                                )}
+                                <SegmentedControl
+                                  size="xs"
+                                  value={m.axis || 'y'}
+                                  onChange={(v) => set({ measures: spec.measures.map((x, j) => (j === i ? { ...x, axis: v as any } : x)) })}
+                                  data={[
+                                    { value: 'y', label: 'Axe gauche' },
+                                    { value: 'y2', label: 'Axe droit' },
+                                  ]}
+                                />
+                              </Group>
+                            )}
+                          </Paper>
+                        ))}
+                        {['barres', 'barres_h', 'lignes', 'aires', 'combine'].includes(spec.type) && (
+                          <Button size="xs" variant="light" leftSection={<IconPlus size={14} />} onClick={() => set({ measures: [...spec.measures, { agg: 'somme', axis: 'y', mark: 'lignes' }] })}>
+                            Ajouter une mesure
+                          </Button>
+                        )}
+                      </>
+                    )}
+                    {spec.type !== 'secteurs' && spec.type !== 'histogramme' && (
+                      <Select
+                        label={spec.type === 'chaleur' || spec.type === 'surface3d' ? 'Axe vertical (Y)' : 'Couleur / séries'}
+                        searchable
+                        clearable
+                        data={cols}
+                        value={spec.series || null}
+                        onChange={(v) => set({ series: v || undefined })}
+                      />
+                    )}
+                    {!['nuage3d', 'surface3d'].includes(spec.type) && (
+                      <Select
+                        label="Petits multiples (un panneau par…)"
+                        description="Plus lisible que de tout superposer"
+                        searchable
+                        clearable
+                        data={cols}
+                        value={spec.facet || null}
+                        onChange={(v) => set({ facet: v || undefined })}
+                      />
+                    )}
+                  </Stack>
+                </Accordion.Panel>
+              </Accordion.Item>
+              <Accordion.Item value="filtres">
+                <Accordion.Control>Filtres du graphique</Accordion.Control>
+                <Accordion.Panel>
+                  {dsId && (
+                    <Conditions
+                      value={{ conditions: spec.filters, logic: 'and' }}
+                      onChange={(v) => set({ filters: v.conditions || [] })}
+                      columns={columns}
+                      datasetId={dsId}
+                    />
+                  )}
+                  <Text size="xs" c="dimmed" mt={4}>
+                    Ces filtres ne concernent que ce graphique (ils sont indiqués dans sa fiche méthode).
+                  </Text>
+                </Accordion.Panel>
+              </Accordion.Item>
+              <Accordion.Item value="axes">
+                <Accordion.Control>Axes et échelles</Accordion.Control>
+                <Accordion.Panel>
+                  <Stack gap="xs">
+                    {['barres', 'barres_h', 'aires', 'combine'].includes(spec.type) && (
+                      <SegmentedControl
+                        size="xs"
+                        value={spec.stack || 'groupe'}
+                        onChange={(v) => set({ stack: v as any })}
+                        data={[
+                          { value: 'groupe', label: 'Côte à côte' },
+                          { value: 'empile', label: 'Empilé' },
+                          { value: 'pourcent', label: '100 %' },
+                        ]}
+                      />
+                    )}
+                    <SegmentedControl
+                      size="xs"
+                      value={spec.y_scale || 'lineaire'}
+                      onChange={(v) => set({ y_scale: v as any })}
+                      data={[
+                        { value: 'lineaire', label: 'Échelle linéaire' },
+                        { value: 'log', label: 'Logarithmique' },
+                      ]}
+                    />
+                    <Group grow>
+                      <NumberInput size="xs" label="Minimum" placeholder="auto" value={spec.y_min ?? ''} onChange={(v) => set({ y_min: v === '' ? null : Number(v) })} />
+                      <NumberInput size="xs" label="Maximum" placeholder="auto" value={spec.y_max ?? ''} onChange={(v) => set({ y_max: v === '' ? null : Number(v) })} />
+                    </Group>
+                    <TextInput size="xs" label="Titre de l’axe horizontal" placeholder={spec.x} value={spec.x_title ?? ''} onChange={(e) => set({ x_title: e.currentTarget.value || undefined })} />
+                    <TextInput size="xs" label="Titre de l’axe vertical (avec l’unité)" placeholder="ex. Débarquements (t)" value={spec.y_title ?? ''} onChange={(e) => set({ y_title: e.currentTarget.value || undefined })} />
+                    {spec.measures.some((m) => m.axis === 'y2') && (
+                      <TextInput size="xs" label="Titre de l’axe droit" value={spec.y2_title ?? ''} onChange={(e) => set({ y2_title: e.currentTarget.value || undefined })} />
+                    )}
+                    {!raw && (
+                      <Select
+                        size="xs"
+                        label="Ordre des catégories"
+                        data={[
+                          { value: 'aucun', label: 'Naturel (alphabétique / chronologique)' },
+                          { value: 'valeur_desc', label: 'Valeur décroissante' },
+                          { value: 'valeur_asc', label: 'Valeur croissante' },
+                        ]}
+                        value={spec.sort || 'aucun'}
+                        onChange={(v) => set({ sort: v as any })}
+                      />
+                    )}
+                    {spec.type.startsWith('barres') && <Switch size="xs" label="Afficher les valeurs" checked={!!spec.show_values} onChange={(e) => set({ show_values: e.currentTarget.checked })} />}
+                  </Stack>
+                </Accordion.Panel>
+              </Accordion.Item>
+              <Accordion.Item value="gabarit">
+                <Accordion.Control>Titre, source, auteur</Accordion.Control>
+                <Accordion.Panel>
+                  <Stack gap="xs">
+                    <TextInput size="xs" label="Titre" placeholder="Ce que montre le graphique" value={spec.template.title} onChange={(e) => setT({ title: e.currentTarget.value })} />
+                    <TextInput size="xs" label="Sous-titre" placeholder="Périmètre, période, unité" value={spec.template.subtitle} onChange={(e) => setT({ subtitle: e.currentTarget.value })} />
+                    <TextInput size="xs" label="Source" placeholder="ex. SACROIS – DGAMPA, traitement CRPM" value={spec.template.source} onChange={(e) => setT({ source: e.currentTarget.value })} />
+                    <TextInput size="xs" label="Auteur" value={spec.template.author} onChange={(e) => setT({ author: e.currentTarget.value })} />
+                    <Textarea size="xs" label="Note de lecture" autosize value={spec.template.caption} onChange={(e) => setT({ caption: e.currentTarget.value })} />
+                    <Group>
+                      <Switch size="xs" label="Date" checked={spec.template.show_date} onChange={(e) => setT({ show_date: e.currentTarget.checked })} />
+                      <Switch size="xs" label="Logo" checked={spec.template.show_logo} disabled={!structure?.has_logo} onChange={(e) => setT({ show_logo: e.currentTarget.checked })} />
+                    </Group>
+                    <Group grow>
+                      <NumberInput size="xs" label="Largeur (px)" min={400} max={3000} value={spec.template.width} onChange={(v) => setT({ width: Number(v) || 1100 })} />
+                      <NumberInput size="xs" label="Hauteur (px)" min={300} max={2000} value={spec.template.height} onChange={(v) => setT({ height: Number(v) || 620 })} />
+                    </Group>
+                  </Stack>
+                </Accordion.Panel>
+              </Accordion.Item>
+            </Accordion>
+          </Stack>
+        </ScrollArea>
+      </Paper>
+
+      <Stack style={{ minWidth: 0, minHeight: 0 }} gap="sm">
+        <Group justify="space-between">
+          <Text size="sm" c="dimmed">
+            {data ? (raw ? `${fmtNumber(data.rows.length)} points` : `${fmtNumber(data.rows.length)} valeurs agrégées`) : ''}
+            {loading && <Loader size="xs" ml={6} />}
+          </Text>
+          <Group gap="xs">
+            <Tooltip label="Voir les chiffres sous forme de tableau">
+              <Button size="xs" variant="default" leftSection={<IconTable size={14} />} disabled={!data} onClick={() => setShowTable(true)}>
+                Tableau
+              </Button>
+            </Tooltip>
+            <Button size="xs" variant="default" leftSection={<IconFileText size={14} />} disabled={!figure} onClick={exportMethod}>
+              Fiche méthode
+            </Button>
+            {canWrite && (
+              <Button size="xs" variant="default" leftSection={<IconDeviceFloppy size={14} />} disabled={!figure} onClick={save}>
+                Enregistrer
+              </Button>
+            )}
+            <Menu withinPortal position="bottom-end">
+              <Menu.Target>
+                <Button size="xs" leftSection={<IconPhoto size={14} />} disabled={!figure}>
+                  Exporter l’image
+                </Button>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item leftSection={<IconPhoto size={14} />} onClick={() => exportImage('png')}>
+                  PNG haute définition
+                </Menu.Item>
+                <Menu.Item leftSection={<IconVectorBezier size={14} />} onClick={() => exportImage('svg')}>
+                  SVG (vectoriel, pour retouche)
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+          </Group>
+        </Group>
+        {advice.length > 0 && figure && (
+          <Alert color="blue" variant="light" p="xs" icon={<IconBulb size={18} />}>
+            {advice.map((a) => (
+              <Text size="xs" key={a}>
+                {a}
+              </Text>
+            ))}
+          </Alert>
+        )}
+        {err && <Alert color="red">{err}</Alert>}
+        <ScrollArea style={{ flex: 1 }} type="auto">
+          {!dsId ? (
+            <Center h={300}>
+              <Text c="dimmed">Choisissez un jeu de données.</Text>
+            </Center>
+          ) : !ready ? (
+            <Center h={300}>
+              <Text c="dimmed">Complétez les champs « Données représentées » pour afficher le graphique.</Text>
+            </Center>
+          ) : (
+            <div className="mo-chart-frame" style={{ width: spec.template.width, height: spec.template.height }}>
+              <div ref={plotRef} />
+            </div>
+          )}
+        </ScrollArea>
+      </Stack>
+
+      <Modal opened={showTable} onClose={() => setShowTable(false)} title="Données du graphique" size="xl">
+        {data && (
+          <ScrollArea h={500}>
+            <Table fz="sm" striped withTableBorder>
+              <Table.Thead>
+                <Table.Tr>
+                  {data.columns.map((c: string, i: number) => {
+                    const mi = i - (data.columns.length - spec.measures.length);
+                    return <Table.Th key={c}>{!raw && mi >= 0 ? measureLabel(spec.measures[mi]) : c}</Table.Th>;
+                  })}
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {data.rows.slice(0, 2000).map((r: any[], i: number) => (
+                  <Table.Tr key={i}>
+                    {r.map((v, j) => (
+                      <Table.Td key={j}>{fmtNumber(v)}</Table.Td>
+                    ))}
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </ScrollArea>
+        )}
+      </Modal>
+    </div>
+  );
+}
