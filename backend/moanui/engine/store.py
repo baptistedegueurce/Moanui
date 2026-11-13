@@ -10,6 +10,7 @@ et les codes à zéros initiaux (« 0123 ») restent du texte pour ne rien perdr
 
 from __future__ import annotations
 
+import csv
 import hashlib
 import json
 import os
@@ -19,8 +20,6 @@ from datetime import date, datetime, time
 from pathlib import Path
 
 import duckdb
-import pyarrow as pa
-import pyarrow.parquet as pq
 
 from .sql import ROW_ID, RecipeError, ident, string_lit
 
@@ -92,7 +91,16 @@ def _detect_delimiter(path: Path, encoding: str) -> str:
     return best
 
 
-def read_csv_as_text(con, path: Path, options: dict) -> tuple[str, dict]:
+def _read_csv_into(con, src: Path, delim: str, header: bool) -> None:
+    """Charge un CSV en table DuckDB « brut0 », tout en texte, dans l'ordre du fichier."""
+    con.execute(
+        f"CREATE OR REPLACE TABLE brut0 AS SELECT * FROM read_csv({string_lit(str(src))}, delim={string_lit(delim)}, "
+        f"header={str(bool(header)).lower()}, all_varchar=true, quote='\"', escape='\"', null_padding=true, "
+        "ignore_errors=false, sample_size=-1, strict_mode=false)"
+    )
+
+
+def read_csv_as_text(con, path: Path, options: dict) -> dict:
     encoding = options.get("encoding") or _detect_encoding(path)
     delim = options.get("delimiter") or _detect_delimiter(path, encoding)
     header = options.get("header", True)
@@ -103,17 +111,11 @@ def read_csv_as_text(con, path: Path, options: dict) -> tuple[str, dict]:
         with open(path, encoding=encoding, errors="replace") as fi, open(src, "w", encoding="utf-8") as fo:
             shutil.copyfileobj(fi, fo, 1 << 20)
     try:
-        rel = con.sql(
-            f"SELECT * FROM read_csv({string_lit(str(src))}, delim={string_lit(delim)}, header={str(bool(header)).lower()}, "
-            "all_varchar=true, quote='\"', escape='\"', null_padding=true, ignore_errors=false, "
-            "sample_size=-1, strict_mode=false)"
-        )
-        tbl = rel.to_arrow_table()
+        _read_csv_into(con, src, delim, header)
     finally:
         if src != path:
             src.unlink(missing_ok=True)
-    used = {"encoding": encoding, "delimiter": delim, "header": bool(header)}
-    return tbl, used
+    return {"encoding": encoding, "delimiter": delim, "header": bool(header)}
 
 
 def _cell_to_text(v) -> str | None:
@@ -141,10 +143,12 @@ def list_sheets(path: Path) -> list[str]:
         wb.close()
 
 
-def read_xlsx_as_text(path: Path, options: dict) -> tuple[pa.Table, dict]:
+def read_xlsx_as_text(con, path: Path, options: dict) -> dict:
+    """Feuille Excel → CSV temporaire (tout en texte) → table DuckDB « brut0 »."""
     from openpyxl import load_workbook
 
     wb = load_workbook(path, read_only=True, data_only=True)
+    tmp = path.with_suffix(".feuille.tmp.csv")
     try:
         sheet = options.get("sheet") or wb.sheetnames[0]
         if sheet not in wb.sheetnames:
@@ -160,21 +164,31 @@ def read_xlsx_as_text(path: Path, options: dict) -> tuple[pa.Table, dict]:
             raise RecipeError("La feuille est vide.")
         width = len(first)
         names = _unique_names(list(first) if header else [f"colonne_{i + 1}" for i in range(width)])
-        cols: list[list] = [[] for _ in range(width)]
-        if not header:
-            for i, v in enumerate(first):
-                cols[i].append(_cell_to_text(v))
-        for r in rows:
-            if r is None or all(v is None for v in r):
-                continue
-            for i in range(width):
-                cols[i].append(_cell_to_text(r[i]) if i < len(r) else None)
-        # supprimer les colonnes entièrement vides et sans en-tête
-        keep = [i for i in range(width) if any(v is not None for v in cols[i]) or (header and first[i] is not None)]
-        tbl = pa.table({names[i]: pa.array(cols[i], type=pa.string()) for i in keep})
-        return tbl, {"sheet": sheet, "header": bool(header), "skip_rows": skip}
+        n_written = 0
+        used_cols = [header and first[i] is not None for i in range(width)]
+        with open(tmp, "w", encoding="utf-8", newline="") as f:
+            w = csv.writer(f, delimiter=";", quoting=csv.QUOTE_ALL)
+            w.writerow(names)
+            pending = [] if header else [first]
+            for r in pending + [r for r in rows]:
+                if r is None or all(v is None for v in r):
+                    continue
+                vals = [_cell_to_text(r[i]) if i < len(r) else None for i in range(width)]
+                for i, v in enumerate(vals):
+                    if v is not None:
+                        used_cols[i] = True
+                w.writerow(["" if v is None else v for v in vals])
+                n_written += 1
+        _read_csv_into(con, tmp, ";", True)
+        # colonnes entièrement vides et sans en-tête : retirées
+        drop = [names[i] for i in range(width) if not used_cols[i]]
+        if drop and len(drop) < width:
+            con.execute(f"CREATE OR REPLACE TABLE brut0 AS SELECT * EXCLUDE ({', '.join(ident(d) for d in drop)}) "
+                        "FROM brut0 ORDER BY rowid")
+        return {"sheet": sheet, "header": bool(header), "skip_rows": skip}
     finally:
         wb.close()
+        tmp.unlink(missing_ok=True)
 
 
 # --------------------------------------------------------------------------- détection des types
@@ -303,16 +317,17 @@ def import_file(src: Path, original_name: str, raw_dir: Path, options: dict | No
     con = duckdb.connect()
     try:
         if fmt == "csv":
-            tbl, used = read_csv_as_text(con, source_copy, options)
+            used = read_csv_as_text(con, source_copy, options)
         else:
-            tbl, used = read_xlsx_as_text(source_copy, options)
-        if tbl.num_columns > MAX_COLUMNS:
-            raise RecipeError(f"Trop de colonnes ({tbl.num_columns}). Vérifiez le séparateur.")
-        names = _unique_names(tbl.column_names)
-        tbl = tbl.rename_columns(names)
-        # numéro de ligne d'origine, attribué avant toute requête pour garantir l'ordre du fichier
-        tbl = tbl.append_column(ROW_ID, pa.array(range(1, tbl.num_rows + 1), type=pa.int64()))
-        con.register("brut", tbl)
+            used = read_xlsx_as_text(con, source_copy, options)
+        raw_names = [r[0] for r in con.execute("DESCRIBE brut0").fetchall()]
+        if len(raw_names) > MAX_COLUMNS:
+            raise RecipeError(f"Trop de colonnes ({len(raw_names)}). Vérifiez le séparateur.")
+        names = _unique_names(raw_names)
+        # numéro de ligne d'origine : rowid suit l'ordre d'insertion, donc l'ordre du fichier
+        con.execute("CREATE OR REPLACE TABLE brut AS SELECT CAST(rowid + 1 AS BIGINT) AS " + ident(ROW_ID) + ", "
+                    + ", ".join(f"{ident(o)} AS {ident(n)}" for o, n in zip(raw_names, names))
+                    + " FROM brut0 ORDER BY rowid")
         keep_text = set(options.get("keep_text") or [])
         types = infer_types(con, "brut", [c for c in names if c not in keep_text])
         for c in keep_text:

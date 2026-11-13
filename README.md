@@ -20,19 +20,23 @@ Tout tourne sur le poste de l'utilisateur (serveur local `127.0.0.1`, aucune don
 
 ## Lancer Moanui
 
-### Utilisateur (Windows / macOS, sans droits administrateur)
+### Utilisateur Windows (sans installation ni droits administrateur)
 
-Depuis une archive de version (interface déjà construite) :
+1. Télécharger `Moanui-windows.zip` depuis les [releases](../../releases) (ou l'onglet *Actions* →
+   « Exécutable Windows » → artefact) ;
+2. dézipper où l'on veut (Bureau, Documents…) ;
+3. double-cliquer sur `Moanui.exe` : Moanui s'ouvre dans le navigateur.
 
-1. Installer [uv](https://docs.astral.sh/uv/getting-started/installation/) (installation utilisateur, pas d'admin) ;
-2. double-cliquer sur `lancer_moanui.bat` (Windows) ou `lancer_moanui.command` (macOS).
+Les données sont stockées dans `%LOCALAPPDATA%\Moanui` (modifiable avec `--home` ou `MOANUI_HOME`) et sont
+conservées lors des mises à jour : il suffit de remplacer le dossier de l'application.
 
-uv télécharge Python et les dépendances la première fois, puis Moanui s'ouvre dans le navigateur.
-Les données sont stockées dans le dossier utilisateur (`%LOCALAPPDATA%\Moanui` sous Windows,
-`~/Library/Application Support/Moanui` sous macOS), modifiable avec `--home` ou `MOANUI_HOME`.
+Pour publier une version : créer une étiquette `vX.Y.Z` ; le workflow construit le zip, vérifie que
+l'exécutable démarre et l'attache à la release.
 
-> Depuis le dépôt git, l'interface doit d'abord être construite (voir « Développement »).
-> Un exécutable autonome (sans uv) est prévu : voir la feuille de route.
+### Sans exécutable (uv)
+
+Avec [uv](https://docs.astral.sh/uv/) installé pour l'utilisateur et l'interface construite :
+`lancer_moanui.bat` (Windows) ou `lancer_moanui.command` (macOS).
 
 ### Développement
 

@@ -178,3 +178,43 @@ def test_unit_convert_and_lookup(client):
     r = client.post(f"/api/datasets/{did}/steps", json={"type": "lookup", "params": {
         "referentiel": "engins_metiers", "column": "engin_cod"}})
     assert r.status_code == 200, r.text
+
+
+def test_import_xlsx_and_row_order(client, tmp_path):
+    from datetime import date
+
+    from openpyxl import Workbook
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "captures"
+    ws.append(["navire", "date", "poids", None, "code"])
+    for i in range(1, 51):
+        ws.append([f"N{i:03d}", date(2024, 1 + i % 12, 1 + i % 28), i * 1.5, None, f"0{i}"])
+    path = tmp_path / "test.xlsx"
+    wb.save(path)
+    with open(path, "rb") as f:
+        r = client.post("/api/datasets/import", files={"file": ("test.xlsx", f, "application/octet-stream")},
+                        data={"options": '{"sheet": "captures"}'})
+    assert r.status_code == 200, r.text
+    cols = {c["name"]: c["type"] for c in r.json()["report"]["columns"]}
+    assert cols == {"navire": "texte", "date": "date", "poids": "decimal", "code": "texte"}
+    rows = client.post(f"/api/datasets/{r.json()['id']}/rows", json={"limit": 3}).json()["rows"]
+    assert rows[0][:2] == [1, "N001"] and rows[2][:2] == [3, "N003"]
+
+
+def test_big_csv_keeps_file_order(client, tmp_path):
+    path = tmp_path / "gros.csv"
+    with open(path, "w") as f:
+        f.write("id;valeur\n")
+        for i in range(1, 300001):
+            f.write(f"{i};{i % 97},5\n")
+    with open(path, "rb") as f:
+        r = client.post("/api/datasets/import", files={"file": ("gros.csv", f, "text/csv")})
+    assert r.status_code == 200, r.text
+    did = r.json()["id"]
+    res = client.post(f"/api/datasets/{did}/steps/check", json={"type": "filter", "params": {
+        "conditions": [{"column": "id", "op": "gt", "value": 0}]}}).json()
+    assert res["n_after"] == 300000
+    page = client.post(f"/api/datasets/{did}/rows", json={"offset": 250000, "limit": 5}).json()
+    assert all(r[0] == r[1] for r in page["rows"])  # __ligne == id : ordre du fichier conservé

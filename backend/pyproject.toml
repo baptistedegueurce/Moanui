@@ -7,7 +7,6 @@ dependencies = [
   "fastapi>=0.115",
   "uvicorn>=0.30",
   "duckdb>=2.0",
-  "pyarrow>=16",
   "openpyxl>=3.1",
   "python-multipart>=0.0.9",
   "platformdirs>=4",

@@ -1,0 +1,16 @@
+MOANUI - données halieutiques
+
+Lancer : double-cliquez sur Moanui.exe.
+Moanui s'ouvre dans votre navigateur (adresse http://127.0.0.1:8765).
+La fenêtre noire doit rester ouverte pendant l'utilisation ; la fermer arrête Moanui.
+
+Aucune installation ni droit administrateur n'est nécessaire.
+Rien n'est envoyé sur internet : tout reste sur cet ordinateur.
+
+Vos données sont enregistrées dans : %LOCALAPPDATA%\Moanui
+(sauvegardez ce dossier ; il est conservé lors des mises à jour).
+
+Mise à jour : remplacez simplement ce dossier par la nouvelle version.
+
+Windows SmartScreen peut avertir au premier lancement (application non signée) :
+cliquez sur « Informations complémentaires » puis « Exécuter quand même ».
