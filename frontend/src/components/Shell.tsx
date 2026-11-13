@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { AppShell, Group, Menu, NavLink, Select, Text, UnstyledButton, Avatar, Badge, Box, ScrollArea } from '@mantine/core';
+import { AppShell, Group, Menu, NavLink, Select, Text, UnstyledButton, Avatar, Box, ScrollArea } from '@mantine/core';
 import {
   IconHome,
   IconTable,
@@ -94,7 +94,7 @@ export default function Shell({ children }: { children: ReactNode }) {
           <div className="mo-nav-section">Travailler</div>
           {nav('/donnees', 'Données', <IconTable size={18} />)}
           {nav('/graphiques', 'Graphiques', <IconChartBar size={18} />)}
-          {nav('/cartographie', 'Cartographie', <IconMap2 size={18} />, <Badge size="xs" variant="light">bientôt</Badge>)}
+          {nav('/cartographie', 'Cartographie', <IconMap2 size={18} />)}
           {nav('/statistiques', 'Statistiques', <IconMathFunction size={18} />)}
           <div className="mo-nav-section">Aide</div>
           {nav('/guide', 'Bonnes pratiques', <IconBook size={18} />)}

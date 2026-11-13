@@ -83,7 +83,7 @@ Principes clés :
 ## 4. Lancer / tester
 
 ```bash
-cd backend && uv sync --extra dev && uv run pytest -q      # tests (20)
+cd backend && uv sync --extra dev && uv run pytest -q      # tests (25)
 cd frontend && npm ci && npm run build                      # compile vers backend/moanui/static
 cd backend && uv run moanui --home ../.moanui-dev           # http://127.0.0.1:8765
 cd frontend && npm run dev                                  # dev avec proxy /api → 8765
@@ -106,13 +106,15 @@ cd frontend && npm run dev                                  # dev avec proxy /ap
   jamais signalés. Les tolérances de l'ancienne app (MAC en FPO/DRB/LLS, SOL en FPO) ont été
   retirées faute d'appui bibliographique : à rajouter par structure si besoin.
 - **Exécutable Windows** testé automatiquement (démarrage + `/api/health`).
+- **Cartographie + VMS (nov. 2026)** : voir §8.
 - **Statistiques guidées** : comparaison de groupes (t de Welch, Mann-Whitney, ANOVA, Welch,
   Kruskal + post-hoc Holm), khi² / Fisher, corrélation, régression linéaire (VIF, Breusch-Pagan,
   Cook) ; blocage contournable, interprétation, historique, fiche méthode.
 
 ## 6. En cours / à faire (ordre proposé)
 
-1. **Cartographie + VMS** (en cours) — voir journal.
+1. Carto suite : bande des 3 milles (licence OFB/CNSP à vérifier), étiquettes (polices embarquées),
+   trajectoires par marée, croisement VMS × SACROIS (répartir les captures sur les positions de pêche).
 2. SACROIS suite : référentiels espèces / ports, corrections d'engins propres à chaque structure
    (base partagée), recettes enregistrables comme modèles, scripts CDP22 / DGAMPA.
 3. Stats suite : GLM, GLMM, GAM, séries temporelles, ACP ; R si installé.
@@ -122,7 +124,29 @@ cd frontend && npm run dev                                  # dev avec proxy /ap
 Questions ouvertes à l'utilisateur : traitements SACROIS récurrents (scripts CDP22),
 vraies listes de corrections d'engins, retours de test de l'exécutable sur un poste.
 
+## 8. Cartographie (détails)
+
+- Moteur : extension **spatiale DuckDB** (GDAL/PROJ/GEOS). En dev elle est téléchargée une fois
+  (`INSTALL spatial`) ; dans l'exe elle est **embarquée** (`packaging/extension_spatiale.py` la copie,
+  `moanui.spec` l'ajoute, le test de démarrage CI vérifie `/api/health` → `cartographie: embarquee`).
+  Toujours `SET geometry_always_xy = true` (fait par `geo.load_spatial`).
+- Couche importée : `home/couches/<id>/source/*` (brut RO) + `couche.parquet` (colonnes attributaires,
+  `geom` WGS84, `geom_m` Web Mercator, `__minx…__maxy`, `__fid`, tri Hilbert). Tuiles :
+  `ST_AsMVT` à la demande, cache LRU mémoire, propriétés castées (MVT n'accepte pas DECIMAL).
+- Couches intégrées : `backend/moanui/couches/*.parquet` + `couches.json`, régénérées par
+  `outils/generer_couches_contexte.py` (Shom DELMAR, OFB AMP via WFS, Natural Earth). ~10 Mo.
+  Ids côté API : `ctx:<id>`. Les terres sont découpées en carreaux de 1° (sinon tuiles lentes).
+- Jeux sur la carte : positions = Parquet en cache (`home/cache/pts_<hash>.parquet`, clé = SQL de la
+  recette) servies en tuiles ; carroyage / rectangles CIEM = GeoJSON calculé (≤ 150 000 mailles).
+- Étapes : `ciem_rect`, `vms_activity` (seuils par engin, `SPEED_PRESETS`), `zone_tag` (jointure
+  spatiale, nécessite `LAYER_RESOLVER` posé par `Workspace`). Modèle `vms` dans `halieutique.TEMPLATES`.
+- Front : `pages/CartoPage.tsx` (MapLibre 4.7.1 chargé à la demande), `lib/carto.ts` (styles,
+  légende, échelle en milles, export PNG composé), `components/LayerImportModal.tsx`.
+  Fonds : Plan IGN (Géoplateforme, sans clé), OSM, hors ligne (terres intégrées), aucun.
+  Pas d'étiquettes texte (il faudrait des polices de glyphes hors ligne) : infos au clic.
+
 ## 7. Journal
 
 - 0.2 socle → SACROIS → exe Windows → stats (cf. historique git).
 - 2026-11 : référentiel engins FAO + engins cohérents (26 espèces) ; PROGRESS.md.
+- 2026-11 : cartographie + VMS (moteur, API, interface, étapes, couches de contexte, exe).

@@ -90,3 +90,25 @@ body {
   border-radius: 8px;
   position: relative;
 }
+
+/* ---------------------------------------------------------------- cartographie */
+.mo-swatch { width: 14px; height: 10px; border-radius: 2px; flex: 0 0 auto; border: 1px solid rgba(0,0,0,.15); }
+.mo-pick { cursor: pointer; }
+.mo-pick:hover { border-color: var(--mo-primary); background: var(--mo-bg); }
+.mo-popup { font-size: 12px; max-height: 300px; overflow: auto; }
+.mo-popup table { border-collapse: collapse; margin-top: 4px; }
+.mo-popup th { text-align: left; font-weight: 600; padding: 1px 8px 1px 0; color: #555; vertical-align: top; }
+.mo-popup td { padding: 1px 0; word-break: break-word; }
+.mo-map-title { position: absolute; top: 10px; left: 10px; z-index: 2; background: rgba(255,255,255,.92); padding: 6px 12px; border-radius: 6px; max-width: 60%; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.mo-map-title .t { font-weight: 650; font-size: 16px; }
+.mo-map-title .s { font-size: 13px; color: var(--mo-muted); }
+.mo-map-legend { position: absolute; bottom: 30px; left: 10px; z-index: 2; background: rgba(255,255,255,.94); padding: 8px 10px; border-radius: 6px; font-size: 12px; max-height: 55%; overflow: auto; box-shadow: 0 1px 3px rgba(0,0,0,.12); color: #222; }
+.mo-map-legend .grp + .grp { margin-top: 6px; }
+.mo-map-legend .h { font-weight: 600; margin-bottom: 2px; }
+.mo-map-legend .row { display: flex; align-items: center; gap: 6px; line-height: 18px; }
+.mo-map-legend .sw { width: 16px; height: 11px; border: 1px solid; border-radius: 2px; opacity: .85; flex: 0 0 auto; }
+.mo-map-legend .sw.point { width: 10px; height: 10px; border-radius: 50%; margin: 0 3px; }
+.mo-map-legend .sw.ligne { height: 0; border-width: 0 0 3px 0; border-radius: 0; background: none; }
+.mo-map-legend .sw.ligne.dashed { border-bottom-style: dashed; }
+.mo-map-scale { position: absolute; bottom: 30px; right: 10px; z-index: 2; background: rgba(255,255,255,.85); padding: 2px 6px 4px; border-radius: 4px; font-size: 11px; color: #333; text-align: left; }
+.mo-map-scale div { height: 5px; border: 2px solid #333; border-top: none; margin-top: 2px; }

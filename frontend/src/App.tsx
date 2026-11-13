@@ -14,7 +14,7 @@ import ChartsPage from './pages/ChartsPage';
 import AdminPage from './pages/AdminPage';
 import StructurePage from './pages/StructurePage';
 import GuidePage from './pages/GuidePage';
-import SoonPage from './pages/SoonPage';
+import CartoPage from './pages/CartoPage';
 import StatsPage from './pages/StatsPage';
 
 export default function App() {
@@ -49,7 +49,7 @@ export default function App() {
           <Route path="/donnees" element={<DatasetsPage />} />
           <Route path="/donnees/:id" element={<DatasetPage />} />
           <Route path="/graphiques" element={<ChartsPage />} />
-          <Route path="/cartographie" element={<SoonPage title="Cartographie" />} />
+          <Route path="/cartographie" element={<CartoPage />} />
           <Route path="/statistiques" element={<StatsPage />} />
           <Route path="/guide" element={<GuidePage />} />
           <Route path="/structure" element={<StructurePage />} />

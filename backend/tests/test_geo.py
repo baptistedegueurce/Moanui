@@ -58,6 +58,14 @@ def test_vms_template_activity_zone_and_grid(client, tmp_path):
         did = upload(client, name)["id"]
         prop = client.get(f"/api/datasets/{did}/templates/vms").json()
         types = [s["type"] for s in prop["steps"]]
+        i = types.index("vms_activity")
+        client.post(f"/api/datasets/{did}/steps/batch", json={"steps": [
+            {"type": s["type"], "params": s["params"]} for s in prop["steps"][:i]]})
+        diag = client.post(f"/api/datasets/{did}/steps/check", json={
+            "type": "vms_activity", "params": prop["steps"][i]["params"]}).json()["diagnostics"]
+        assert any("25 nœuds" in d["message"] for d in diag)  # positions simulées : sauts impossibles repérés
+        assert any("Répartition de l'activité" in d["message"] for d in diag)
+        prop["steps"] = prop["steps"][i:]
         assert types[0] == "rename" and "vms_activity" in types and "ciem_rect" in types
         assert ("unit_convert" in types) == (name.startswith("vms_cls"))
         r = client.post(f"/api/datasets/{did}/steps/batch", json={"steps": [

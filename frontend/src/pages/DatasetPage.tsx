@@ -37,6 +37,7 @@ import {
   IconFingerprint,
   IconAlertTriangle,
   IconMathFunction,
+  IconMap2,
 } from '@tabler/icons-react';
 import { api, download, saveText } from '../lib/api';
 import { useAuth } from '../lib/auth';
@@ -318,6 +319,9 @@ export default function DatasetPage() {
           </Button>
           <Button variant="light" leftSection={<IconMathFunction size={16} />} onClick={() => nav(`/statistiques?dataset=${ds.id}`)}>
             Statistiques
+          </Button>
+          <Button variant="light" leftSection={<IconMap2 size={16} />} onClick={() => nav(`/cartographie?dataset=${ds.id}`)}>
+            Carte
           </Button>
           <Button leftSection={<IconDownload size={16} />} onClick={() => setExportOpen(true)}>
             Exporter

@@ -375,6 +375,28 @@ def diagnose(con, plan: Plan, step: dict) -> list[dict]:
                                    "connues dans l'étape, ou exportez la liste pour validation."})
         else:
             out.append({"niveau": "info", "message": "Aucun engin incohérent pour les espèces contrôlées."})
+    elif t == "vms_activity":
+        from .recipe import compile_step
+
+        sql = compile_step(step, f"({plan.sql})", plan.schema)
+        n, jumps, gaps, dup, acts = con.execute(
+            f"SELECT count(*), count_if(vitesse_calc_nds > 25), count_if(ecart_min > {float(p.get('max_gap_min', 120))}), "
+            f"count_if(ecart_min = 0), histogram(activite) FROM ({sql})").fetchone()
+        if jumps:
+            out.append({"niveau": "attention",
+                        "message": f"{jumps} position(s) impliquent une vitesse calculée de plus de 25 nœuds depuis la "
+                                   "précédente : positions erronées, navires mélangés sous un même identifiant ou "
+                                   "horodatage incorrect. À vérifier avant d'interpréter l'activité."})
+        if dup:
+            out.append({"niveau": "attention",
+                        "message": f"{dup} position(s) ont le même horodatage que la précédente pour le même navire "
+                                   "(doublons probables : voir l'étape « Supprimer les doublons »)."})
+        if gaps:
+            out.append({"niveau": "info", "message": f"{gaps} écart(s) de plus de {p.get('max_gap_min', 120)} min entre "
+                                                     "deux positions : vitesse non calculée à ces endroits."})
+        if acts:
+            share = ", ".join(f"{k} : {round(100 * v / n)} %" for k, v in sorted(acts.items(), key=lambda x: -x[1]) if k)
+            out.append({"niveau": "info", "message": f"Répartition de l'activité ({n} positions) : {share}."})
     elif t == "aggregate" and (p.get("secret") or {}).get("vessel_column"):
         from .recipe import compile_step
 

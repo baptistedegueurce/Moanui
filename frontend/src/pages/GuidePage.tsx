@@ -64,6 +64,19 @@ export default function GuidePage() {
             </List>
           </Accordion.Panel>
         </Accordion.Item>
+        <Accordion.Item value="carto">
+          <Accordion.Control>6. Cartes et VMS</Accordion.Control>
+          <Accordion.Panel>
+            <List spacing={6}>
+              <List.Item>Une couche importée (SHP, GeoPackage…) est conservée telle quelle ; vérifiez sa projection (fichier .prj) et indiquez sa source.</List.Item>
+              <List.Item>VMS : harmonisez d'abord les fichiers (modèle « Préparation VMS ») ; chez CLS la vitesse « SP » est en dixièmes de nœud.</List.Item>
+              <List.Item>L'activité de pêche déduite de la vitesse est une estimation : adaptez les seuils à l'engin et vérifiez-les sur quelques marées connues.</List.Item>
+              <List.Item>Des vitesses calculées supérieures à 25 nœuds signalent des positions erronées ou des navires mélangés : à corriger avant d'interpréter.</List.Item>
+              <List.Item>Pour diffuser une carte d'effort, préférez le carroyage ou les rectangles CIEM avec le secret statistique (moins de 3 navires masqués) aux positions brutes.</List.Item>
+              <List.Item>Les limites maritimes (Shom) et les aires protégées (OFB) intégrées sont des références à date : citez-les en source.</List.Item>
+            </List>
+          </Accordion.Panel>
+        </Accordion.Item>
       </Accordion>
     </Paper>
   );

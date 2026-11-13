@@ -852,6 +852,100 @@ function DedupeForm(p: FormProps) {
   );
 }
 
+// --------------------------------------------------------------------------- géographie / VMS
+
+function LonLat({ params, set, columns }: FormProps) {
+  return (
+    <Group grow>
+      <Select label="Longitude (degrés)" searchable data={colData(columns)} value={params.lon || null} onChange={(v) => set({ ...params, lon: v })} />
+      <Select label="Latitude (degrés)" searchable data={colData(columns)} value={params.lat || null} onChange={(v) => set({ ...params, lat: v })} />
+    </Group>
+  );
+}
+
+function CiemForm(p: FormProps) {
+  const { params, set } = p;
+  return (
+    <Stack>
+      <LonLat {...p} />
+      <TextInput label="Nom de la nouvelle colonne" value={params.name ?? 'rectangle_ciem'} onChange={(e) => set({ ...params, name: e.currentTarget.value })} />
+      <Text size="xs" c="dimmed">
+        Rectangle statistique CIEM (1° de longitude × 0,5° de latitude, ex. 25E4), pour croiser des positions avec les déclarations SACROIS.
+      </Text>
+    </Stack>
+  );
+}
+
+function VmsForm(p: FormProps) {
+  const { params, set, columns } = p;
+  const [presets, setPresets] = useState<Record<string, { label: string; min: number; max: number }>>({});
+  useEffect(() => {
+    api.get('/api/geo/status').then((r) => setPresets(r.vitesses || {})).catch(() => setPresets({}));
+  }, []);
+  return (
+    <Stack>
+      <Group grow>
+        <Select label="Navire" searchable data={colData(columns)} value={params.vessel || null} onChange={(v) => set({ ...params, vessel: v })} />
+        <Select label="Date-heure" searchable data={colData(columns)} value={params.datetime || null} onChange={(v) => set({ ...params, datetime: v })} />
+      </Group>
+      <LonLat {...p} />
+      <Group grow>
+        <Select label="Vitesse déclarée (facultatif)" description="Vide : vitesse calculée entre positions" clearable searchable data={colData(columns)} value={params.speed || null} onChange={(v) => set({ ...params, speed: v })} />
+        <Select label="Unité de cette vitesse" data={[{ value: 'noeud', label: 'nœuds' }, { value: 'dixieme_noeud', label: 'dixièmes de nœud (CLS « SP »)' }, { value: 'km_h', label: 'km/h' }]} value={params.speed_unit || 'noeud'} onChange={(v) => set({ ...params, speed_unit: v })} disabled={!params.speed} />
+      </Group>
+      <Select
+        label="Seuils selon l'engin"
+        data={[...Object.entries(presets).map(([k, v]) => ({ value: k, label: `${v.label} : ${v.min}–${v.max} nœuds` })), { value: 'perso', label: 'Personnalisés' }]}
+        value={params.preset || 'perso'}
+        onChange={(v) => {
+          const pr = v && presets[v];
+          set({ ...params, preset: v, ...(pr ? { min: pr.min, max: pr.max } : {}) });
+        }}
+      />
+      <Group grow>
+        <NumberInput label="Pêche : vitesse minimale (nœuds)" min={0} max={40} step={0.5} decimalScale={1} value={params.min ?? 2} onChange={(v) => set({ ...params, min: Number(v), preset: 'perso' })} />
+        <NumberInput label="Pêche : vitesse maximale (nœuds)" min={0} max={40} step={0.5} decimalScale={1} value={params.max ?? 5} onChange={(v) => set({ ...params, max: Number(v), preset: 'perso' })} />
+        <NumberInput label="Écart max. entre positions (min)" min={1} max={1440} value={params.max_gap_min ?? 120} onChange={(v) => set({ ...params, max_gap_min: Number(v) })} />
+      </Group>
+      <Text size="xs" c="dimmed">
+        Ajoute ecart_min, distance_km, vitesse_calc_nds et activite (« pêche », « route », « arrêt / lent »). Les seuils sont des ordres de grandeur de la littérature (VMStools) : à
+        ajuster selon l'engin et à vérifier sur quelques marées connues.
+      </Text>
+    </Stack>
+  );
+}
+
+function ZoneForm(p: FormProps) {
+  const { params, set } = p;
+  const [layers, setLayers] = useState<any[]>([]);
+  useEffect(() => {
+    api.get('/api/geo/layers').then((r) => setLayers(r.couches.filter((c: any) => c.kind === 'polygone'))).catch(() => setLayers([]));
+  }, []);
+  const lay = layers.find((l) => l.id === params.layer);
+  return (
+    <Stack>
+      <Select
+        label="Couche de zones (polygones)"
+        searchable
+        data={layers.map((l) => ({ value: l.id, label: `${l.nom}${l.integree ? '' : ' (importée)'}` }))}
+        value={params.layer || null}
+        onChange={(v) => set({ ...params, layer: v, layer_name: layers.find((l) => l.id === v)?.nom, attribute: null })}
+      />
+      <Select
+        label="Attribut à reporter (facultatif)"
+        description="Vide : simple oui / non (dans une zone ou pas)"
+        clearable
+        searchable
+        data={(lay?.columns || []).map((c: any) => c.name)}
+        value={params.attribute || null}
+        onChange={(v) => set({ ...params, attribute: v })}
+      />
+      <LonLat {...p} />
+      <TextInput label="Nom de la nouvelle colonne" value={params.name ?? 'zone'} onChange={(e) => set({ ...params, name: e.currentTarget.value })} />
+    </Stack>
+  );
+}
+
 export default function StepForm(props: FormProps & { type: string }) {
   switch (props.type) {
     case 'filter':
@@ -894,6 +988,12 @@ export default function StepForm(props: FormProps & { type: string }) {
       return <UnitForm {...props} />;
     case 'gear_check':
       return <GearCheckForm {...props} />;
+    case 'ciem_rect':
+      return <CiemForm {...props} />;
+    case 'vms_activity':
+      return <VmsForm {...props} />;
+    case 'zone_tag':
+      return <ZoneForm {...props} />;
     case 'edit_cells':
       return (
         <Text size="sm">
@@ -919,4 +1019,7 @@ export const DEFAULT_PARAMS: Record<string, any> = {
   lookup: { referentiel: 'engins_metiers', default: 'Autres' },
   unit_convert: { from: 'kg', to: 't' },
   gear_check: { name: 'engin_sug', corrections: [] },
+  ciem_rect: { name: 'rectangle_ciem' },
+  vms_activity: { preset: 'chalut_fond', min: 2, max: 5, max_gap_min: 120, speed_unit: 'noeud' },
+  zone_tag: { name: 'zone' },
 };

@@ -28,7 +28,7 @@ build-backend = "setuptools.build_meta"
 include = ["moanui*"]
 
 [tool.setuptools.package-data]
-moanui = ["static/**/*", "themes/*.json"]
+moanui = ["static/**/*", "themes/*.json", "referentiels/*.json", "couches/*.parquet", "couches/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
