@@ -1,0 +1,246 @@
+{
+ "nom": "Engins → métiers",
+ "description": "Regroupement des codes engins FAO en métiers (repris de Moanui 0.1, à valider par chaque structure).",
+ "cle": "engin_cod",
+ "colonnes": [
+  "metier",
+  "metier_detail"
+ ],
+ "lignes": [
+  {
+   "engin_cod": "OTB",
+   "metier": "Chaluts",
+   "metier_detail": "Chaluts à panneaux"
+  },
+  {
+   "engin_cod": "OTM",
+   "metier": "Chaluts",
+   "metier_detail": "Chaluts à panneaux"
+  },
+  {
+   "engin_cod": "OTT",
+   "metier": "Chaluts",
+   "metier_detail": "Chaluts à panneaux"
+  },
+  {
+   "engin_cod": "OT",
+   "metier": "Chaluts",
+   "metier_detail": "Chaluts à panneaux"
+  },
+  {
+   "engin_cod": "PTB",
+   "metier": "Chaluts",
+   "metier_detail": "Chaluts bœufs"
+  },
+  {
+   "engin_cod": "PTM",
+   "metier": "Chaluts",
+   "metier_detail": "Chaluts bœufs"
+  },
+  {
+   "engin_cod": "TBB",
+   "metier": "Chaluts",
+   "metier_detail": "Chaluts"
+  },
+  {
+   "engin_cod": "TBN",
+   "metier": "Chaluts",
+   "metier_detail": "Chaluts"
+  },
+  {
+   "engin_cod": "TB",
+   "metier": "Chaluts",
+   "metier_detail": "Chaluts"
+  },
+  {
+   "engin_cod": "TBS",
+   "metier": "Chaluts",
+   "metier_detail": "Chaluts"
+  },
+  {
+   "engin_cod": "SDN",
+   "metier": "Sennes",
+   "metier_detail": "Sennes"
+  },
+  {
+   "engin_cod": "SV",
+   "metier": "Sennes",
+   "metier_detail": "Sennes"
+  },
+  {
+   "engin_cod": "SPR",
+   "metier": "Sennes",
+   "metier_detail": "Senne coulissante"
+  },
+  {
+   "engin_cod": "SX",
+   "metier": "Sennes",
+   "metier_detail": "Sennes"
+  },
+  {
+   "engin_cod": "SSC",
+   "metier": "Sennes",
+   "metier_detail": "Sennes"
+  },
+  {
+   "engin_cod": "SDV",
+   "metier": "Dragues",
+   "metier_detail": "Dragues"
+  },
+  {
+   "engin_cod": "SB",
+   "metier": "Sennes",
+   "metier_detail": "Senne de plage"
+  },
+  {
+   "engin_cod": "PS",
+   "metier": "Sennes",
+   "metier_detail": "Senne coulissante"
+  },
+  {
+   "engin_cod": "PS1",
+   "metier": "Sennes",
+   "metier_detail": "Senne coulissante"
+  },
+  {
+   "engin_cod": "DRB",
+   "metier": "Dragues",
+   "metier_detail": "Dragues"
+  },
+  {
+   "engin_cod": "DHB",
+   "metier": "Dragues",
+   "metier_detail": "Dragues à main"
+  },
+  {
+   "engin_cod": "GNC",
+   "metier": "Filets",
+   "metier_detail": "Filets maillants"
+  },
+  {
+   "engin_cod": "GNS",
+   "metier": "Filets",
+   "metier_detail": "Filets maillants"
+  },
+  {
+   "engin_cod": "GND",
+   "metier": "Filets",
+   "metier_detail": "Filets maillants"
+  },
+  {
+   "engin_cod": "GTN",
+   "metier": "Filets",
+   "metier_detail": "Filets maillants"
+  },
+  {
+   "engin_cod": "GNE",
+   "metier": "Filets",
+   "metier_detail": "Filets maillants"
+  },
+  {
+   "engin_cod": "LN",
+   "metier": "Filets",
+   "metier_detail": "Filets soulevés"
+  },
+  {
+   "engin_cod": "LNS",
+   "metier": "Filets",
+   "metier_detail": "Filets soulevés"
+  },
+  {
+   "engin_cod": "LNB",
+   "metier": "Filets",
+   "metier_detail": "Filets soulevés"
+  },
+  {
+   "engin_cod": "GTR",
+   "metier": "Filets",
+   "metier_detail": "Trémails"
+  },
+  {
+   "engin_cod": "GN",
+   "metier": "Filets",
+   "metier_detail": "Filets maillants"
+  },
+  {
+   "engin_cod": "GEN",
+   "metier": "Filets",
+   "metier_detail": "Filets maillants"
+  },
+  {
+   "engin_cod": "FPO",
+   "metier": "Casiers",
+   "metier_detail": "Casiers et nasses"
+  },
+  {
+   "engin_cod": "FYK",
+   "metier": "Casiers",
+   "metier_detail": "Verveux"
+  },
+  {
+   "engin_cod": "LHP",
+   "metier": "Hameçons",
+   "metier_detail": "Lignes à main"
+  },
+  {
+   "engin_cod": "LHM",
+   "metier": "Hameçons",
+   "metier_detail": "Lignes à main"
+  },
+  {
+   "engin_cod": "LLD",
+   "metier": "Hameçons",
+   "metier_detail": "Palangres"
+  },
+  {
+   "engin_cod": "LLS",
+   "metier": "Hameçons",
+   "metier_detail": "Palangres"
+  },
+  {
+   "engin_cod": "LX",
+   "metier": "Hameçons",
+   "metier_detail": "Palangres"
+  },
+  {
+   "engin_cod": "LVS",
+   "metier": "Hameçons",
+   "metier_detail": "Palangres"
+  },
+  {
+   "engin_cod": "LVD",
+   "metier": "Hameçons",
+   "metier_detail": "Palangres"
+  },
+  {
+   "engin_cod": "LL",
+   "metier": "Hameçons",
+   "metier_detail": "Palangres"
+  },
+  {
+   "engin_cod": "LTL",
+   "metier": "Hameçons",
+   "metier_detail": "Lignes de traîne"
+  },
+  {
+   "engin_cod": "GES",
+   "metier": "Divers",
+   "metier_detail": "Divers"
+  },
+  {
+   "engin_cod": "HRK",
+   "metier": "Divers",
+   "metier_detail": "Divers"
+  },
+  {
+   "engin_cod": "FIE",
+   "metier": "Divers",
+   "metier_detail": "Divers"
+  },
+  {
+   "engin_cod": "FID",
+   "metier": "Divers",
+   "metier_detail": "Divers"
+  }
+ ]
+}

@@ -93,6 +93,9 @@ export interface Meta {
   cast_types: Record<string, string>;
   join_kinds: Record<string, string>;
   functions: { name: string; doc: string }[];
+  units: Record<string, Record<string, string>>;
+  referentiels: Record<string, { nom: string; description: string; colonnes: string[]; especes?: Record<string, { nom: string; coherents: string[] }> }>;
+  templates: Record<string, { nom: string; description: string }>;
 }
 
 export interface Warning {

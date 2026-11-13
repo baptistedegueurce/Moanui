@@ -16,7 +16,7 @@ from pydantic import BaseModel, Field
 
 from .. import methods
 from ..db import Database, new_id, now
-from ..engine import pipeline, sensitivity, store
+from ..engine import halieutique, pipeline, sensitivity, store
 from ..engine.formula import function_help
 from ..engine.recipe import CAST_TYPES, JOIN_KINDS, OPS, describe_step, step_types
 from ..engine.sql import RecipeError, ident, string_lit
@@ -75,6 +75,10 @@ class PageIn(BaseModel):
     upto: int | None = None  # aperçu de la recette jusqu'à l'étape n
 
 
+class BatchIn(BaseModel):
+    steps: list[StepIn]
+
+
 class ShareIn(BaseModel):
     structure_id: str
 
@@ -93,6 +97,10 @@ def meta(_: User = Depends(current_user)):
         "cast_types": {k: v[1] for k, v in CAST_TYPES.items()},
         "join_kinds": {k: v[1] for k, v in JOIN_KINDS.items()},
         "functions": function_help(),
+        "units": {k: {u: halieutique.UNIT_LABELS[u] for u in v} for k, v in halieutique.UNITS.items()},
+        "referentiels": {k: {"nom": r["nom"], "description": r["description"], "colonnes": r.get("colonnes", []),
+                             "especes": r.get("especes")} for k, r in halieutique.referentiels().items()},
+        "templates": {k: {"nom": t["nom"], "description": t["description"]} for k, t in halieutique.TEMPLATES.items()},
     }
 
 
@@ -438,6 +446,62 @@ def add_step(did: str, body: StepIn, user: User = Depends(current_user), db: Dat
     db.log("etape_ajoutee", user_id=user.id, structure_id=ds["structure_id"], dataset_id=did,
            step=describe_step(step))
     return {"id": step["id"], "description": describe_step(step), "downstream_error": after.error}
+
+
+@router.get("/datasets/{did}/templates/{tid}")
+def template_proposal(did: str, tid: str, user: User = Depends(current_user), db: Database = Depends(get_db),
+                      settings=Depends(get_settings)):
+    """Étapes proposées par un modèle de traitement, adaptées aux colonnes du jeu."""
+    ds, _ = dataset_access(db, user, did)
+    t = halieutique.TEMPLATES.get(tid)
+    if not t:
+        raise HTTPException(404, "Modèle inconnu.")
+    with Workspace(db, settings, user) as ws:
+        plan = ws.plan(ds)
+    if plan.error:
+        raise HTTPException(400, "Corrigez d'abord l'étape en erreur de la recette.")
+    steps = t["build"](plan.schema)
+    for st in steps:
+        st["description"] = describe_step(st)
+    return {"nom": t["nom"], "description": t["description"], "steps": steps}
+
+
+@router.post("/datasets/{did}/steps/batch")
+def add_steps(did: str, body: BatchIn, user: User = Depends(current_user), db: Database = Depends(get_db),
+              settings=Depends(get_settings)):
+    """Ajoute plusieurs étapes d'un coup (modèle de traitement) : tout ou rien."""
+    ds = writable_dataset(db, user, did)
+    recipe = json.loads(ds["recipe"])
+    new_recipe = list(recipe)
+    with Workspace(db, settings, user) as ws:
+        for i, b in enumerate(body.steps, start=1):
+            step = {"id": new_id()[:12], "type": b.type, "params": b.params, "comment": b.comment[:2000],
+                    "enabled": True, "author": user.id, "at": now()}
+            _enrich(db, step)
+            try:
+                ws.check(ds, new_recipe, step)
+            except RecipeError as e:
+                raise HTTPException(400, f"Étape {i} ({describe_step(step)}) : {e}") from e
+            new_recipe.append(step)
+    _save_recipe(db, did, new_recipe)
+    db.log("etapes_ajoutees", user_id=user.id, structure_id=ds["structure_id"], dataset_id=did,
+           n=len(body.steps))
+    return {"ok": True, "n": len(body.steps)}
+
+
+@router.post("/datasets/{did}/gear-inconsistencies")
+def gear_inconsistencies(did: str, body: StepIn, user: User = Depends(current_user), db: Database = Depends(get_db),
+                         settings=Depends(get_settings)):
+    """Liste des combinaisons navire / espèce / engin incohérentes (pour validation et corrections)."""
+    ds, _ = dataset_access(db, user, did)
+    recipe = json.loads(ds["recipe"])
+    pos = len(recipe) if body.position is None else max(0, min(body.position, len(recipe)))
+    with Workspace(db, settings, user) as ws:
+        plan = ws.plan(ds, recipe=recipe[:pos])
+        try:
+            return halieutique.gear_inconsistencies(ws.con, plan.sql, body.params, plan.schema, limit=5000)
+        except RecipeError as e:
+            bad(e)
 
 
 @router.patch("/datasets/{did}/steps/{step_id}")

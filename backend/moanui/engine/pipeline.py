@@ -108,7 +108,9 @@ def to_json_value(v):
     if v is None:
         return None
     if isinstance(v, float):
-        return v if math.isfinite(v) else None
+        # 12 chiffres significatifs : masque les artefacts binaires (315.84000000000003) à l'affichage ;
+        # les exports, eux, gardent la valeur exacte
+        return float(f"{v:.12g}") if math.isfinite(v) else None
     if isinstance(v, Decimal):
         return float(v)
     if isinstance(v, (datetime, date)):
@@ -350,6 +352,27 @@ def diagnose(con, plan: Plan, step: dict) -> list[dict]:
             out.append({"niveau": "attention",
                         "message": f"La jointure ajoute {n_after - n_left} ligne(s) : risque de double comptage "
                                    "dans les sommes."})
+    elif t == "gear_check":
+        from .halieutique import gear_inconsistencies
+
+        inc = gear_inconsistencies(con, plan.sql, p, plan.schema)
+        if inc:
+            n = sum(x["n"] for x in inc)
+            ex = "; ".join(f"{x.get('vessel', '')} {x['species']}/{x['gear']} ({x['n']})".strip() for x in inc[:5])
+            out.append({"niveau": "attention",
+                        "message": f"{len(inc)} combinaison(s) navire/espèce/engin incohérente(s), {n} ligne(s) "
+                                   f"marquées « * » : {ex}{' …' if len(inc) > 5 else ''}. Ajoutez les corrections "
+                                   "connues dans l'étape, ou exportez la liste pour validation."})
+        else:
+            out.append({"niveau": "info", "message": "Aucun engin incohérent pour les espèces contrôlées."})
+    elif t == "aggregate" and (p.get("secret") or {}).get("vessel_column"):
+        from .recipe import compile_step
+
+        sql = compile_step(step, f"({plan.sql})", plan.schema)
+        n, k = con.execute(f"SELECT count(*), count_if(secret_stat) FROM ({sql})").fetchone()
+        out.append({"niveau": "attention" if k else "info",
+                    "message": f"Secret statistique : {k} groupe(s) sur {n} portent sur moins de "
+                               f"{p['secret'].get('threshold') or 3} navires ; leurs valeurs seront masquées."})
     elif t == "union":
         sources = [("jeu actuel", f"({plan.sql})", plan.schema)]
         for ds_id in p.get("dataset_ids") or []:

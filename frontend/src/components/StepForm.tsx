@@ -18,9 +18,10 @@ import {
   Code,
   ScrollArea,
   Popover,
+  FileButton,
 } from '@mantine/core';
 import { IconPlus, IconTrash, IconHelp } from '@tabler/icons-react';
-import { api } from '../lib/api';
+import { api, saveText } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { isNumericType, isTemporalType } from '../lib/format';
 import type { Column, DatasetSummary } from '../lib/types';
@@ -367,6 +368,22 @@ function AggregateForm({ params, set, columns }: FormProps) {
           </Group>
         )}
       />
+      <Paper withBorder p="xs">
+        <Switch
+          label="Secret statistique : masquer les résultats portant sur trop peu de navires"
+          checked={!!params.secret?.vessel_column}
+          onChange={(e) => {
+            const guess = colData(columns).find((c) => /cfr|navs|navire_cod/i.test(c)) || colData(columns).find((c) => /navire/i.test(c)) || '';
+            set({ ...params, secret: e.currentTarget.checked ? { vessel_column: guess, threshold: 3 } : undefined });
+          }}
+        />
+        {params.secret && (
+          <Group grow mt={6}>
+            <Select size="xs" label="Identifiant navire" searchable data={colData(columns)} value={params.secret.vessel_column || null} onChange={(v) => set({ ...params, secret: { ...params.secret, vessel_column: v } })} />
+            <NumberInput size="xs" label="Seuil (navires)" min={1} value={params.secret.threshold ?? 3} onChange={(v) => set({ ...params, secret: { ...params.secret, threshold: Number(v) || 3 } })} />
+          </Group>
+        )}
+      </Paper>
       <Text size="xs" c="dimmed">
         Après un regroupement, la correction cellule par cellule n’est plus possible (les lignes d’origine n’existent plus).
       </Text>
@@ -600,6 +617,203 @@ function UnionForm({ params, set, datasetId }: FormProps) {
   );
 }
 
+
+// --------------------------------------------------------------------------- halieutique
+
+function LookupForm({ params, set, columns }: FormProps) {
+  const { meta } = useAuth();
+  const refs = Object.entries(meta?.referentiels || {}).filter(([, r]) => r.colonnes.length);
+  const ref = meta?.referentiels[params.referentiel];
+  return (
+    <Stack>
+      <Select
+        label="Référentiel"
+        description={ref?.description}
+        data={refs.map(([k, r]) => ({ value: k, label: r.nom }))}
+        value={params.referentiel || null}
+        onChange={(v) => set({ ...params, referentiel: v, outputs: meta?.referentiels[v || '']?.colonnes })}
+      />
+      <Select label="Colonne de code" searchable data={colData(columns)} value={params.column || null} onChange={(v) => set({ ...params, column: v })} />
+      {ref && <MultiSelect label="Colonnes à ajouter" data={ref.colonnes} value={params.outputs || ref.colonnes} onChange={(v) => set({ ...params, outputs: v })} />}
+      <TextInput
+        label="Valeur pour les codes absents du référentiel"
+        description="Vide = laisser vide"
+        value={params.default ?? 'Autres'}
+        onChange={(e) => set({ ...params, default: e.currentTarget.value === '' ? null : e.currentTarget.value })}
+      />
+      <Text size="xs" c="dimmed">
+        Pour un référentiel propre à votre structure, importez-le comme jeu de données puis utilisez « Associer un autre jeu ».
+      </Text>
+    </Stack>
+  );
+}
+
+function UnitForm({ params, set, columns }: FormProps) {
+  const { meta } = useAuth();
+  const groups = Object.entries(meta?.units || {});
+  const units = groups.flatMap(([g, us]) => Object.entries(us).map(([k, l]) => ({ value: k, label: l, group: g })));
+  const groupOf = (u?: string) => units.find((x) => x.value === u)?.group;
+  const sameGroup = units.filter((u) => !params.from || u.group === groupOf(params.from));
+  const toData = (list: typeof units) =>
+    groups
+      .map(([g]) => ({ group: g, items: list.filter((u) => u.group === g).map((u) => ({ value: u.value, label: u.label })) }))
+      .filter((g) => g.items.length);
+  return (
+    <Stack>
+      <Select label="Colonne" searchable data={visible(columns).filter((c) => isNumericType(c.type)).map((c) => c.name)} value={params.column || null} onChange={(v) => set({ ...params, column: v })} />
+      <Group grow>
+        <Select label="Unité actuelle" data={toData(units)} value={params.from || null} onChange={(v) => set({ ...params, from: v, to: groupOf(v || '') === groupOf(params.to) ? params.to : null })} />
+        <Select label="Convertir en" data={toData(sameGroup)} value={params.to || null} onChange={(v) => set({ ...params, to: v })} />
+      </Group>
+      <TextInput
+        label="Nouvelle colonne (facultatif)"
+        description="Vide = remplacer la colonne existante"
+        value={params.name || ''}
+        onChange={(e) => set({ ...params, name: e.currentTarget.value })}
+      />
+    </Stack>
+  );
+}
+
+function GearCheckForm({ params, set, columns, datasetId }: FormProps) {
+  const { meta } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const ref = meta?.referentiels.engins_coherents?.especes || {};
+  const corrections: any[] = params.corrections || [];
+  const coh: Record<string, string[]> = params.coherents || Object.fromEntries(Object.entries(ref).map(([k, v]) => [k, v.coherents]));
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const inc: any[] = await api.post(`/api/datasets/${datasetId}/gear-inconsistencies`, { type: 'gear_check', params });
+      const key = (c: any) => `${c.vessel ?? ''}|${c.species}|${c.gear}`;
+      const known = new Set(corrections.map(key));
+      set({ ...params, corrections: [...corrections, ...inc.filter((c) => !known.has(key(c))).map((c) => ({ vessel: c.vessel, species: c.species, gear: c.gear, corrected: '', n: c.n }))] });
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Stack>
+      <Group grow>
+        <Select label="Colonne espèce" searchable data={colData(columns)} value={params.species_column || null} onChange={(v) => set({ ...params, species_column: v })} />
+        <Select label="Colonne engin" searchable data={colData(columns)} value={params.gear_column || null} onChange={(v) => set({ ...params, gear_column: v })} />
+        <Select label="Colonne navire (facultatif)" searchable clearable data={colData(columns)} value={params.vessel_column || null} onChange={(v) => set({ ...params, vessel_column: v })} />
+      </Group>
+      <TextInput label="Nom de la colonne résultat" value={params.name || 'engin_sug'} onChange={(e) => set({ ...params, name: e.currentTarget.value })} />
+      <Paper withBorder p="xs">
+        <Text size="sm" fw={600} mb={4}>
+          Engins cohérents par espèce
+        </Text>
+        <Stack gap={4}>
+          {Object.entries(coh).map(([sp, gears]) => (
+            <Group key={sp} gap={6} wrap="nowrap">
+              <Text size="xs" w={60} fw={600}>
+                {sp}
+              </Text>
+              <TextInput
+                size="xs"
+                style={{ flex: 1 }}
+                value={gears.join(', ')}
+                onChange={(e) => set({ ...params, coherents: { ...coh, [sp]: e.currentTarget.value.split(/[\s,;]+/).filter(Boolean) } })}
+              />
+              <ActionIcon size="sm" variant="subtle" color="red" onClick={() => { const c = { ...coh }; delete c[sp]; set({ ...params, coherents: c }); }}>
+                <IconTrash size={14} />
+              </ActionIcon>
+            </Group>
+          ))}
+          <Button
+            size="xs"
+            variant="light"
+            w="fit-content"
+            leftSection={<IconPlus size={14} />}
+            onClick={() => {
+              const sp = prompt('Code espèce FAO (ex. HKE)');
+              if (sp) set({ ...params, coherents: { ...coh, [sp.toUpperCase()]: [] } });
+            }}
+          >
+            Ajouter une espèce
+          </Button>
+        </Stack>
+      </Paper>
+      <Paper withBorder p="xs">
+        <Group justify="space-between" mb={4}>
+          <Text size="sm" fw={600}>
+            Corrections connues ({corrections.length})
+          </Text>
+          <Group gap={4}>
+            <Button size="xs" variant="light" loading={loading} disabled={!params.species_column || !params.gear_column} onClick={load}>
+              Charger les incohérences du jeu
+            </Button>
+            <Button
+              size="xs"
+              variant="default"
+              disabled={!corrections.length}
+              onClick={() => {
+                const lines = ['navire;espece;engin_declare;engin_corrige;lignes', ...corrections.map((c) => [c.vessel ?? '', c.species, c.gear, c.corrected ?? '', c.n ?? ''].join(';'))];
+                saveText('\ufeff' + lines.join('\r\n'), 'corrections_engins.csv', 'text/csv;charset=utf-8');
+              }}
+            >
+              Exporter (CSV)
+            </Button>
+            <FileButton
+              accept=".csv,text/csv"
+              onChange={async (f) => {
+                if (!f) return;
+                const rows = (await f.text()).replace(/^\ufeff/, '').split(/\r?\n/).filter((l) => l.trim());
+                const sep = rows[0].includes(';') ? ';' : ',';
+                const imported = rows.slice(1).map((l) => {
+                  const [vessel, species, gear, corrected] = l.split(sep).map((x) => x.trim());
+                  return { vessel: vessel || undefined, species: (species || '').toUpperCase(), gear: (gear || '').toUpperCase(), corrected: (corrected || '').toUpperCase() };
+                }).filter((c) => c.species && c.gear);
+                const key = (c: any) => `${c.vessel ?? ''}|${c.species}|${c.gear}`;
+                const byKey = new Map(corrections.map((c) => [key(c), c]));
+                imported.forEach((c) => byKey.set(key(c), { ...byKey.get(key(c)), ...c }));
+                set({ ...params, corrections: [...byKey.values()] });
+              }}
+            >
+              {(props) => (
+                <Button {...props} size="xs" variant="default">
+                  Importer (CSV)
+                </Button>
+              )}
+            </FileButton>
+          </Group>
+        </Group>
+        <Text size="xs" c="dimmed" mb={6}>
+          Pour chaque incohérence, indiquez l’engin réel (laisser vide = rester marqué « * »). Ces corrections sont enregistrées dans la recette et donc dans la fiche méthode.
+        </Text>
+        <ScrollArea h={corrections.length ? 220 : 0}>
+          <Stack gap={4}>
+            {corrections.map((c, i) => (
+              <Group key={i} gap={6} wrap="nowrap">
+                <Text size="xs" style={{ flex: 1 }} truncate>
+                  {c.vessel ? `${c.vessel} · ` : ''}
+                  {c.species} / {c.gear}
+                  {c.n ? ` (${c.n} l.)` : ''}
+                </Text>
+                <TextInput
+                  size="xs"
+                  w={110}
+                  placeholder="engin réel"
+                  value={c.corrected || ''}
+                  onChange={(e) => set({ ...params, corrections: corrections.map((x, j) => (j === i ? { ...x, corrected: e.currentTarget.value.toUpperCase() } : x)) })}
+                />
+                <ActionIcon size="sm" variant="subtle" color="red" onClick={() => set({ ...params, corrections: corrections.filter((_, j) => j !== i) })}>
+                  <IconTrash size={14} />
+                </ActionIcon>
+              </Group>
+            ))}
+          </Stack>
+        </ScrollArea>
+      </Paper>
+    </Stack>
+  );
+}
+
 function DedupeForm(p: FormProps) {
   return (
     <Stack>
@@ -647,6 +861,12 @@ export default function StepForm(props: FormProps & { type: string }) {
       return <JoinForm {...props} />;
     case 'union':
       return <UnionForm {...props} />;
+    case 'lookup':
+      return <LookupForm {...props} />;
+    case 'unit_convert':
+      return <UnitForm {...props} />;
+    case 'gear_check':
+      return <GearCheckForm {...props} />;
     case 'edit_cells':
       return (
         <Text size="sm">
@@ -669,4 +889,7 @@ export const DEFAULT_PARAMS: Record<string, any> = {
   rename: { mapping: {} },
   replace_values: { pairs: [] },
   fill_null: { method: 'valeur' },
+  lookup: { referentiel: 'engins_metiers', default: 'Autres' },
+  unit_convert: { from: 'kg', to: 't' },
+  gear_check: { name: 'engin_sug', corrections: [] },
 };

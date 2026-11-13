@@ -1,0 +1,48 @@
+{
+ "nom": "Engins cohérents par espèce",
+ "description": "Engins attendus pour chaque espèce (repris de Moanui 0.1, à compléter).",
+ "especes": {
+  "MAC": {
+   "nom": "Maquereau commun",
+   "coherents": [
+    "PTM",
+    "OTM",
+    "PS",
+    "LLS",
+    "FPO",
+    "LHP",
+    "DRB",
+    "SDN"
+   ]
+  },
+  "POL": {
+   "nom": "Lieu jaune",
+   "coherents": [
+    "OTB",
+    "OTT",
+    "PTB",
+    "GNS",
+    "GTN",
+    "GTR",
+    "LLS",
+    "LHP",
+    "LHM",
+    "FPO",
+    "SDN",
+    "DRB"
+   ]
+  },
+  "SOL": {
+   "nom": "Sole commune",
+   "coherents": [
+    "OTB",
+    "PTB",
+    "SDN",
+    "SSC",
+    "GTR",
+    "GNS",
+    "FPO"
+   ]
+  }
+ }
+}

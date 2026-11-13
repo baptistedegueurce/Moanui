@@ -423,9 +423,24 @@ def _aggregate(prev, p, schema):
             raise RecipeError(f"Deux colonnes résultat s'appelleraient « {name} ».")
         names.add(name)
         sel.append(f"{AGG_FUNCS[fn][0].format(c=ident(col) if col else '*')} AS {ident(name)}")
+    secret = p.get("secret") or {}
+    vessel = secret.get("vessel_column")
+    if vessel:
+        _need(schema, vessel)
+        for extra in ("n_navires", "secret_stat"):
+            if extra in names:
+                raise RecipeError(f"Le nom « {extra} » est réservé au contrôle du secret statistique.")
+        sel.append(f"count(DISTINCT {ident(vessel)}) AS \"n_navires\"")
     group = f" GROUP BY {', '.join(ident(g) for g in groups)}" if groups else ""
     order = f" ORDER BY {', '.join(ident(g) for g in groups)}" if groups else ""
-    return f"SELECT {', '.join(sel)} FROM {prev}{group}{order}"
+    inner = f"SELECT {', '.join(sel)} FROM {prev}{group}{order}"
+    if not vessel:
+        return inner
+    # secret statistique : résultats masqués quand moins de N navires contribuent
+    seuil = int(secret.get("threshold") or 3)
+    masked = [n for n in names if n not in groups]
+    reps = ", ".join(f"(CASE WHEN \"n_navires\" < {seuil} THEN NULL ELSE {ident(n)} END) AS {ident(n)}" for n in masked)
+    return (f"SELECT * REPLACE ({reps}), (\"n_navires\" < {seuil}) AS \"secret_stat\" FROM ({inner})")
 
 
 @_aggregate
@@ -434,7 +449,12 @@ def _(p):
                      for a in p.get("aggregations") or [])
     groups = p.get("group_by") or []
     by = f" par {', '.join('« ' + g + ' »' for g in groups)}" if groups else " sur l'ensemble des lignes"
-    return f"Regrouper{by} et calculer : {aggs}."
+    secret = p.get("secret") or {}
+    tail = ""
+    if secret.get("vessel_column"):
+        tail = (f" Secret statistique : résultats masqués lorsque moins de {secret.get('threshold') or 3} navires "
+                f"(« {secret['vessel_column']} ») contribuent (colonnes n_navires et secret_stat ajoutées).")
+    return f"Regrouper{by} et calculer : {aggs}.{tail}"
 
 
 @step("sort", "Trier")
@@ -746,3 +766,7 @@ def _(p):
     src = f" ; colonne « {p['source_column']} » indiquant la provenance" if p.get("source_column") else ""
     return (f"Empiler les lignes de : {', '.join('« ' + str(n) + ' »' for n in names)} "
             f"(colonnes associées par leur nom, colonnes absentes laissées vides{src}).")
+
+
+# étapes métier (référentiels, unités, cohérence engin / espèce) : enregistrées à l'import
+from . import halieutique  # noqa: E402,F401

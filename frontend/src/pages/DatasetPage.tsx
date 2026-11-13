@@ -47,6 +47,7 @@ import RecipePanel from '../components/RecipePanel';
 import StepModal, { StepDraft } from '../components/StepModal';
 import ColumnDrawer from '../components/ColumnDrawer';
 import Markdown from '../components/Markdown';
+import TemplateModal from '../components/TemplateModal';
 
 const LEVEL_COLOR: Record<string, string> = { info: 'blue', attention: 'orange', alerte: 'red' };
 
@@ -224,6 +225,7 @@ export default function DatasetPage() {
   const [pending, setPending] = useState<PendingEdit[]>([]);
   const [editComment, setEditComment] = useState('');
   const [draft, setDraft] = useState<StepDraft | null>(null);
+  const [template, setTemplate] = useState<string | null>(null);
   const [colOpen, setColOpen] = useState<string | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -438,7 +440,7 @@ export default function DatasetPage() {
               </div>
             </Stack>
             <Paper withBorder p="sm" w={340} style={{ flexShrink: 0, background: 'var(--mo-bg)' }}>
-              <RecipePanel datasetId={ds.id} steps={ds.steps} canWrite={canWrite} onAdd={setDraft} onChanged={changed} viewUpto={viewUpto} setViewUpto={setViewUpto} />
+              <RecipePanel datasetId={ds.id} steps={ds.steps} canWrite={canWrite} onAdd={setDraft} onChanged={changed} viewUpto={viewUpto} setViewUpto={setViewUpto} onTemplate={setTemplate} />
             </Paper>
           </div>
         </Tabs.Panel>
@@ -514,6 +516,7 @@ export default function DatasetPage() {
         </Tabs.Panel>
       </Tabs>
 
+      <TemplateModal datasetId={ds.id} templateId={template} onClose={() => setTemplate(null)} onDone={changed} />
       <StepModal draft={draft} onClose={() => setDraft(null)} onSaved={changed} datasetId={ds.id} columns={ds.schema} />
       <ColumnDrawer datasetId={ds.id} column={colOpen} columns={ds.schema} canWrite={canWrite} onClose={() => setColOpen(null)} onStep={setDraft} />
       <ExportModal ds={ds} opened={exportOpen} onClose={() => setExportOpen(false)} />

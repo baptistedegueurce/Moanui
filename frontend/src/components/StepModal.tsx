@@ -146,7 +146,7 @@ export default function StepModal({ draft, onClose, onSaved, datasetId, columns 
                           <Table.Tr key={i}>
                             {r.map((v, j) => (
                               <Table.Td key={j} style={{ whiteSpace: 'nowrap' }}>
-                                {v === null ? <Text span c="dimmed" size="xs">vide</Text> : String(v)}
+                                {v === null ? <Text span c="dimmed" size="xs">vide</Text> : typeof v === 'number' ? fmtNumber(v) : String(v)}
                               </Table.Td>
                             ))}
                           </Table.Tr>

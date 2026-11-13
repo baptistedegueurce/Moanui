@@ -13,10 +13,12 @@ const GROUPS: { label: string; types: string[] }[] = [
   { label: 'Corriger', types: ['replace_values', 'clean_text', 'fill_null'] },
   { label: 'Calculer', types: ['formula', 'case_when', 'date_parts', 'aggregate'] },
   { label: 'Combiner', types: ['join', 'union'] },
+  { label: 'Halieutique', types: ['lookup', 'unit_convert', 'gear_check'] },
   { label: 'Protéger', types: ['anonymize'] },
 ];
 
-export default function RecipePanel({ datasetId, steps, canWrite, onAdd, onChanged, viewUpto, setViewUpto }: {
+export default function RecipePanel({ datasetId, steps, canWrite, onAdd, onChanged, viewUpto, setViewUpto, onTemplate }: {
+  onTemplate: (id: string) => void;
   datasetId: string;
   steps: Step[];
   canWrite: boolean;
@@ -59,6 +61,13 @@ export default function RecipePanel({ datasetId, steps, canWrite, onAdd, onChang
               </Button>
             </Menu.Target>
             <Menu.Dropdown>
+              <Menu.Label>Modèles de traitement</Menu.Label>
+              {Object.entries(meta?.templates || {}).map(([k, t]) => (
+                <Menu.Item key={k} fw={600} onClick={() => onTemplate(k)}>
+                  {t.nom}…
+                </Menu.Item>
+              ))}
+              <Menu.Divider />
               {GROUPS.map((g) => (
                 <div key={g.label}>
                   <Menu.Label>{g.label}</Menu.Label>
@@ -116,7 +125,7 @@ export default function RecipePanel({ datasetId, steps, canWrite, onAdd, onChang
                     </Text>
                     <Group gap={0}>
                       <Tooltip label="Voir les données à cette étape">
-                        <ActionIcon size="sm" variant={active ? 'filled' : 'subtle'} onClick={() => setViewUpto(active ? null : s.index)}>
+                        <ActionIcon size="sm" aria-label="Voir les données à cette étape" variant={active ? 'filled' : 'subtle'} onClick={() => setViewUpto(active ? null : s.index)}>
                           <IconEye size={14} />
                         </ActionIcon>
                       </Tooltip>
@@ -134,20 +143,21 @@ export default function RecipePanel({ datasetId, steps, canWrite, onAdd, onChang
                             />
                           </Tooltip>
                           {s.type !== 'edit_cells' && (
-                            <ActionIcon size="sm" variant="subtle" onClick={() => onAdd({ type: s.type!, params: s.params, editId: s.id!, comment: s.comment })}>
+                            <ActionIcon size="sm" variant="subtle" aria-label="Modifier l’étape" onClick={() => onAdd({ type: s.type!, params: s.params, editId: s.id!, comment: s.comment })}>
                               <IconPencil size={14} />
                             </ActionIcon>
                           )}
-                          <ActionIcon size="sm" variant="subtle" onClick={() => move(s.id!, -1)}>
+                          <ActionIcon size="sm" variant="subtle" aria-label="Monter" onClick={() => move(s.id!, -1)}>
                             <IconArrowUp size={14} />
                           </ActionIcon>
-                          <ActionIcon size="sm" variant="subtle" onClick={() => move(s.id!, 1)}>
+                          <ActionIcon size="sm" variant="subtle" aria-label="Descendre" onClick={() => move(s.id!, 1)}>
                             <IconArrowDown size={14} />
                           </ActionIcon>
                           <ActionIcon
                             size="sm"
                             variant="subtle"
                             color="red"
+                            aria-label="Supprimer l’étape"
                             onClick={() => {
                               if (confirm('Supprimer cette étape ? (elle restera visible dans le journal)')) act(() => api.del(`/api/datasets/${datasetId}/steps/${s.id}`));
                             }}

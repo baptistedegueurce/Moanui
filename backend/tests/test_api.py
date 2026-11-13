@@ -137,3 +137,44 @@ def test_profile_consistency_checks(client):
     p = client.get(f"/api/datasets/{did}/profile").json()
     assert p["n_rows"] == 3000
     assert os.environ.get("X") is None
+
+
+def test_sacrois_template_and_secret(client):
+    did = upload(client, "logbook_2023.csv", kind="sacrois")["id"]
+    prop = client.get(f"/api/datasets/{did}/templates/sacrois").json()
+    types = [s["type"] for s in prop["steps"]]
+    assert {"clean_text", "date_parts", "lookup", "gear_check", "formula", "unit_convert"} <= set(types)
+    r = client.post(f"/api/datasets/{did}/steps/batch", json={"steps": [
+        {"type": s["type"], "params": s["params"], "comment": s["why"]} for s in prop["steps"]]})
+    assert r.status_code == 200, r.text
+    d = client.get(f"/api/datasets/{did}").json()
+    cols = [c["name"] for c in d["schema"]]
+    assert {"metier", "engin_sug", "prix_moyen_kg", "cpue_kg_jdm", "debarquement_t", "date_annee"} <= set(cols)
+    assert d["error"] is None
+    gear = next(s for s in prop["steps"] if s["type"] == "gear_check")
+    inc = client.post(f"/api/datasets/{did}/gear-inconsistencies", json=gear).json()
+    assert isinstance(inc, list)
+    chk = client.post(f"/api/datasets/{did}/steps/check", json={"type": "aggregate", "params": {
+        "group_by": ["esp_cod_fao", "port_cod"],
+        "aggregations": [{"column": "debarquement_Kg", "fn": "somme", "name": "kg"}],
+        "secret": {"vessel_column": "nom_navire", "threshold": 3}}}).json()
+    assert chk["ok"], chk
+    assert any("Secret statistique" in x["message"] for x in chk["diagnostics"])
+    cols = [c["name"] for c in chk["preview"]["columns"]]
+    assert "n_navires" in cols and "secret_stat" in cols
+    rows = chk["preview"]["rows"]
+    i_n, i_kg = cols.index("n_navires"), cols.index("kg")
+    assert all(r[i_kg] is None for r in rows if r[i_n] < 3)
+
+
+def test_unit_convert_and_lookup(client):
+    did = upload(client, "rbind_annee_2022.csv")["id"]
+    r = client.post(f"/api/datasets/{did}/steps", json={"type": "unit_convert", "params": {
+        "column": "debarquement_Kg", "from": "t", "to": "kg"}})
+    assert r.status_code == 200, r.text
+    rows = client.post(f"/api/datasets/{did}/rows", json={"limit": 1}).json()
+    i = [c["name"] for c in rows["columns"]].index("debarquement_Kg")
+    assert rows["rows"][0][i] == 2305.0
+    r = client.post(f"/api/datasets/{did}/steps", json={"type": "lookup", "params": {
+        "referentiel": "engins_metiers", "column": "engin_cod"}})
+    assert r.status_code == 200, r.text
