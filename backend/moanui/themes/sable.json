@@ -1,0 +1,18 @@
+{
+  "name": "Sable",
+  "colors": {
+    "primary": "#5C4B3B",
+    "primary_contrast": "#FFFFFF",
+    "accent": "#C8553D",
+    "background": "#FAF7F2",
+    "surface": "#FFFFFF",
+    "text": "#2A231C",
+    "muted": "#7A6E62",
+    "border": "#E6DED3"
+  },
+  "palette": ["#C8553D", "#588B8B", "#F28F3B", "#93748A", "#4F6D7A", "#D4A373", "#6B9080", "#A44A3F"],
+  "sequential": ["#FBF1E6", "#F3D5B5", "#E8AC7E", "#D9804F", "#B5562F", "#7F3519"],
+  "diverging": ["#A44A3F", "#D4A373", "#F3E9DC", "#F7F7F7", "#CDE0E0", "#6B9B9B", "#2F5D62"],
+  "font": "Inter, 'Segoe UI', system-ui, -apple-system, sans-serif",
+  "chart": {"show_logo": true, "logo_position": "bas-droite", "default_source": "", "background": "#FFFFFF", "grid": "#EEE7DD"}
+}

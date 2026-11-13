@@ -1,0 +1,24 @@
+{
+  "name": "Neutre (par défaut)",
+  "colors": {
+    "primary": "#2F4858",
+    "primary_contrast": "#FFFFFF",
+    "accent": "#3A7CA5",
+    "background": "#F6F7F9",
+    "surface": "#FFFFFF",
+    "text": "#1C2430",
+    "muted": "#5F6B7A",
+    "border": "#DDE2E8"
+  },
+  "palette": ["#3A7CA5", "#E07A5F", "#81B29A", "#F2CC8F", "#6D597A", "#5FA8D3", "#B56576", "#8D99AE"],
+  "sequential": ["#E8F1F8", "#B9D4E8", "#7FB0D3", "#4A88B8", "#2C5F8A", "#173A5C"],
+  "diverging": ["#B2182B", "#EF8A62", "#FDDBC7", "#F7F7F7", "#D1E5F0", "#67A9CF", "#2166AC"],
+  "font": "Inter, 'Segoe UI', system-ui, -apple-system, sans-serif",
+  "chart": {
+    "show_logo": true,
+    "logo_position": "bas-droite",
+    "default_source": "",
+    "background": "#FFFFFF",
+    "grid": "#E6E9EE"
+  }
+}

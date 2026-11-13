@@ -1,0 +1,33 @@
+[project]
+name = "moanui"
+version = "0.2.0.dev0"
+description = "Moanui — traitement, analyse et visualisation de données halieutiques"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn>=0.30",
+  "duckdb>=2.0",
+  "pyarrow>=16",
+  "openpyxl>=3.1",
+  "python-multipart>=0.0.9",
+  "platformdirs>=4",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "httpx>=0.27"]
+
+[project.scripts]
+moanui = "moanui.main:run"
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["moanui*"]
+
+[tool.setuptools.package-data]
+moanui = ["static/**/*", "themes/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

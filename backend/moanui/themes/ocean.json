@@ -1,0 +1,18 @@
+{
+  "name": "Océan",
+  "colors": {
+    "primary": "#0B4F6C",
+    "primary_contrast": "#FFFFFF",
+    "accent": "#01BAEF",
+    "background": "#F3F8FA",
+    "surface": "#FFFFFF",
+    "text": "#0F2430",
+    "muted": "#557080",
+    "border": "#D3E2EA"
+  },
+  "palette": ["#0B4F6C", "#01BAEF", "#20BF55", "#F4A259", "#BC4B51", "#5B8E7D", "#8CB369", "#757BC8"],
+  "sequential": ["#E6F6FB", "#B3E5F5", "#66CBEB", "#1FA4D6", "#0B6E99", "#063F5A"],
+  "diverging": ["#9E2A2B", "#E09F3E", "#FFF3B0", "#F7F7F7", "#BEE3F8", "#3A9BDC", "#0B4F6C"],
+  "font": "Inter, 'Segoe UI', system-ui, -apple-system, sans-serif",
+  "chart": {"show_logo": true, "logo_position": "bas-droite", "default_source": "", "background": "#FFFFFF", "grid": "#E3ECF0"}
+}

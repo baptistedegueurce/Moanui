@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+node_modules/
+frontend/dist/
+backend/moanui/static/
+build/
+dist/
+*.spec
+.moanui-dev/
+.DS_Store
