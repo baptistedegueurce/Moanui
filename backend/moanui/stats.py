@@ -558,6 +558,17 @@ ANALYSES = {
                       {"role": "x", "label": "Facteurs explicatifs", "type": "any", "multiple": True}],
         "tests": {"ols": "Régression linéaire"},
     },
+    "glm": {
+        "titre": "Modéliser des captures, comptages ou présences (GLM)",
+        "question": "Standardiser une CPUE, expliquer des comptages ou la présence d'une espèce selon l'année, l'engin, la zone…",
+        "variables": [{"role": "y", "label": "Mesure à modéliser (captures, nombre, 0 / 1)", "type": "num"},
+                      {"role": "x", "label": "Facteurs explicatifs", "type": "any", "multiple": True},
+                      {"role": "effort", "label": "Effort (facultatif : jours de mer, heures, marées…)", "type": "num",
+                       "optional": True}],
+        "tests": {"poisson": "Poisson (comptages)", "quasi_poisson": "Quasi-Poisson",
+                  "binomiale_negative": "Binomiale négative (comptages dispersés)",
+                  "gamma": "Gamma (valeurs positives : CPUE, poids)", "logistique": "Logistique (présence / absence)"},
+    },
 }
 
 
@@ -585,6 +596,24 @@ def run(con, plan, spec: dict, filters_sql: str = "") -> Result:
         _need_num(schema, y)
         data, total, n = fetch(con, plan.sql, schema, [x, y], filters_sql)
         res = correlation(data[x], data[y], x, y, force)
+    elif kind == "glm":
+        y, xs, eff = v.get("y"), v.get("x") or [], v.get("effort") or None
+        if isinstance(xs, str):
+            xs = [xs]
+        if not xs:
+            raise RecipeError("Choisissez au moins un facteur explicatif.")
+        _need_num(schema, y)
+        if eff:
+            _need_num(schema, eff)
+        if y in xs or (eff and (eff in xs or eff == y)):
+            raise RecipeError("Une même colonne ne peut pas être à la fois mesure, facteur et effort.")
+        cat = {x for x in xs if x in schema and not is_numeric_type(schema[x])}
+        data, total, n = fetch(con, plan.sql, schema, [y] + xs + ([eff] if eff else []), filters_sql)
+        if n == 0:
+            raise RecipeError("Aucune ligne complète pour ces variables.")
+        for c in cat:
+            data[c] = data[c].astype(str)
+        res = glm_analysis(data, y, xs, cat, eff, force)
     else:
         y, xs = v.get("y"), v.get("x") or []
         if isinstance(xs, str):
@@ -636,3 +665,277 @@ def method_md(res: dict, spec: dict, dataset_name: str, author: str, justificati
     L += ["", "## Limites", ""] + [f"- {p}" for p in res["limites"]]
     L += ["", f"Seuil de significativité : 5 %. Calculs : SciPy {__import__('scipy').__version__}."]
     return "\n".join(L)
+
+
+# --------------------------------------------------------------------------- modèles linéaires généralisés
+
+
+def design(data: dict, xnames: list[str], cat: set[str]):
+    """Matrice du modèle : constante + variables numériques + indicatrices (modalité de référence = la plus fréquente)."""
+    n = len(next(iter(data.values())))
+    cols, names, terms, levels = [np.ones(n)], ["(constante)"], [], {}
+    for xn in xnames:
+        v = data[xn]
+        start = len(cols)
+        if xn in cat:
+            vals, counts = np.unique(v.astype(str), return_counts=True)
+            if len(vals) > 50:
+                raise RecipeError(f"« {xn} » a trop de modalités ({len(vals)}) pour un modèle (50 maximum).")
+            if len(vals) < 2:
+                raise RecipeError(f"« {xn} » n'a qu'une seule valeur : retirez-la du modèle.")
+            ref = vals[int(np.argmax(counts))]
+            lv = [ref] + sorted((x for x in vals if x != ref), key=str)
+            levels[xn] = lv
+            for x in lv[1:]:
+                cols.append((v.astype(str) == x).astype(float))
+                names.append(f"{xn} = {x} (vs {ref})")
+        else:
+            cols.append(v.astype(float))
+            names.append(xn)
+        terms.append((xn, list(range(start, len(cols)))))
+    return np.column_stack(cols), names, terms, levels
+
+
+def _vif(X) -> float:
+    worst = 1.0
+    for j in range(1, X.shape[1]):
+        others = np.delete(X, j, axis=1)
+        gj, *_ = np.linalg.lstsq(others, X[:, j], rcond=None)
+        ss = float(np.sum((X[:, j] - X[:, j].mean()) ** 2))
+        r2j = 1 - float(np.sum((X[:, j] - others @ gj) ** 2)) / ss if ss else 0.0
+        worst = max(worst, 1 / (1 - r2j) if r2j < 1 else float("inf"))
+    return worst
+
+
+def _pct(f: float) -> str:
+    d = (f - 1) * 100
+    return f"{'+' if d >= 0 else '−'}{fr(abs(d), 0 if abs(d) >= 10 else 1)} %"
+
+
+def glm_analysis(data: dict, yname: str, xnames: list[str], cat: set[str], offset_name: str | None,
+                 force: str | None) -> Result:
+    from . import glm
+
+    y = data[yname].astype(float)
+    n = len(y)
+    integer = bool(np.all(np.abs(y - np.round(y)) < 1e-9))
+    binary = bool(np.all((y == 0) | (y == 1)))
+    r = Result("glm", f"Modéliser « {yname} » selon {', '.join('« ' + x + ' »' for x in xnames)}"
+               + (f" (effort : « {offset_name} »)" if offset_name else ""))
+    # --- choix de la famille selon la nature de la mesure
+    fam = force
+    nature = ("présence / absence (0 / 1)" if binary else "comptages (entiers ≥ 0)" if integer and y.min() >= 0
+              else "valeurs strictement positives" if y.min() > 0 else
+              "valeurs positives avec des zéros" if y.min() == 0 else "valeurs négatives")
+    # entiers élevés sans zéro (poids en kg arrondis, montants) : quantités plutôt que comptages
+    big_int = integer and not binary and y.min() > 0 and float(np.median(y)) >= 20
+    if fam is None:
+        fam = ("logistique" if binary else "gamma" if big_int else "poisson" if integer and y.min() >= 0
+               else "gamma" if y.min() > 0 else None)
+    domain_ok = {
+        "logistique": binary,
+        "poisson": integer and y.min() >= 0, "quasi_poisson": y.min() >= 0, "binomiale_negative": integer and y.min() >= 0,
+        "gamma": y.min() > 0,
+    }
+    if fam is None or not domain_ok[fam]:
+        r.test, r.test_label = fam or "", glm.FAMILIES.get(fam or "", "GLM")
+        advice = ("Les zéros et les valeurs décimales ne vont ensemble dans aucune de ces familles. Approche usuelle en "
+                  "halieutique (modèle « delta ») : 1) une régression logistique sur la présence (formule "
+                  f"SI([{yname}] > 0; 1; 0)), 2) un GLM Gamma sur les seules valeurs positives (filtre {yname} > 0)."
+                  if y.min() == 0 and not integer else
+                  "Pour des valeurs négatives, utilisez la régression linéaire." if y.min() < 0 else
+                  "Choisissez une famille adaptée (ou « Automatique »).")
+        r.checks.append(Check("Nature de la mesure", False, "bloquant",
+                              f"« {yname} » contient des {nature} : incompatible avec {glm.FAMILIES.get(fam or '', 'les GLM proposés')}. {advice}"))
+        r.bloque = True
+        r.alternative = None
+        return r
+    r.checks.append(Check("Nature de la mesure", True, "info", f"« {yname} » : {nature}."
+                          + (" Valeurs entières mais élevées et sans zéro (poids, montants) : traitées comme des quantités "
+                             "continues (Gamma). S'il s'agit de vrais comptages d'individus, choisissez « Binomiale "
+                             "négative »." if big_int and force is None else "")))
+    off = None
+    if offset_name:
+        e = data[offset_name].astype(float)
+        if np.any(e <= 0):
+            raise RecipeError(f"L'effort « {offset_name} » doit être strictement positif (filtrez les valeurs ≤ 0).")
+        off = np.log(e)
+    X, names, terms, levels = design(data, xnames, cat)
+    p_ = X.shape[1]
+    r.effectifs = {"n": n, "parametres": p_}
+    small = n <= p_ + 2
+    if fam == "logistique":
+        events = int(min(y.sum(), n - y.sum()))
+        enough = events >= 10 * (p_ - 1)
+        msg = f"{events} cas dans la catégorie la plus rare pour {p_ - 1} paramètre(s)"
+    else:
+        enough = n >= 10 * (p_ - 1)
+        msg = f"{n} observations pour {p_ - 1} paramètre(s)"
+    r.checks.append(Check("Effectif", enough and not small, "bloquant" if small else ("avertissement" if not enough else "info"),
+                          msg + ("" if enough else " : règle usuelle de 10 par paramètre non respectée (estimations instables).")))
+    if small:
+        r.bloque = True
+        return r
+    m = glm.fit(X, y, fam, off)
+    auto = force is None
+    switched = None
+    if fam == "poisson" and m["disp"] > 1.5:
+        if auto:
+            switched = m["disp"]
+            fam = "binomiale_negative"
+            m = glm.fit(X, y, fam, off)
+        else:
+            r.checks.append(Check("Surdispersion", False, "bloquant",
+                                  f"Variance {fr(m['disp'], 1)} fois plus forte que prévu par le modèle de Poisson : les "
+                                  "p-values seraient beaucoup trop optimistes (faux effets significatifs)."))
+            r.bloque = True
+            r.alternative = "binomiale_negative"
+    if switched:
+        r.checks.append(Check("Surdispersion", True, "info",
+                              f"Variance {fr(switched, 1)} fois plus forte que prévu par un modèle de Poisson (fréquent pour des "
+                              "captures) : le modèle binomial négatif, qui l'absorbe, est utilisé."))
+    elif fam == "binomiale_negative":
+        r.checks.append(Check("Surdispersion", True, "info", f"Paramètre de dispersion θ = {fr(m['theta'], 2)} "
+                                                            "(plus θ est petit, plus les comptages sont dispersés)."))
+    elif fam in ("poisson",) and not r.bloque:
+        r.checks.append(Check("Surdispersion", True, "info", f"Rapport de dispersion = {fr(m['disp'], 2)} (≈ 1 attendu) : correct."))
+    r.test, r.test_label = fam, glm.FAMILIES[fam]
+    if not m["conv"]:
+        r.checks.append(Check("Convergence", False, "avertissement", "L'ajustement n'a pas complètement convergé : "
+                              "simplifiez le modèle (moins de facteurs ou de modalités)."))
+    beta, cov, mu = m["beta"], m["cov"], m["mu"]
+    se = np.sqrt(np.maximum(np.diag(cov), 0))
+    if fam == "logistique" and (np.any(np.abs(beta[1:]) > 10) or np.mean((mu < 1e-6) | (mu > 1 - 1e-6)) > 0.05):
+        r.checks.append(Check("Séparation", False, "avertissement",
+                              "Certaines modalités prédisent parfaitement la présence ou l'absence : coefficients et "
+                              "intervalles très incertains. Regroupez les modalités rares."))
+    if fam in ("poisson", "quasi_poisson", "binomiale_negative"):
+        z_obs, z_exp = int(np.sum(y == 0)), glm.expected_zeros(fam, mu, m["theta"])
+        excess = z_obs > 1.5 * z_exp and (z_obs - z_exp) > 0.05 * n
+        r.checks.append(Check("Zéros", not excess, "avertissement" if excess else "info",
+                              f"{z_obs} zéros observés pour {fr(z_exp, 0)} attendus par le modèle"
+                              + (" : excès de zéros. Envisagez un modèle « delta » (présence puis quantité si présent)."
+                                 if excess else ".")))
+    vif = _vif(X) if p_ > 2 else 1.0
+    r.checks.append(Check("Colinéarité", vif < 5, "avertissement" if vif >= 5 else "info",
+                          f"VIF maximal = {fr(vif, 1)}" + (" : des facteurs se recoupent (ex. port et quartier), leurs effets "
+                                                           "sont difficiles à séparer." if vif >= 5 else " (correct).")))
+    rq = glm.quantile_residuals(fam, y, mu, m["theta"], m["phi"])
+    sample = rq if n <= SHAPIRO_MAX else np.random.default_rng(1).choice(rq, SHAPIRO_MAX, replace=False)
+    p_sw = float(st.shapiro(sample).pvalue) if n >= 8 else 1.0
+    fit_ok = p_sw >= ALPHA or n > 2000  # avec beaucoup de données, le moindre écart devient « significatif »
+    r.checks.append(Check(
+        "Ajustement (résidus quantiles)", fit_ok, "info" if fit_ok else "avertissement",
+        f"Test de Shapiro-Wilk sur les résidus quantiles randomisés (Dunn & Smyth) {fpe(p_sw)} : "
+        + ("la loi choisie décrit correctement les données." if p_sw >= ALPHA else
+           "écart faible à cet effectif, voir le graphique des résidus." if fit_ok else
+           "la loi choisie décrit imparfaitement les données (vérifiez la famille, ajoutez un facteur manquant, "
+           "regardez le graphique des résidus).")))
+    # --- tests de chaque facteur (rapport de vraisemblance / F, en retirant le facteur)
+    est_phi = fam in glm.ESTIMATED_PHI
+    dof = n - p_
+    term_rows = []
+    for name, idx in terms:
+        keep = [j for j in range(p_) if j not in idx]
+        if fam == "binomiale_negative":  # θ fixé à celui du modèle complet (comme anova.negbin)
+            b0, mu0, _, _ = glm.irls(X[:, keep], y, fam, off, m["theta"])
+            d0 = float(np.sum(glm.deviance_units(fam, y, mu0, m["theta"])))
+        else:
+            d0 = glm.fit(X[:, keep], y, fam, off)["dev"]
+        dd, k = max(d0 - m["dev"], 0.0), len(idx)
+        if est_phi:
+            stat, pv = dd / k / m["phi"], float(st.f.sf(dd / k / m["phi"], k, dof))
+            term_rows.append([name, k, f"F = {fr(stat)}", fp(pv), "oui" if pv < ALPHA else "non"])
+        else:
+            pv = float(st.chi2.sf(dd, k))
+            term_rows.append([name, k, f"χ² = {fr(dd)}", fp(pv), "oui" if pv < ALPHA else "non"])
+    # déviance nulle (constante seule) : part de déviance expliquée
+    if fam == "binomiale_negative":
+        _, mun, _, _ = glm.irls(X[:, :1], y, fam, off, m["theta"])
+        dnull = float(np.sum(glm.deviance_units(fam, y, mun, m["theta"])))
+    else:
+        dnull = glm.fit(X[:, :1], y, fam, off)["dev"]
+    expl = 1 - m["dev"] / dnull if dnull > 0 else 0.0
+    q = st.t.ppf(0.975, dof) if est_phi else st.norm.ppf(0.975)
+    pvals = 2 * (st.t.sf(np.abs(beta / se), dof) if est_phi else st.norm.sf(np.abs(beta / se)))
+    eff = "Rapport de cotes" if fam == "logistique" else "Effet multiplicatif"
+    r.resultats = [{"nom": "Déviance expliquée", "valeur": f"{expl:.1%}"},
+                   {"nom": "AIC", "valeur": fr(m["aic"], 1) if m["aic"] is not None else "— (quasi-vraisemblance)"},
+                   {"nom": "n", "valeur": fr(n)}]
+    if est_phi:
+        r.resultats.append({"nom": "Dispersion estimée", "valeur": fr(m["phi"], 3)})
+    if m["theta"]:
+        r.resultats.append({"nom": "θ (binomiale négative)", "valeur": fr(m["theta"], 3)})
+    r.tableaux.append({"titre": "Effet de chaque facteur (test en retirant le facteur)",
+                       "colonnes": ["Facteur", "ddl", "Statistique", "p", "Significatif ?"], "lignes": term_rows})
+    r.tableaux.append({"titre": "Coefficients",
+                       "colonnes": ["Terme", "Estimation (échelle " + ("logit" if fam == "logistique" else "log") + ")",
+                                    eff, "IC 95 %", "p"],
+                       "lignes": [[nm, fr(float(b)), fr(math.exp(b)) if abs(b) < 50 else "—",
+                                   f"[{fr(math.exp(b - q * s))} ; {fr(math.exp(b + q * s))}]" if abs(b) < 50 else "—",
+                                   fp(float(pv))]
+                                  for nm, b, s, pv in zip(names, beta, se, pvals)]})
+    # --- valeurs prédites par modalité du premier facteur catégoriel (indice standardisé, ex. CPUE par année)
+    first_cat = next((x for x in xnames if x in levels), None)
+    if first_cat:
+        base = np.array([1.0] + [0.0] * (p_ - 1))
+        for name, idx in terms:
+            if name not in levels:
+                base[idx[0]] = float(np.mean(X[:, idx[0]]))
+            else:  # autres facteurs : moyenne des indicatrices (prédiction « moyenne » sur l'échantillon)
+                if name != first_cat:
+                    base[idx] = X[:, idx].mean(axis=0)
+        rows = []
+        cat_idx = dict(terms)[first_cat]
+        for i, lv in enumerate(levels[first_cat]):
+            x0 = base.copy()
+            x0[cat_idx] = 0.0
+            if i:
+                x0[cat_idx[i - 1]] = 1.0
+            eta = float(x0 @ beta)
+            s = float(math.sqrt(max(x0 @ cov @ x0, 0)))
+            inv = (lambda e: 1 / (1 + math.exp(-e))) if fam == "logistique" else math.exp
+            rows.append([lv, fr(inv(eta)), f"[{fr(inv(eta - q * s))} ; {fr(inv(eta + q * s))}]",
+                         int(np.sum(data[first_cat].astype(str) == lv))])
+        what = ("probabilité de présence" if fam == "logistique" else
+                f"« {yname} » par unité de « {offset_name} »" if offset_name else f"« {yname} » moyen")
+        rows.sort(key=lambda r_: str(r_[0]))
+        r.tableaux.append({"titre": f"Valeurs prédites par « {first_cat} » ({what}, autres facteurs à leur moyenne) — "
+                                    "indice standardisé",
+                           "colonnes": [first_cat, "Prédiction", "IC 95 %", "n"], "lignes": rows})
+    # --- interprétation
+    sig_terms = [t[0] for t in term_rows if t[4] == "oui"]
+    r.interpretation = [f"Le modèle explique {expl:.0%} de la déviance de « {yname} » (part de la variabilité prise en compte)."]
+    if sig_terms:
+        r.interpretation.append("Facteurs ayant un effet significatif : " + ", ".join(f"« {t} »" for t in sig_terms) + ".")
+    else:
+        r.interpretation.append("Aucun facteur n'a d'effet statistiquement significatif.")
+    unit = (f"« {yname} » par unité de « {offset_name} »" if offset_name else f"« {yname} »")
+    for nm, b, pv in list(zip(names[1:], beta[1:], pvals[1:])):
+        if pv >= ALPHA or abs(b) > 50:
+            continue
+        f_ = math.exp(b)
+        if fam == "logistique":
+            what = f"les chances de présence sont multipliées par {fr(f_)}"
+        else:
+            what = f"{unit} est multiplié par {fr(f_)} ({_pct(f_)})"
+        if " = " in nm:
+            r.interpretation.append(f"{nm} : {what}, à autres facteurs égaux.")
+        else:
+            r.interpretation.append(f"Quand « {nm} » augmente de 1 : {what}, à autres facteurs égaux.")
+        if len(r.interpretation) > 10:
+            break
+    if offset_name:
+        r.interpretation.append(f"L'effort « {offset_name} » est pris en compte comme décalage (offset) : le modèle porte "
+                                "sur le rendement (captures par unité d'effort), comme pour une standardisation de CPUE.")
+    idx = np.random.default_rng(0).choice(n, min(n, 5000), replace=False)
+    r.graph = {"type": "residus", "x": np.log(mu[idx]).tolist() if fam != "logistique" else mu[idx].tolist(),
+               "y": rq[idx].tolist(), "xname": "Valeurs prédites" + (" (échelle log)" if fam != "logistique" else ""),
+               "yname": "Résidus quantiles"}
+    r.limites = ["Un effet dans un modèle n'est pas une preuve de causalité.",
+                 "Les lignes d'un même navire ou d'une même marée ne sont pas indépendantes : un modèle mixte (effet navire) "
+                 "serait plus rigoureux ; à défaut, interprétez les p-values avec prudence.",
+                 "Le modèle ne vaut que dans la plage des valeurs observées : pas d'extrapolation.",
+                 "Pour une variable numérique (ex. année), l'effet est supposé régulier ; convertissez-la en texte pour "
+                 "obtenir un effet par modalité (indice annuel)."] + COMMON_LIMITS[:1]
+    return r

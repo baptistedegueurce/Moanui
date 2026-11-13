@@ -74,6 +74,23 @@ export default function GuidePage() {
               <List.Item>Des vitesses calculées supérieures à 25 nœuds signalent des positions erronées ou des navires mélangés : à corriger avant d'interpréter.</List.Item>
               <List.Item>Pour diffuser une carte d'effort, préférez le carroyage ou les rectangles CIEM avec le secret statistique (moins de 3 navires masqués) aux positions brutes.</List.Item>
               <List.Item>Les limites maritimes (Shom) et les aires protégées (OFB) intégrées sont des références à date : citez-les en source.</List.Item>
+              <List.Item>
+                Croisement VMS × SACROIS (étape « Répartir les captures sur les positions ») : les captures d'un navire et d'un jour sont réparties sur ses positions de pêche
+                du même jour (et du même rectangle). Vérifiez la part attribuée affichée avant validation : une part faible signale des identifiants de navire différents, des
+                navires sans VMS ou une date de débarquement utilisée à la place de la date de pêche.
+              </List.Item>
+            </List>
+          </Accordion.Panel>
+        </Accordion.Item>
+        <Accordion.Item value="glm">
+          <Accordion.Control>7. Modéliser des captures (GLM)</Accordion.Control>
+          <Accordion.Panel>
+            <List spacing={6}>
+              <List.Item>Choisir la famille selon la mesure : comptages → Poisson ou binomiale négative ; quantités positives (kg, CPUE) → Gamma ; présence / absence → logistique.</List.Item>
+              <List.Item>Pour une CPUE, modélisez les captures avec l'effort en « décalage » (offset) plutôt que le rapport captures / effort : le modèle reste juste quand l'effort varie beaucoup.</List.Item>
+              <List.Item>Indice annuel standardisé : année en texte, en premier facteur ; lisez le tableau « Valeurs prédites ».</List.Item>
+              <List.Item>Beaucoup de zéros : modèle delta (présence, puis quantité si présent). Une surdispersion non prise en compte rend de faux effets « significatifs ».</List.Item>
+              <List.Item>Les lignes d'un même navire ne sont pas indépendantes : restez prudent sur les p-values (les modèles mixtes viendront plus tard).</List.Item>
             </List>
           </Accordion.Panel>
         </Accordion.Item>

@@ -14,7 +14,7 @@ const GROUPS: { label: string; types: string[] }[] = [
   { label: 'Calculer', types: ['formula', 'case_when', 'date_parts', 'aggregate'] },
   { label: 'Combiner', types: ['join', 'union'] },
   { label: 'Halieutique', types: ['lookup', 'unit_convert', 'gear_check'] },
-  { label: 'Géographie / VMS', types: ['vms_activity', 'ciem_rect', 'zone_tag'] },
+  { label: 'Géographie / VMS', types: ['vms_activity', 'ciem_rect', 'zone_tag', 'vms_catch_split'] },
   { label: 'Protéger', types: ['anonymize'] },
 ];
 

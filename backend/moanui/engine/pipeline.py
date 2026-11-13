@@ -397,6 +397,8 @@ def diagnose(con, plan: Plan, step: dict) -> list[dict]:
         if acts:
             share = ", ".join(f"{k} : {round(100 * v / n)} %" for k, v in sorted(acts.items(), key=lambda x: -x[1]) if k)
             out.append({"niveau": "info", "message": f"Répartition de l'activité ({n} positions) : {share}."})
+    elif t == "vms_catch_split":
+        out.extend(catch_split_report(con, plan, step))
     elif t == "aggregate" and (p.get("secret") or {}).get("vessel_column"):
         from .recipe import compile_step
 
@@ -436,4 +438,46 @@ def diagnose(con, plan: Plan, step: dict) -> list[dict]:
                                     "message": f"Ordre de grandeur très différent pour « {c} » : médiane "
                                                f"{lo[1]:g} dans « {lo[0]} » contre {hi[1]:g} dans « {hi[0]} » "
                                                f"(×{hi[1] / lo[1]:.0f}). Unités différentes (tonnes / kg) ?"})
+    return out
+
+
+def catch_split_report(con, plan: Plan, step: dict) -> list[dict]:
+    """Bilan du croisement VMS × captures : part attribuée par niveau, captures non attribuées."""
+    from .geo_steps import catch_split_parts
+    from .recipe import compile_step
+
+    p = step.get("params") or {}
+    prev = f"({plan.sql})"
+    x = catch_split_parts(prev, p, plan.schema)
+    v0 = x["values"][0]
+    sql = compile_step(step, prev, plan.schema)
+    out_cols = [r[0] for r in con.execute(f"DESCRIBE SELECT * FROM ({sql})").fetchall()]
+    niv, qcol = out_cols[-1], out_cols[-1 - len(x["values"])]  # colonnes ajoutées en fin : …, quantités, niveau
+    total, n_lines = con.execute(f"WITH c AS ({x['c']}) SELECT sum(__v0), count(*) FROM c").fetchone()
+    by = dict(con.execute(f"SELECT {ident(niv)}, sum({ident(qcol)}) FROM ({sql}) WHERE {ident(niv)} IS NOT NULL "
+                          "GROUP BY 1").fetchall())
+    n_out = con.execute(f"SELECT count(*) FROM ({sql})").fetchone()[0]
+    total = float(total or 0)
+    got = sum(float(b or 0) for b in by.values())
+    out = []
+    if total <= 0:
+        return [{"niveau": "attention", "message": f"Aucune quantité « {v0} » à répartir dans le jeu de captures."}]
+    pct = lambda a: f"{100 * a / total:.1f} %".replace(".", ",")  # noqa: E731
+    detail = ", ".join(f"{k} : {pct(float(b or 0))}" for k, b in sorted(by.items()))
+    out.append({"niveau": "info", "message": f"« {v0} » attribué aux positions : {pct(got)} du total déclaré "
+                                             f"({detail or 'rien'}) ; {n_out} ligne(s) produites."})
+    rest = total - got
+    if rest > total * 0.001:
+        miss = con.execute(
+            f"WITH v AS ({x['v']}), c AS ({x['c']}) SELECT count(*), count(DISTINCT __nav) FROM c "
+            f"WHERE NOT EXISTS (SELECT 1 FROM v WHERE v.__nav = c.__nav AND v.__jour = c.__jour)").fetchone()
+        nodate = con.execute(f"WITH c AS ({x['c']}) SELECT count(*) FROM c WHERE __jour IS NULL").fetchone()[0]
+        msg = (f"{pct(rest)} de « {v0} » non attribué : {miss[0]} ligne(s) de captures (navire × jour"
+               f"{' × rectangle' if x['rect'] else ''}{' × espèce' if x['species'] else ''}, {miss[1]} navire(s)) "
+               "sans aucune position de pêche le même jour. Causes possibles : navire sans VMS (moins de 12 m), "
+               "identifiants de navire différents entre les deux jeux, seuils de vitesse trop stricts, "
+               "date de débarquement au lieu de la date de capture.")
+        if nodate:
+            msg += f" {nodate} ligne(s) ont une date illisible."
+        out.append({"niveau": "attention" if rest > total * 0.2 else "info", "message": msg})
     return out

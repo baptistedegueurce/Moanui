@@ -33,7 +33,7 @@ import { Conditions } from '../components/StepForm';
 interface Analyse {
   titre: string;
   question: string;
-  variables: { role: string; label: string; type: 'num' | 'cat' | 'any'; multiple?: boolean }[];
+  variables: { role: string; label: string; type: 'num' | 'cat' | 'any'; multiple?: boolean; optional?: boolean }[];
   tests: Record<string, string>;
 }
 
@@ -83,7 +83,15 @@ const GUIDES: Record<string, string[]> = {
     'Choisissez la mesure à expliquer et un ou plusieurs facteurs (numériques ou catégories).',
     'Chaque coefficient se lit « à autres facteurs égaux ».',
     'Vérifiez le graphique des résidus : ils doivent former un nuage sans forme particulière autour de zéro.',
-    'Pour des comptages ou des captures très asymétriques, transformez d’abord la mesure (formule LOG1P) ; les modèles linéaires généralisés arrivent bientôt.',
+    'Pour des comptages, des captures très asymétriques ou une présence / absence, utilisez plutôt « Modéliser des captures, comptages ou présences (GLM) ».',
+  ],
+  glm: [
+    'Choisissez la mesure : un nombre (individus, marées), une quantité positive (kg, CPUE) ou une présence codée 0 / 1.',
+    'En automatique, Moanui choisit la famille : logistique pour 0 / 1, Poisson pour des comptages (binomiale négative si les comptages sont trop dispersés, cas le plus fréquent), Gamma pour des quantités positives.',
+    'Effort (facultatif) : jours de mer, heures de pêche… Il est pris en « décalage » (offset) : le modèle porte alors sur la capture par unité d’effort, c’est la standardisation de CPUE.',
+    'Pour obtenir un indice par année, mettez l’année en texte (étape « Changer le type ») et placez-la en premier facteur : le tableau « Valeurs prédites » donne l’indice standardisé.',
+    'Les effets se lisent en multiplicateurs : « × 1,3 » = 30 % de plus, à autres facteurs égaux.',
+    'Captures avec beaucoup de zéros : modèle « delta » en deux temps (présence 0 / 1 puis quantités positives) ; Moanui vous le signale.',
   ],
 };
 
@@ -164,7 +172,7 @@ export default function StatsPage() {
   const a = kind ? catalogue[kind] : null;
   const opts = (t: string) =>
     columns.filter((c) => (t === 'num' ? isNumericType(c.type) : true)).map((c) => ({ value: c.name, label: `${c.name}${isNumericType(c.type) ? '' : ' (catégories)'}` }));
-  const complete = a?.variables.every((v) => (v.multiple ? (vars[v.role] || []).length : vars[v.role]));
+  const complete = a?.variables.every((v) => v.optional || (v.multiple ? (vars[v.role] || []).length : vars[v.role]));
   const validFilters = filters.filter((c) => c.column && (['is_null', 'not_null'].includes(c.op) || (['in', 'not_in'].includes(c.op) ? c.values?.length : c.value !== '')));
   const body = (extra: any = {}) => ({ analyse: kind, variables: vars, test, filters: validFilters, ...extra });
 
@@ -236,7 +244,7 @@ export default function StatsPage() {
                   v.multiple ? (
                     <MultiSelect key={v.role} label={v.label} searchable data={opts(v.type)} value={vars[v.role] || []} onChange={(x) => setVars({ ...vars, [v.role]: x })} />
                   ) : (
-                    <Select key={v.role} label={v.label} searchable data={opts(v.type)} value={vars[v.role] || null} onChange={(x) => setVars({ ...vars, [v.role]: x })} />
+                    <Select key={v.role} label={v.label} searchable clearable={!!v.optional} data={opts(v.type)} value={vars[v.role] || null} onChange={(x) => setVars({ ...vars, [v.role]: x })} />
                   ),
                 )}
                 <Select

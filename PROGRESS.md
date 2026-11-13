@@ -15,7 +15,7 @@ structures sans formation poussée en stats. Tout en **français**.
 - Branche de travail : `claude/compassionate-johnson-0kgjax` (dépôt `baptistedegueurce/moanui`).
   Ne pas créer de PR sans demande. Pas d'identifiant de modèle dans les commits.
 - Exécutable Windows : construit par GitHub Actions (workflow « Exécutable Windows ») à chaque push,
-  artefact `Moanui-windows` (zip ~76 Mo + spatial). Release automatique sur étiquette `v*`.
+  artefact `Moanui-windows` (zip ~117 Mo avec l'extension spatiale). Release automatique sur étiquette `v*`.
 
 ## 2. Choix validés avec l'utilisateur (ne pas remettre en cause)
 
@@ -83,7 +83,7 @@ Principes clés :
 ## 4. Lancer / tester
 
 ```bash
-cd backend && uv sync --extra dev && uv run pytest -q      # tests (25)
+cd backend && uv sync --extra dev && uv run pytest -q      # tests (28)
 cd frontend && npm ci && npm run build                      # compile vers backend/moanui/static
 cd backend && uv run moanui --home ../.moanui-dev           # http://127.0.0.1:8765
 cd frontend && npm run dev                                  # dev avec proxy /api → 8765
@@ -110,14 +110,29 @@ cd frontend && npm run dev                                  # dev avec proxy /ap
 - **Statistiques guidées** : comparaison de groupes (t de Welch, Mann-Whitney, ANOVA, Welch,
   Kruskal + post-hoc Holm), khi² / Fisher, corrélation, régression linéaire (VIF, Breusch-Pagan,
   Cook) ; blocage contournable, interprétation, historique, fiche méthode.
+- **GLM (nov. 2026)** : `backend/moanui/glm.py` (IRLS NumPy/SciPy, **pas de statsmodels** pour ne pas
+  alourdir l'exe ; validé contre statsmodels à 1e-6) : Poisson, quasi-Poisson, binomiale négative
+  (θ par MV en alternance, comme `MASS::glm.nb`), Gamma (log), logistique. Analyse `glm` dans
+  `stats.py` (`glm_analysis`) : famille auto (0/1 → logistique ; entiers → Poisson puis NB si
+  dispersion > 1,5 ; entiers élevés sans zéro ou décimaux > 0 → Gamma ; zéros + décimaux → bloqué
+  avec conseil « delta »), effort en offset log, tests par facteur (LRT χ² ou F si dispersion estimée),
+  rapports multiplicatifs, **indice standardisé** (prédictions par modalité du 1er facteur catégoriel),
+  contrôles (surdispersion, zéros attendus/observés, séparation, VIF, résidus quantiles Dunn-Smyth).
+  Référence = modalité la plus fréquente. AIC à la R (dispersion comptée pour Gamma/NB).
+- **VMS × SACROIS (nov. 2026)** : étape `vms_catch_split` (geo_steps.py) — captures sommées par
+  navire × jour (× rectangle) (× espèce), réparties sur les positions de pêche du même navire/jour/
+  rectangle, repli au niveau jour, à parts égales ou au prorata de `ecart_min` (intervalle médian du
+  navire après une coupure). Identifiants comparés en `upper(trim())`, dates texte jj/mm/aaaa lues.
+  Bilan avant validation (`pipeline.catch_split_report`) : part attribuée par niveau, captures sans
+  position. Formulaire `CatchSplitForm` avec propositions de colonnes SACROIS.
 
 ## 6. En cours / à faire (ordre proposé)
 
 1. Carto suite : bande des 3 milles (licence OFB/CNSP à vérifier), étiquettes (polices embarquées),
-   trajectoires par marée, croisement VMS × SACROIS (répartir les captures sur les positions de pêche).
+   trajectoires par marée ; VMS × SACROIS par marée (et non seulement par jour) si les données le permettent.
 2. SACROIS suite : référentiels espèces / ports, corrections d'engins propres à chaque structure
    (base partagée), recettes enregistrables comme modèles, scripts CDP22 / DGAMPA.
-3. Stats suite : GLM, GLMM, GAM, séries temporelles, ACP ; R si installé.
+3. Stats suite : GLMM (effet navire), GAM, modèle delta assisté, séries temporelles, ACP ; R si installé.
 4. Composition de planches, rapports PDF / PPTX.
 5. macOS, signature Windows, mises à jour ; mode serveur ; export des recettes en R / Python.
 
@@ -150,3 +165,4 @@ vraies listes de corrections d'engins, retours de test de l'exécutable sur un p
 - 0.2 socle → SACROIS → exe Windows → stats (cf. historique git).
 - 2026-11 : référentiel engins FAO + engins cohérents (26 espèces) ; PROGRESS.md.
 - 2026-11 : cartographie + VMS (moteur, API, interface, étapes, couches de contexte, exe).
+- 2026-11 : croisement VMS × SACROIS (répartition des captures) ; GLM guidés.

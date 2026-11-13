@@ -946,6 +946,125 @@ function ZoneForm(p: FormProps) {
   );
 }
 
+const pick = (cols: Column[], res: RegExp[], numeric = false) => {
+  const names = visible(cols).filter((c) => !numeric || isNumericType(c.type)).map((c) => c.name);
+  for (const re of res) {
+    const f = names.find((n) => re.test(n));
+    if (f) return f;
+  }
+  return '';
+};
+
+/** Croisement VMS × captures déclarées (SACROIS, journal de bord) : répartition sur les positions de pêche. */
+function CatchSplitForm({ params, set, columns, datasetId }: FormProps) {
+  const others = useOtherDatasets(datasetId);
+  const otherCols = useSchema(params.dataset_id);
+  const has = (c: string) => columns.some((x) => x.name === c);
+  useEffect(() => {
+    // propositions côté VMS (colonnes produites par le modèle « Préparation VMS »)
+    if (params.vessel === undefined)
+      set({
+        ...params,
+        vessel: pick(columns, [/^navire$/i, /navire|vessel|immat|^op$/i]),
+        datetime: pick(columns, [/^date_heure$/i, /date/i]),
+        rect: has('rectangle_ciem') ? 'rectangle_ciem' : '',
+        activity: has('activite') ? 'activite' : '',
+        activity_value: 'pêche',
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    // propositions côté captures dès que le jeu est choisi (noms SACROIS usuels)
+    if (!params.dataset_id || !otherCols.length || params.s_vessel) return;
+    const q = pick(otherCols, [/poids|kg|quant|debarq|capt/i], true);
+    const v = pick(otherCols, [/euro|valeur|montant|prix_total/i], true);
+    set({
+      ...params,
+      s_vessel: pick(otherCols, [/^navire$/i, /navs?_cod|immat|navire|vessel/i]),
+      s_date: pick(otherCols, [/date_(seq|peche|capt)/i, /^date$/i, /date/i]),
+      s_rect: params.rect ? pick(otherCols, [/stat_rect|rect/i, /sect/i]) : '',
+      s_species: pick(otherCols, [/esp_cod_fao|espece|species/i, /esp/i]),
+      values: [q, v].filter(Boolean),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.dataset_id, otherCols]);
+  const oc = colData(otherCols);
+  const numOther = visible(otherCols).filter((c) => isNumericType(c.type)).map((c) => c.name);
+  return (
+    <Stack>
+      <Text size="xs" c="dimmed">
+        Répartit les captures déclarées (SACROIS, journal de bord) d'un navire et d'un jour entre ses positions de pêche du même jour — et du même rectangle CIEM si
+        disponible. Méthode usuelle (VMStools, Hintzen et al. 2012). Résultat : une ligne par position et par espèce, prête pour la carte (somme par maille).
+      </Text>
+      <Select
+        label="Jeu de captures déclarées"
+        searchable
+        data={others.map((d) => ({ value: d.id, label: `${d.name} (${d.source_name})` }))}
+        value={params.dataset_id || null}
+        onChange={(v) => set({ ...params, dataset_id: v, dataset_name: others.find((d) => d.id === v)?.name, s_vessel: '', values: [] })}
+      />
+      <Paper withBorder p="sm">
+        <Stack gap="xs">
+          <Text size="sm" fw={500}>
+            Correspondance des colonnes (positions VMS ↔ captures)
+          </Text>
+          <Group grow>
+            <Select size="xs" label="Navire (VMS)" searchable data={colData(columns)} value={params.vessel || null} onChange={(v) => set({ ...params, vessel: v })} />
+            <Select size="xs" label="Navire (captures)" searchable data={oc} value={params.s_vessel || null} onChange={(v) => set({ ...params, s_vessel: v })} />
+          </Group>
+          <Group grow>
+            <Select size="xs" label="Date-heure (VMS)" searchable data={colData(columns)} value={params.datetime || null} onChange={(v) => set({ ...params, datetime: v })} />
+            <Select size="xs" label="Date de pêche (captures)" searchable data={oc} value={params.s_date || null} onChange={(v) => set({ ...params, s_date: v })} />
+          </Group>
+          <Group grow>
+            <Select size="xs" label="Rectangle CIEM (VMS)" description="Facultatif" clearable searchable data={colData(columns)} value={params.rect || null} onChange={(v) => set({ ...params, rect: v || '' })} />
+            <Select size="xs" label="Rectangle (captures)" description="Facultatif" clearable searchable data={oc} value={params.s_rect || null} onChange={(v) => set({ ...params, s_rect: v || '' })} />
+          </Group>
+        </Stack>
+      </Paper>
+      <Group grow>
+        <Select label="Espèce (captures)" description="Vide : total toutes espèces" clearable searchable data={oc} value={params.s_species || null} onChange={(v) => set({ ...params, s_species: v || '' })} />
+        <MultiSelect label="Quantités à répartir" searchable data={numOther} value={params.values || []} onChange={(v) => set({ ...params, values: v })} />
+      </Group>
+      <Group grow align="flex-start">
+        <Select
+          label="Positions qui reçoivent les captures"
+          data={[{ value: '', label: 'Toutes les positions' }, ...colData(columns).map((c) => ({ value: c, label: `Selon « ${c} »` }))]}
+          value={params.activity ?? ''}
+          onChange={(v) => set({ ...params, activity: v || '' })}
+        />
+        {params.activity ? (
+          <TextInput label="Valeur indiquant la pêche" value={params.activity_value ?? 'pêche'} onChange={(e) => set({ ...params, activity_value: e.currentTarget.value })} />
+        ) : (
+          <div />
+        )}
+      </Group>
+      <SegmentedControl
+        data={[
+          { value: 'egal', label: 'Parts égales par position' },
+          { value: 'duree', label: 'Au prorata du temps (ecart_min)' },
+        ]}
+        value={params.weight || 'egal'}
+        onChange={(v) => set({ ...params, weight: v })}
+      />
+      {params.weight === 'duree' && !has('ecart_min') && (
+        <Text size="xs" c="orange">
+          La colonne ecart_min est produite par l'étape « Identifier l'activité de pêche (VMS) » : ajoutez-la avant.
+        </Text>
+      )}
+      <Switch
+        label="Garder les positions sans capture correspondante (quantités vides)"
+        checked={!!params.keep_unmatched}
+        onChange={(e) => set({ ...params, keep_unmatched: e.currentTarget.checked })}
+      />
+      <Text size="xs" c="dimmed">
+        Les captures sans position dans le rectangle déclaré sont réparties sur les positions du jour (colonne niveau_repartition). Le bilan (part attribuée, captures sans
+        position) s'affiche avant validation. Attention : la date doit être celle de pêche, pas de débarquement, et les identifiants de navire identiques dans les deux jeux.
+      </Text>
+    </Stack>
+  );
+}
+
 export default function StepForm(props: FormProps & { type: string }) {
   switch (props.type) {
     case 'filter':
@@ -994,6 +1113,8 @@ export default function StepForm(props: FormProps & { type: string }) {
       return <VmsForm {...props} />;
     case 'zone_tag':
       return <ZoneForm {...props} />;
+    case 'vms_catch_split':
+      return <CatchSplitForm {...props} />;
     case 'edit_cells':
       return (
         <Text size="sm">
@@ -1022,4 +1143,5 @@ export const DEFAULT_PARAMS: Record<string, any> = {
   ciem_rect: { name: 'rectangle_ciem' },
   vms_activity: { preset: 'chalut_fond', min: 2, max: 5, max_gap_min: 120, speed_unit: 'noeud' },
   zone_tag: { name: 'zone' },
+  vms_catch_split: { weight: 'egal', activity_value: 'pêche' },
 };
