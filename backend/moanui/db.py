@@ -98,6 +98,16 @@ CREATE TABLE IF NOT EXISTS journal (
     details TEXT NOT NULL DEFAULT '{}'
 );
 
+CREATE TABLE IF NOT EXISTS analyses (
+    id TEXT PRIMARY KEY,
+    dataset_id TEXT NOT NULL REFERENCES datasets(id) ON DELETE CASCADE,
+    titre TEXT NOT NULL,
+    spec TEXT NOT NULL,
+    resultat TEXT NOT NULL,
+    created_by TEXT NOT NULL REFERENCES users(id),
+    created_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS charts (
     id TEXT PRIMARY KEY,
     dataset_id TEXT NOT NULL REFERENCES datasets(id) ON DELETE CASCADE,

@@ -7,7 +7,7 @@ frontend/dist/
 backend/moanui/static/
 build/
 dist/
-*.spec
+build/*.spec
 .moanui-dev/
 .DS_Store
 *.egg-info/
