@@ -8,7 +8,8 @@ on:
   pull_request:
   push:
     tags: ["v*"]
-    # reconstruit aussi quand l'empaquetage ou les dépendances changent
+    branches: ["**"]
+    # sur une branche : reconstruit aussi quand l'empaquetage ou les dépendances changent
     paths:
       - "packaging/**"
       - ".github/workflows/windows.yml"
