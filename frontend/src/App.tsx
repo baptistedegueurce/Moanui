@@ -15,6 +15,7 @@ import AdminPage from './pages/AdminPage';
 import StructurePage from './pages/StructurePage';
 import GuidePage from './pages/GuidePage';
 import SoonPage from './pages/SoonPage';
+import StatsPage from './pages/StatsPage';
 
 export default function App() {
   const { me, loading, needsSetup, structure } = useAuth();
@@ -49,7 +50,7 @@ export default function App() {
           <Route path="/donnees/:id" element={<DatasetPage />} />
           <Route path="/graphiques" element={<ChartsPage />} />
           <Route path="/cartographie" element={<SoonPage title="Cartographie" />} />
-          <Route path="/statistiques" element={<SoonPage title="Statistiques" />} />
+          <Route path="/statistiques" element={<StatsPage />} />
           <Route path="/guide" element={<GuidePage />} />
           <Route path="/structure" element={<StructurePage />} />
           <Route path="/administration" element={<AdminPage />} />

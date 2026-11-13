@@ -95,7 +95,7 @@ export default function Shell({ children }: { children: ReactNode }) {
           {nav('/donnees', 'Données', <IconTable size={18} />)}
           {nav('/graphiques', 'Graphiques', <IconChartBar size={18} />)}
           {nav('/cartographie', 'Cartographie', <IconMap2 size={18} />, <Badge size="xs" variant="light">bientôt</Badge>)}
-          {nav('/statistiques', 'Statistiques', <IconMathFunction size={18} />, <Badge size="xs" variant="light">bientôt</Badge>)}
+          {nav('/statistiques', 'Statistiques', <IconMathFunction size={18} />)}
           <div className="mo-nav-section">Aide</div>
           {nav('/guide', 'Bonnes pratiques', <IconBook size={18} />)}
           {(isStructureAdmin || me?.is_superadmin) && (
