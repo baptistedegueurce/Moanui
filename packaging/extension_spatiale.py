@@ -11,4 +11,4 @@ src = con.execute("SELECT install_path FROM duckdb_extensions() WHERE extension_
 dest = Path(__file__).parent / "duckdb_ext"
 dest.mkdir(exist_ok=True)
 shutil.copy(src, dest / "spatial.duckdb_extension")
-print("extension copiée :", src, "→", dest)
+print("extension copiee :", src, "->", dest)

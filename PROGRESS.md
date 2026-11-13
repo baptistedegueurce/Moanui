@@ -106,7 +106,7 @@ cd frontend && npm run dev                                  # dev avec proxy /ap
   jamais signalés. Les tolérances de l'ancienne app (MAC en FPO/DRB/LLS, SOL en FPO) ont été
   retirées faute d'appui bibliographique : à rajouter par structure si besoin.
 - **Exécutable Windows** testé automatiquement (démarrage + `/api/health`).
-- **Cartographie + VMS (nov. 2026)** : voir §8.
+- **Cartographie + VMS (nov. 2026)** : voir §7.
 - **Statistiques guidées** : comparaison de groupes (t de Welch, Mann-Whitney, ANOVA, Welch,
   Kruskal + post-hoc Holm), khi² / Fisher, corrélation, régression linéaire (VIF, Breusch-Pagan,
   Cook) ; blocage contournable, interprétation, historique, fiche méthode.
@@ -124,7 +124,7 @@ cd frontend && npm run dev                                  # dev avec proxy /ap
 Questions ouvertes à l'utilisateur : traitements SACROIS récurrents (scripts CDP22),
 vraies listes de corrections d'engins, retours de test de l'exécutable sur un poste.
 
-## 8. Cartographie (détails)
+## 7. Cartographie (détails)
 
 - Moteur : extension **spatiale DuckDB** (GDAL/PROJ/GEOS). En dev elle est téléchargée une fois
   (`INSTALL spatial`) ; dans l'exe elle est **embarquée** (`packaging/extension_spatiale.py` la copie,
@@ -145,7 +145,7 @@ vraies listes de corrections d'engins, retours de test de l'exécutable sur un p
   Fonds : Plan IGN (Géoplateforme, sans clé), OSM, hors ligne (terres intégrées), aucun.
   Pas d'étiquettes texte (il faudrait des polices de glyphes hors ligne) : infos au clic.
 
-## 7. Journal
+## 8. Journal
 
 - 0.2 socle → SACROIS → exe Windows → stats (cf. historique git).
 - 2026-11 : référentiel engins FAO + engins cohérents (26 espèces) ; PROGRESS.md.
