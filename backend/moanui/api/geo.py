@@ -489,3 +489,109 @@ def delete_map(mid: str, user: User = Depends(current_user), db: Database = Depe
     _writable_map(db, user, mid)
     db.execute("DELETE FROM maps WHERE id = ?", (mid,))
     return {"ok": True}
+
+
+# --------------------------------------------------------------------------- fiche méthode d'une carte
+
+class MapMethodIn(BaseModel):
+    name: str = Field("carte", max_length=200)
+    spec: dict
+    png: str | None = Field(default=None, max_length=30_000_000)  # rendu de la carte (data:image/png;base64,…)
+
+
+AGG_FR = {"nombre": "nombre de positions", "somme": "somme", "moyenne": "moyenne", "max": "maximum",
+          "navires": "nombre de navires distincts"}
+
+
+def _map_fiche(db: Database, user: User, body: MapMethodIn):
+    from ..fiche import Fiche
+
+    s = body.spec
+    t = s.get("template") or {}
+    f = Fiche(f"Fiche méthode de la carte : {t.get('title') or body.name}", t.get("subtitle") or "")
+    f.meta = [(k, v) for k, v in [("Auteur", t.get("author") or user.display_name), ("Source affichée", t.get("source") or ""),
+                                  ("Date", datetime.now().strftime("%d/%m/%Y"))] if v]
+    if body.png and body.png.startswith("data:image/png;base64,"):
+        svg = (f'<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 '
+               f'{int(t.get("width") or 1600)} {int(t.get("height") or 1000)}"><image width="100%" height="100%" '
+               f'href="{body.png}"/></svg>')
+        f.fig("carte", svg, t.get("title") or body.name)
+    layers = [x for x in s.get("layers") or [] if x.get("visible", True)]
+    f.h("Couches représentées")
+    rows, refs, has_secret, has_vms = [], [], False, False
+    builtin = geo.builtin_layers()
+    for lay in layers:
+        kind = lay.get("kind")
+        if kind == "couche":
+            lid = lay.get("layerId") or ""
+            if lid.startswith(BUILTIN_PREFIX):
+                meta = builtin.get(lid[len(BUILTIN_PREFIX):], {})
+                src = f"{meta.get('source', '')}" + (f" ({meta['licence']})" if meta.get("licence") not in (None, "", "—", "–") else "")
+                refs += {"ciem_rectangles": ["ices_rect"], "terres": ["naturalearth"]}.get(meta.get("id", ""), [])
+                if "Shom" in src:
+                    refs.append("shom_delmar")
+                if "OFB" in src:
+                    refs.append("ofb_amp")
+                what = "couche de contexte intégrée"
+            else:
+                row = db.one("SELECT name, description, source_name FROM layers WHERE id = ?", (lid,))
+                src = (row["description"] or row["source_name"]) if row else "couche importée"
+                what = "couche importée (reprojetée en WGS84)"
+            rows.append([lay.get("title", ""), what, src])
+        elif kind == "points":
+            ds = db.one("SELECT name FROM datasets WHERE id = ?", (lay.get("datasetId"),))
+            has_vms = True
+            rows.append([lay.get("title", ""), "positions", f"jeu « {ds['name'] if ds else '?'} », colonnes "
+                                                            f"« {lay.get('lon')} » / « {lay.get('lat')} » (degrés WGS84)"])
+        elif kind == "agregat":
+            a = lay.get("agg") or {}
+            ds = db.one("SELECT name FROM datasets WHERE id = ?", (lay.get("datasetId"),))
+            how = (f"carroyage de {a.get('cell')}° " if a.get("mode") == "grille" else "rectangles statistiques CIEM ")
+            val = AGG_FR.get(a.get("agg"), a.get("agg"))
+            if a.get("value") and a.get("agg") not in ("nombre", "navires"):
+                val += f" de « {a['value']} »"
+            sec = ""
+            if a.get("vessel") and int(a.get("secret") or 0) > 1:
+                has_secret = True
+                sec = f" ; mailles de moins de {a['secret']} navires masquées (secret statistique)"
+            if a.get("mode") == "ciem":
+                refs.append("ices_rect")
+            rows.append([lay.get("title", ""), how.strip(), f"jeu « {ds['name'] if ds else '?'} » : {val} par maille{sec}"])
+    f.table(["Couche", "Nature", "Source et calcul"], rows, "Couches visibles, de haut en bas.")
+    f.h("Projection et fond de carte")
+    base = {"ign": "Plan IGN (Géoplateforme, IGN)", "osm": "OpenStreetMap (contributeurs OpenStreetMap, ODbL)",
+            "horsligne": "terres émergées Natural Earth (domaine public), fond hors ligne", "aucun": "aucun"}.get(
+        s.get("basemap"), s.get("basemap"))
+    if s.get("basemap") == "horsligne":
+        refs.append("naturalearth")
+    f.p(f"Données stockées en coordonnées géographiques WGS84 (EPSG:4326), affichées en projection Web Mercator "
+        f"(EPSG:3857). Les surfaces sont exagérées vers les hautes latitudes : à l'échelle de la Manche et du golfe de "
+        f"Gascogne, l'écart reste modéré mais les mailles en degrés n'ont pas toutes la même surface. Fond : {base}.")
+    f.h("Méthodes")
+    paras = []
+    if any(x.get("kind") == "agregat" for x in layers):
+        paras.append("Les valeurs agrégées par maille sont représentées par une couleur ; les classes et la palette "
+                     "séquentielle choisies conditionnent fortement la lecture : une même donnée peut paraître homogène "
+                     f"ou contrastée selon les bornes des classes {f.cite('brewer2003', 'monmonier2018')}.")
+    if has_vms:
+        paras.append("Les positions VMS sont des points échantillonnés (en général toutes les heures ou plus) : leur densité "
+                     "dépend de la fréquence d'émission et de la vitesse ; l'effort de pêche se représente plutôt par le "
+                     f"nombre de positions en pêche par maille, après identification de l'activité {f.cite('lee2010', 'hintzen2012')}.")
+    if has_secret:
+        paras.append("Les mailles comptant trop peu de navires sont masquées pour respecter le secret statistique "
+                     f"{f.cite('loi1951', 'reg223')}.")
+    f.ul(paras or ["Représentation de couches de référence, sans calcul."])
+    if refs:
+        f.cite(*refs)
+    return f
+
+
+@router.post("/maps/method.zip")
+def map_method_zip(body: MapMethodIn, user: User = Depends(current_user), db: Database = Depends(get_db)):
+    return Response(_map_fiche(db, user, body).zip("carte_methode"), media_type="application/zip",
+                    headers={"Content-Disposition": 'attachment; filename="carte_methode.zip"'})
+
+
+@router.post("/maps/method.md")
+def map_method_md(body: MapMethodIn, user: User = Depends(current_user), db: Database = Depends(get_db)):
+    return Response(_map_fiche(db, user, body).markdown(), media_type="text/markdown; charset=utf-8")

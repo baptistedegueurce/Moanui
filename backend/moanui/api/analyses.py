@@ -41,7 +41,8 @@ def _run(db, settings, user, did: str, body: StatIn) -> tuple[dict, dict, dict]:
             raise HTTPException(400, "La recette contient une erreur : corrigez-la avant d'analyser.")
         try:
             where = pipeline._view_filters(plan.schema, body.filters, None)
-            res = stats.run(ws.con, plan, body.model_dump(), where).as_dict()
+            robj = stats.run(ws.con, plan, body.model_dump(), where)
+            res = robj.as_dict()
         except RecipeError as e:
             raise HTTPException(400, str(e)) from e
     spec = body.model_dump()
@@ -54,6 +55,7 @@ def _run(db, settings, user, did: str, body: StatIn) -> tuple[dict, dict, dict]:
             res["resultats"], res["interpretation"] = [], []
             res["tableaux"] = res["tableaux"][:1]
         res["force"] = body.force
+    res["_fd"] = robj.fd
     return ds, res, spec
 
 
@@ -61,6 +63,7 @@ def _run(db, settings, user, did: str, body: StatIn) -> tuple[dict, dict, dict]:
 def run_stat(did: str, body: StatIn, user: User = Depends(current_user), db: Database = Depends(get_db),
              settings=Depends(get_settings)):
     ds, res, spec = _run(db, settings, user, did, body)
+    res.pop("_fd", None)
     if body.save and (not res["bloque"] or body.force):
         aid = new_id()
         db.execute("INSERT INTO analyses(id, dataset_id, titre, spec, resultat, created_by, created_at) VALUES (?,?,?,?,?,?,?)",
@@ -82,11 +85,28 @@ def history(did: str, user: User = Depends(current_user), db: Database = Depends
     return rows
 
 
-@router.post("/datasets/{did}/stats/method.md")
-def stat_method(did: str, body: StatIn, user: User = Depends(current_user), db: Database = Depends(get_db),
-                settings=Depends(get_settings)):
+def _stat_fiche(db, settings, user, did, body):
     ds, res, spec = _run(db, settings, user, did, body)
     if res["bloque"] and not body.force:
         raise HTTPException(400, "Analyse bloquée : choisissez l'alternative proposée ou justifiez le passage en force.")
-    md = stats.method_md(res, spec, ds["name"], user.display_name, body.justification)
-    return Response(md, media_type="text/markdown; charset=utf-8")
+    fd = res.pop("_fd", {})
+    return stats.method_fiche(res, spec, ds["name"], user.display_name, body.justification, fd)
+
+
+@router.post("/datasets/{did}/stats/method.md")
+def stat_method(did: str, body: StatIn, user: User = Depends(current_user), db: Database = Depends(get_db),
+                settings=Depends(get_settings)):
+    return Response(_stat_fiche(db, settings, user, did, body).markdown(), media_type="text/markdown; charset=utf-8")
+
+
+@router.post("/datasets/{did}/stats/method.html")
+def stat_method_html(did: str, body: StatIn, user: User = Depends(current_user), db: Database = Depends(get_db),
+                     settings=Depends(get_settings)):
+    return Response(_stat_fiche(db, settings, user, did, body).html(), media_type="text/html; charset=utf-8")
+
+
+@router.post("/datasets/{did}/stats/method.zip")
+def stat_method_zip(did: str, body: StatIn, user: User = Depends(current_user), db: Database = Depends(get_db),
+                    settings=Depends(get_settings)):
+    return Response(_stat_fiche(db, settings, user, did, body).zip("analyse_methode"), media_type="application/zip",
+                    headers={"Content-Disposition": 'attachment; filename="analyse_methode.zip"'})

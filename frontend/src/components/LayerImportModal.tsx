@@ -89,7 +89,7 @@ export default function LayerImportModal({ opened, onClose, onDone }: { opened: 
     <Modal opened={opened} onClose={() => { reset(); onClose(); }} title="Importer une couche géographique" size="lg">
       <Stack>
         <Text size="sm" c="dimmed">
-          Shapefile (sélectionnez ensemble .shp, .dbf, .shx, .prj — ou un zip), GeoPackage, GeoJSON, KML. Le fichier d'origine est conservé tel quel ; la couche est
+          Shapefile (sélectionnez ensemble .shp, .dbf, .shx, .prj, ou un zip), GeoPackage, GeoJSON, KML. Le fichier d'origine est conservé tel quel ; la couche est
           reprojetée en WGS84 et optimisée pour l'affichage.
         </Text>
         <Dropzone onDrop={inspect} multiple maxSize={1024 ** 3} loading={busy}>
@@ -108,7 +108,7 @@ export default function LayerImportModal({ opened, onClose, onDone }: { opened: 
             {found.length > 1 && (
               <Select
                 label="Couche à importer"
-                data={found.map((x) => ({ value: `${x.file}|${x.layer}`, label: `${x.layer} (${x.file}) — ${x.n ?? '?'} entités, ${x.geometry || '?'}` }))}
+                data={found.map((x) => ({ value: `${x.file}|${x.layer}`, label: `${x.layer} (${x.file}) : ${x.n ?? '?'} entités, ${x.geometry || '?'}` }))}
                 value={choice}
                 onChange={setChoice}
               />

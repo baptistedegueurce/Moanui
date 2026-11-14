@@ -5,14 +5,12 @@ import {
   Alert,
   Badge,
   Button,
-  Card,
   Group,
   List,
   MultiSelect,
   Paper,
   ScrollArea,
   Select,
-  SimpleGrid,
   Stack,
   Table,
   Text,
@@ -22,11 +20,11 @@ import {
   UnstyledButton,
 } from '@mantine/core';
 import { IconCheck, IconAlertTriangle, IconBan, IconInfoCircle, IconFileText, IconDeviceFloppy, IconPlayerPlay } from '@tabler/icons-react';
-import { api, saveText } from '../lib/api';
+import { api, downloadPost } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { isNumericType } from '../lib/format';
 import { fail, ok } from '../lib/notify';
-import { NEUTRAL } from '../lib/theme';
+import { NEUTRAL, fontOf } from '../lib/theme';
 import type { Column, DatasetSummary } from '../lib/types';
 import { Conditions } from '../components/StepForm';
 
@@ -111,7 +109,7 @@ function StatGraph({ g }: { g: any }) {
       margin: { l: 60, r: 20, t: 20, b: 50 },
       paper_bgcolor: '#fff',
       plot_bgcolor: '#fff',
-      font: { family: theme.font, size: 12, color: theme.colors.text },
+      font: { family: fontOf(theme), size: 12, color: theme.colors.text },
       showlegend: false,
       separators: ', ',
       yaxis: { gridcolor: theme.chart.grid, title: { text: g.yname || g.y || '' } },
@@ -300,23 +298,35 @@ export default function StatsPage() {
 
       <ScrollArea type="auto">
         {!res ? (
-          <Card p="xl">
-            <Title order={3}>Des statistiques fiables, sans coder</Title>
-            <SimpleGrid cols={{ base: 1, md: 3 }} mt="md">
-              {[
-                ['1. Une question', 'Choisissez ce que vous voulez savoir, pas un nom de test.'],
-                ['2. Des conditions vérifiées', 'Moanui contrôle que le test est applicable et bloque sinon, en proposant une alternative.'],
-                ['3. Une conclusion lisible', 'Interprétation en français, limites, graphique et fiche méthode pour vos rapports.'],
-              ].map(([t, d]) => (
-                <Paper withBorder p="md" key={t}>
-                  <Text fw={600}>{t}</Text>
-                  <Text size="sm" c="dimmed">
-                    {d}
-                  </Text>
-                </Paper>
-              ))}
-            </SimpleGrid>
-          </Card>
+          <div className="mo-panel" style={{ maxWidth: 860 }}>
+            <div className="mo-panel-head">Fonctionnement</div>
+            <div style={{ padding: '14px 18px' }}>
+              <Text size="sm" mb="sm">
+                Choisissez une question à gauche, puis les colonnes concernées. Moanui vérifie les conditions d’application, choisit le test adapté et, si une condition
+                n’est pas remplie, bloque en proposant une alternative (un passage en force reste possible avec une justification écrite). Le résultat comprend la
+                taille de l’effet, une interprétation, les limites et une fiche méthode avec figures et références.
+              </Text>
+              <table className="mo-doc-table">
+                <thead>
+                  <tr>
+                    <th>Question</th>
+                    <th>Tests possibles</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(catalogue).map(([k, c]) => (
+                    <tr key={k}>
+                      <td>{c.titre}</td>
+                      <td>{Object.values(c.tests).join(', ')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <Text size="xs" c="dimmed">
+                Rappel : une ligne doit correspondre à une observation indépendante. Si vos lignes sont des espèces d’une même marée, regroupez d’abord par marée.
+              </Text>
+            </div>
+          </div>
         ) : (
           <Stack>
             <Group justify="space-between">
@@ -331,12 +341,7 @@ export default function StatsPage() {
                   <Button
                     variant="default"
                     leftSection={<IconFileText size={16} />}
-                    onClick={() =>
-                      api
-                        .post<string>(`/api/datasets/${dsId}/stats/method.md`, body(forced))
-                        .then((t) => saveText(t, `analyse_${kind}.md`))
-                        .catch(fail)
-                    }
+                    onClick={() => downloadPost(`/api/datasets/${dsId}/stats/method.zip`, body(forced), `analyse_${kind}.zip`).catch(fail)}
                   >
                     Fiche méthode
                   </Button>

@@ -52,3 +52,15 @@ export function isNumericType(t: string): boolean {
 export function isTemporalType(t: string): boolean {
   return /^(DATE|TIMESTAMP)/i.test(t);
 }
+
+/** Étiquette courte du type, affichée dans les en-têtes et la liste des colonnes. */
+export function typeTag(t: string): { label: string; cls: string } {
+  if (isNumericType(t)) return { label: '123', cls: 'num' };
+  if (isTemporalType(t)) return { label: 'date', cls: 'date' };
+  if (t.toUpperCase().startsWith('BOOL')) return { label: 'oui/non', cls: 'bool' };
+  return { label: 'abc', cls: 'txt' };
+}
+
+// tableau : toute la précision, virgule décimale, séparateur de milliers à partir de 10 000 (années intactes)
+const nfGrid = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 12, useGrouping: 'min2' } as any);
+export const fmtCell = (v: number) => nfGrid.format(v);

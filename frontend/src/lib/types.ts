@@ -91,11 +91,13 @@ export interface Meta {
   steps: { type: string; label: string }[];
   operators: Record<string, string>;
   cast_types: Record<string, string>;
+  transforms: Record<string, { label: string; kind: 'texte' | 'nombre' }>;
   join_kinds: Record<string, string>;
   functions: { name: string; doc: string }[];
   units: Record<string, Record<string, string>>;
   referentiels: Record<string, { nom: string; description: string; colonnes: string[]; especes?: Record<string, { nom: string; nom_latin?: string; principaux?: string[]; note?: string; groupe?: string; coherents: string[] }> }>;
   templates: Record<string, { nom: string; description: string }>;
+  biblio: Record<string, { court: string; complet: string }>;
 }
 
 export interface Warning {

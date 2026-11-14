@@ -173,8 +173,8 @@ export default function ImportModal({ opened, onClose, onDone }: { opened: boole
         <Stack>
           <Alert color="teal" title="Import réussi">
             {fmtNumber(result.n_rows)} lignes, {result.report.columns.length} colonnes. Séparateur «{' '}
-            {result.report.options.delimiter === '\t' ? 'tabulation' : result.report.options.delimiter || '—'} », encodage{' '}
-            {result.report.options.encoding || '—'}.
+            {result.report.options.delimiter === '\t' ? 'tabulation' : result.report.options.delimiter || '–'} », encodage{' '}
+            {result.report.options.encoding || '–'}.
           </Alert>
           {warnings.length > 0 && (
             <Alert color="orange" icon={<IconAlertTriangle />} title="À vérifier">

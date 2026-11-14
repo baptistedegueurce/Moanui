@@ -64,7 +64,7 @@ function UserModal({ user, structures, onClose, onSaved }: { user: AdminUser | '
             </Group>
           </Group>
         ))}
-        <Button variant="light" size="xs" w="fit-content" leftSection={<IconPlus size={14} />} onClick={() => setF({ ...f, memberships: [...ms, { structure_id: structures[0]?.id, role: 'analyste' }] })}>
+        <Button variant="default" size="xs" w="fit-content" leftSection={<IconPlus size={14} />} onClick={() => setF({ ...f, memberships: [...ms, { structure_id: structures[0]?.id, role: 'analyste' }] })}>
           Ajouter une structure
         </Button>
         <Group justify="flex-end">
@@ -228,7 +228,7 @@ export default function AdminPage() {
                 {journal.map((j) => (
                   <Table.Tr key={j.id}>
                     <Table.Td>{fmtDate(j.at)}</Table.Td>
-                    <Table.Td>{j.user_name || '—'}</Table.Td>
+                    <Table.Td>{j.user_name || '–'}</Table.Td>
                     <Table.Td>{j.action.replace(/_/g, ' ')}</Table.Td>
                     <Table.Td>
                       <Text size="xs" c="dimmed" lineClamp={2}>

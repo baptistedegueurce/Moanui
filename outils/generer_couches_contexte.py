@@ -29,9 +29,9 @@ AMP = ("https://wxs.ofb.fr/geoserver/gestion/ows?service=WFS&version=2.0.0&reque
        "&typeNames=gestion:ges_omon_amp_ofb_pol_3857_vue&outputFormat=application/json&srsName=EPSG:4326")
 NE_LAND = "https://naciscdn.org/naturalearth/10m/physical/ne_10m_land.zip"
 
-SHOM = {"source": "Shom — Délimitations maritimes (DELMAR)", "licence": "Licence Ouverte Etalab 2.0",
+SHOM = {"source": "Shom, Délimitations maritimes (DELMAR)", "licence": "Licence Ouverte Etalab 2.0",
         "url": "https://www.data.gouv.fr/datasets/delimitations-maritimes"}
-OFB = {"source": "OFB — Aires marines protégées françaises", "licence": "Licence Ouverte Etalab 2.0",
+OFB = {"source": "OFB, Aires marines protégées françaises", "licence": "Licence Ouverte Etalab 2.0",
        "url": "https://www.data.gouv.fr/datasets/aires-marines-protegees-francaises-2"}
 
 
@@ -76,7 +76,7 @@ def main() -> None:
     layers.append(build(con, "ciem_rectangles", geo.ciem_grid_sql(), {
         "nom": "Rectangles statistiques CIEM", "groupe": "Référentiels",
         "description": "Grille des rectangles statistiques CIEM (1° × 0,5°), calculée.",
-        "source": "Calcul Moanui selon la définition CIEM", "licence": "—", "url": "https://www.ices.dk",
+        "source": "Calcul Moanui selon la définition CIEM", "licence": "", "url": "https://www.ices.dk",
         "date": today, "style": {"couleur": "#7a7a7a", "epaisseur": 0.6, "remplissage": 0, "etiquette": "rectangle"}}))
 
     # Shom : limites maritimes
@@ -101,14 +101,14 @@ def main() -> None:
     ]
     for lid, rel, nom, color in shom:
         layers.append(build(con, lid, f"SELECT {keep}, geom FROM ST_Read('{base / rel}')", {
-            "nom": nom, "groupe": "Limites maritimes", "description": f"{nom} — Shom.", **SHOM, "date": today,
+            "nom": nom, "groupe": "Limites maritimes", "description": f"{nom} (Shom).", **SHOM, "date": today,
             "style": {"couleur": color, "epaisseur": 1.5}}))
     layers.append(build(con, "delimitations", (
         f"SELECT {keep}, 'avec accord' AS statut, geom FROM ST_Read('{base / '5_Delim_avec_accord/SHAPE/Delim_accord_WGS84.shp'}') "
         f"UNION ALL BY NAME SELECT {keep}, 'sans accord' AS statut, geom FROM "
         f"ST_Read('{base / '6_Lim_sans_accord/SHAPE/Lim_sans_accord_WGS84.shp'}')"), {
         "nom": "Délimitations avec les États voisins", "groupe": "Limites maritimes",
-        "description": "Délimitations avec accord et limites sans accord — Shom.", **SHOM, "date": today,
+        "description": "Délimitations avec accord et limites sans accord (Shom).", **SHOM, "date": today,
         "style": {"couleur": "#eb6834", "epaisseur": 1.5, "pointilles": True}}))
 
     # OFB : aires marines protégées
@@ -117,13 +117,13 @@ def main() -> None:
             "mpa_mnhnid AS id_mnhn, subloc_name AS region, country_iso3namefr AS territoire, mpa_url AS lien")
     layers.append(build(con, "aires_marines_protegees", f"SELECT {cols}, geom FROM ST_Read('{amp}')", {
         "nom": "Aires marines protégées (toutes)", "groupe": "Environnement",
-        "description": "Aires marines protégées françaises (Natura 2000, parcs, réserves, OSPAR…) — OFB.",
+        "description": "Aires marines protégées françaises (Natura 2000, parcs, réserves, OSPAR…) (OFB).",
         **OFB, "date": today, "style": {"couleur": "#1baf7a", "epaisseur": 1, "remplissage": 0.25,
                                          "etiquette": "nom"}}, tol=0.0005))
     layers.append(build(con, "natura2000_mer", f"SELECT {cols}, geom FROM ST_Read('{amp}') "
                         "WHERE des_desigfr LIKE '%N2000%'", {
         "nom": "Natura 2000 en mer", "groupe": "Environnement",
-        "description": "Sites Natura 2000 (ZSC, ZPS, SIC) ayant une partie marine — OFB.",
+        "description": "Sites Natura 2000 (ZSC, ZPS, SIC) ayant une partie marine (OFB).",
         **OFB, "date": today, "style": {"couleur": "#008300", "epaisseur": 1, "remplissage": 0.2,
                                          "etiquette": "nom"}}, tol=0.0005))
 
@@ -145,7 +145,7 @@ def main() -> None:
             "WHERE ST_Intersects(l.geom, ST_MakeEnvelope(x, y, x + 1, y + 1))")
     layers.append(build(con, "terres", f"SELECT * FROM ({land}) WHERE NOT ST_IsEmpty(geom)", {
         "nom": "Terres (fond hors ligne)", "groupe": "Fond de carte",
-        "description": "Terres émergées au 1/10 000 000 (Atlantique Nord-Est et Méditerranée) — fond utilisable sans internet.",
+        "description": "Terres émergées au 1/10 000 000 (Atlantique Nord-Est et Méditerranée) : fond utilisable sans internet.",
         "source": "Natural Earth", "licence": "Domaine public", "url": "https://www.naturalearthdata.com",
         "date": today, "style": {"couleur": "#d9d4c7", "epaisseur": 0.5, "remplissage": 1}}))
 

@@ -65,7 +65,7 @@ export function ThemeEditor({ structure, onSaved }: { structure: Structure; onSa
             <StructureLogo key={v} id={structure.id} has={structure.has_logo} height={48} />
             <FileButton onChange={upload} accept="image/png,image/jpeg,image/svg+xml,image/webp">
               {(props) => (
-                <Button {...props} variant="light" leftSection={<IconUpload size={16} />}>
+                <Button {...props} variant="default" leftSection={<IconUpload size={16} />}>
                   Téléverser
                 </Button>
               )}

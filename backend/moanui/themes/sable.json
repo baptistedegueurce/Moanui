@@ -38,7 +38,7 @@
     "#e34948",
     "#a32f2f"
   ],
-  "font": "Inter, 'Segoe UI', system-ui, -apple-system, sans-serif",
+  "font": "'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif",
   "chart": {
     "show_logo": true,
     "logo_position": "bas-droite",

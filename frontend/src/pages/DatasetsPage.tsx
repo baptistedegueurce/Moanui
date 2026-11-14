@@ -44,14 +44,14 @@ export default function DatasetsPage() {
       </Group>
       <TextInput leftSection={<IconSearch size={16} />} placeholder="Rechercher…" value={q} onChange={(e) => setQ(e.currentTarget.value)} maw={360} />
       <Card p={0}>
-        <Table highlightOnHover verticalSpacing="sm">
+        <Table highlightOnHover verticalSpacing="sm" className="mo-table">
           <Table.Thead>
             <Table.Tr>
               <Table.Th>Nom</Table.Th>
               <Table.Th>Nature</Table.Th>
               <Table.Th>Fichier source</Table.Th>
               <Table.Th ta="right">Lignes (brut)</Table.Th>
-              <Table.Th ta="right">Étapes</Table.Th>
+              <Table.Th ta="right">Opérations</Table.Th>
               <Table.Th>Modifié</Table.Th>
             </Table.Tr>
           </Table.Thead>

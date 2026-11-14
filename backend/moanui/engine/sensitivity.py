@@ -22,6 +22,8 @@ def detect(columns: list[str]) -> list[dict]:
         if c.startswith("__"):
             continue
         low = c.lower()
+        if re.match(r"^(n|nb|nombre)_", low):  # comptages (n_navires…) : pas un identifiant
+            continue
         for rx, kind in PATTERNS:
             if re.search(rx, low):
                 out.append({"column": c, "kind": kind})

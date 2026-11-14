@@ -1,10 +1,10 @@
 // Tableau de données : lecture paginée côté serveur (millions de lignes possibles),
 // tri, recherche, correction de cellules par double-clic (en attente jusqu'à enregistrement).
-import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 import { AgGridReact } from 'ag-grid-react';
 import { AllCommunityModule, ModuleRegistry, themeQuartz, type ColDef, type IDatasource, type GridApi } from 'ag-grid-community';
 import { api } from '../lib/api';
-import { isNumericType, typeLabel } from '../lib/format';
+import { fmtCell, isNumericType, typeLabel, typeTag } from '../lib/format';
 import type { Column } from '../lib/types';
 
 ModuleRegistry.registerModules([AllCommunityModule]);
@@ -29,6 +29,7 @@ interface Props {
   pending: PendingEdit[];
   onEdit: (e: PendingEdit) => void;
   onHeaderClick: (col: string) => void;
+  selected?: string[];
   onTotal: (n: number) => void;
   upto?: number | null;
 }
@@ -43,6 +44,31 @@ const gridTheme = themeQuartz.withParams({
   headerBackgroundColor: 'var(--mo-bg)',
   borderColor: 'var(--mo-border)',
 });
+
+/** En-tête : clic sur le nom = sélection de la colonne ; flèche = tri. */
+function Header(props: any) {
+  const { displayName, colName, type, selected, onSelect, column, progressSort } = props;
+  const sort = column.getSort?.();
+  const tg = type ? typeTag(type) : null;
+  return (
+    <div className="mo-hdr" data-sel={selected || undefined}>
+      <span className="mo-hdr-name" onClick={() => colName && onSelect?.(colName)} title={colName ? 'Sélectionner la colonne' : undefined}>
+        {displayName}
+      </span>
+      {tg && <span className={`mo-type mo-type-${tg.cls}`}>{tg.label}</span>}
+      <button
+        type="button"
+        className="mo-hdr-sort"
+        data-on={sort || undefined}
+        aria-label={`Trier par ${displayName}`}
+        title="Trier (Maj + clic : tri sur plusieurs colonnes)"
+        onClick={(e) => progressSort?.(e.shiftKey)}
+      >
+        {sort === 'asc' ? '▲' : sort === 'desc' ? '▼' : '↕'}
+      </button>
+    </div>
+  );
+}
 
 const DataGrid = forwardRef<GridHandle, Props>(function DataGrid(p, ref) {
   const gridApi = useRef<GridApi | null>(null);
@@ -59,25 +85,28 @@ const DataGrid = forwardRef<GridHandle, Props>(function DataGrid(p, ref) {
         const tech = c.name === '__ligne';
         return {
           field: `c${i}`,
-          headerName: tech ? 'n° ligne' : c.name,
-          headerTooltip: tech ? 'Numéro de la ligne dans le fichier d’origine' : `${c.name} · ${typeLabel(c.type)} · cliquez pour les détails`,
+          headerName: tech ? 'n°' : c.name,
+          headerTooltip: tech ? 'Numéro de la ligne dans le fichier d’origine' : `${c.name} · ${typeLabel(c.type)}`,
+          headerComponent: Header,
           pinned: tech ? 'left' : undefined,
-          width: tech ? 90 : Math.min(260, Math.max(110, c.name.length * 9 + 40)),
+          width: tech ? 92 : Math.min(300, Math.max(130, c.name.length * 8 + 78)),
           sortable: true,
           cellDataType: false, // éditeur texte simple : la conversion est faite côté serveur selon le type
           editable: !tech && p.editable && hasRowId,
           cellClass: (params: any) => {
             const row = params.data?.c_row;
             const edited = pendingRef.current.some((e) => e.row === row && e.column === c.name);
-            return [tech ? 'mo-tech' : '', edited ? 'mo-cell-edited' : ''].join(' ');
+            const sel = propsRef.current.selected?.includes(c.name);
+            return [tech ? 'mo-tech' : '', edited ? 'mo-cell-edited' : '', sel ? 'mo-col-sel' : ''].join(' ');
           },
           type: isNumericType(c.type) ? 'rightAligned' : undefined,
-          valueFormatter: (params: any) => (params.value === null || params.value === undefined ? '' : String(params.value)),
-          headerComponentParams: { colName: c.name },
+          valueFormatter: (params: any) =>
+            params.value === null || params.value === undefined ? '' : !tech && typeof params.value === 'number' ? fmtCell(params.value) : String(params.value),
+          headerComponentParams: tech ? {} : { colName: c.name, type: c.type, selected: p.selected?.includes(c.name), onSelect: p.onHeaderClick },
         } as ColDef;
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [p.columns, p.editable, hasRowId],
+    [p.columns, p.editable, hasRowId, p.selected],
   );
 
   const datasource: IDatasource = useMemo(
@@ -118,6 +147,10 @@ const DataGrid = forwardRef<GridHandle, Props>(function DataGrid(p, ref) {
     [],
   );
 
+  useEffect(() => {
+    gridApi.current?.refreshCells({ force: true });
+  }, [p.selected]);
+
   const refresh = useCallback(() => {
     gridApi.current?.purgeInfiniteCache();
   }, []);
@@ -133,13 +166,6 @@ const DataGrid = forwardRef<GridHandle, Props>(function DataGrid(p, ref) {
         cacheBlockSize={200}
         maxBlocksInCache={50}
         onGridReady={(e) => (gridApi.current = e.api)}
-        onColumnHeaderClicked={(e: any) => {
-          const field = e.column?.getColId?.();
-          if (field && field.startsWith('c')) {
-            const c = p.columns[Number(field.slice(1))];
-            if (c && c.name !== '__ligne') p.onHeaderClick(c.name);
-          }
-        }}
         onCellValueChanged={(e) => {
           const col = p.columns[Number(e.colDef.field!.slice(1))];
           if (!col || e.oldValue === e.newValue || e.data?.c_row == null) return; // ligne pas encore chargée

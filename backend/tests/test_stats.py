@@ -32,7 +32,16 @@ def test_two_groups_filter_and_method(client):
     assert set(res["effectifs"]) >= {"BR", "LO"} and res["test"] in ("t_welch", "mann_whitney")
     md = client.post(f"/api/datasets/{did}/stats/method.md", json=body)
     if not res["bloque"]:
-        assert md.status_code == 200 and "Vérification des conditions" in md.text and "BR" in md.text
+        assert md.status_code == 200 and "Conditions d'application" in md.text and "BR" in md.text
+        assert "figures/boites.svg" in md.text and "(Welch, 1947" in md.text or "(Mann et Whitney, 1947)" in md.text
+        assert not any(ch in md.text for ch in "✅⛔⚠ℹ")  # pas d'émojis
+        z = client.post(f"/api/datasets/{did}/stats/method.zip", json=body)
+        import io
+        import zipfile
+
+        names = zipfile.ZipFile(io.BytesIO(z.content)).namelist()
+        assert {"analyse_methode.md", "analyse_methode.html", "figures/boites.svg", "figures/qq.svg"} - set(names) == \
+            {"figures/qq.svg"}
 
 
 def test_association_correlation_regression(client):

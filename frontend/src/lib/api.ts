@@ -67,6 +67,15 @@ export async function download(url: string, fallbackName = 'export'): Promise<vo
   saveBlob(blob, m ? m[1] : fallbackName);
 }
 
+/** Télécharge le résultat d'un POST (ex. fiche méthode en ZIP). */
+export async function downloadPost(url: string, body: any, fallbackName = 'export.zip'): Promise<void> {
+  const res = await fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  if (!res.ok) await handle(res);
+  const blob = await res.blob();
+  const m = /filename="([^"]+)"/.exec(res.headers.get('content-disposition') || '');
+  saveBlob(blob, m ? m[1] : fallbackName);
+}
+
 export function saveBlob(blob: Blob, name: string) {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);

@@ -28,7 +28,7 @@ SHAPIRO_MAX = 5000
 def fr(x, d=3) -> str:
     """Nombre au format français."""
     if x is None or (isinstance(x, float) and not math.isfinite(x)):
-        return "—"
+        return "–"
     if isinstance(x, (int, np.integer)):
         return f"{int(x):,}".replace(",", " ")
     x = float(x)
@@ -40,9 +40,16 @@ def fr(x, d=3) -> str:
     return s.replace(".", ",")
 
 
+def pc(x: float, d: int = 0) -> str:
+    """Pourcentage à la française : « 12,5 % »."""
+    if x is None or not math.isfinite(x):
+        return "–"
+    return f"{fr(100 * x, d)}\u202f%"
+
+
 def fp(p: float) -> str:
     if p is None or not math.isfinite(p):
-        return "—"
+        return "–"
     return "< 0,001" if p < 0.001 else fr(p, 3)
 
 
@@ -97,6 +104,7 @@ class Result:
     limites: list[str] = field(default_factory=list)
     graph: dict | None = None
     effectifs: dict = field(default_factory=dict)
+    fd: dict = field(default_factory=dict)  # données des figures de la fiche méthode (non renvoyées à l'interface)
 
     def as_dict(self):
         return {
@@ -210,10 +218,11 @@ def compare_groups(y: np.ndarray, g: np.ndarray, yname: str, gname: str, force: 
     meds = [float(np.median(x)) for x in groups]
     r.tableaux.append({"titre": "Résumé par groupe", "colonnes": ["Groupe", "n", "Moyenne", "Médiane", "Écart-type", "Min", "Max"],
                        "lignes": [[str(lv), len(x), fr(float(np.mean(x))), fr(float(np.median(x))),
-                                   fr(float(np.std(x, ddof=1))) if len(x) > 1 else "—", fr(float(np.min(x))), fr(float(np.max(x)))]
+                                   fr(float(np.std(x, ddof=1))) if len(x) > 1 else "–", fr(float(np.min(x))), fr(float(np.max(x)))]
                                   for lv, x in zip(levels, groups)]})
     r.graph = {"type": "boites", "groupes": [str(lv) for lv in levels],
                "valeurs": [x[:5000].tolist() for x in groups], "y": yname}
+    r.fd = {"kind": "boites", "levels": [str(lv) for lv in levels], "groups": groups, "y": yname, "g": gname}
     if small:
         return r
     if k == 2:
@@ -260,7 +269,7 @@ def compare_groups(y: np.ndarray, g: np.ndarray, yname: str, gname: str, force: 
             stat, p, df1, df2 = welch_anova(groups)
             r.test_label = "ANOVA de Welch (moyennes, variances inégales)"
             stat_txt = f"F = {fr(stat)} (ddl {fr(df1, 1)} ; {fr(df2, 1)})"
-            eff = "—"
+            eff = "–"
         else:
             res = st.kruskal(*groups)
             eps2 = (res.statistic - k + 1) / (n_tot - k) if n_tot > k else 0.0
@@ -269,7 +278,15 @@ def compare_groups(y: np.ndarray, g: np.ndarray, yname: str, gname: str, force: 
             eff = f"ε² = {fr(eps2, 3)} ({effect_words(math.sqrt(max(eps2, 0)), (0.1, 0.25, 0.4))})"
         r.resultats = [{"nom": "Statistique", "valeur": stat_txt}, {"nom": "p", "valeur": fp(p)},
                        {"nom": "Taille d'effet", "valeur": eff}]
-        r.interpretation = [sig_sentence(p).replace("un tel écart", "de tels écarts entre groupes")]
+        loc = means if parametric else meds
+        word = "moyenne" if parametric else "médiane"
+        hi_i, lo_i = int(np.argmax(loc)), int(np.argmin(loc))
+        r.interpretation = [
+            f"{word.capitalize()} de « {yname} » la plus élevée pour « {levels[hi_i]} » ({fr(loc[hi_i])}), la plus faible pour "
+            f"« {levels[lo_i]} » ({fr(loc[lo_i])}), sur {k} groupes et {fr(n_tot)} observations.",
+            sig_sentence(p).replace("un tel écart", "de tels écarts entre groupes")]
+        if eff != "–":
+            r.interpretation.append(f"Taille d'effet : {eff}.")
         if p < ALPHA:
             pairs = pairwise(groups, levels, parametric)
             r.tableaux.append({"titre": "Comparaisons deux à deux (correction de Holm)",
@@ -338,7 +355,7 @@ def association(x: np.ndarray, y: np.ndarray, xname: str, yname: str, force: str
     tiny = bool(np.any(expected < 1))
     ok = low <= 0.2 and not tiny
     r.checks.append(Check("Effectifs théoriques", ok, "bloquant" if not ok else "info",
-                          f"{low:.0%} des cases ont un effectif attendu < 5" + (" et certaines < 1" if tiny else "") + "."
+                          f"{pc(low, 0)} des cases ont un effectif attendu < 5" + (" et certaines < 1" if tiny else "") + "."
                           if not ok else "Effectifs attendus suffisants (≥ 5 dans au moins 80 % des cases).",
                           "Regroupez les modalités rares, ou utilisez le test exact de Fisher (tableau 2×2)."))
     is2x2 = table.shape == (2, 2)
@@ -363,9 +380,14 @@ def association(x: np.ndarray, y: np.ndarray, xname: str, yname: str, force: str
     r.tableaux.append({"titre": "Tableau croisé (effectifs observés)", "colonnes": [xname + " \\ " + yname] + [str(b) for b in ys],
                        "lignes": [[str(a)] + [int(c) for c in row] for a, row in zip(xs, table)]})
     resid = (table - expected) / np.sqrt(np.where(expected > 0, expected, 1))
+    r.fd = {"kind": "empile", "xs": [str(a) for a in xs], "ys": [str(b) for b in ys], "table": table, "x": xname, "y": yname,
+            "resid": resid}
     strong = [(str(xs[i]), str(ys[j]), resid[i, j]) for i in range(len(xs)) for j in range(len(ys)) if abs(resid[i, j]) > 2]
     r.interpretation = [sig_sentence(p).replace("un tel écart", "une telle répartition") if p < ALPHA else
                         f"Rien n'indique que « {xname} » et « {yname} » soient liés ({fpe(p)})."]
+    if test == "chi2":
+        r.interpretation.append(f"Intensité du lien (V de Cramér) : {fr(v, 2)}, soit un lien {effect_words(v, (0.1, 0.3, 0.5))} "
+                                f"({fr(int(n))} observations, tableau {table.shape[0]} × {table.shape[1]}).")
     if p < ALPHA and strong:
         r.interpretation.append("Combinaisons plus (+) ou moins (−) fréquentes qu'attendu : " + ", ".join(
             f"{a} × {b} ({'+' if v_ > 0 else '−'})" for a, b, v_ in sorted(strong, key=lambda t: -abs(t[2]))[:10]) + ".")
@@ -403,7 +425,7 @@ def correlation(x: np.ndarray, y: np.ndarray, xname: str, yname: str, force: str
         coef, p = float(res.statistic), float(res.pvalue)
         r.test_label = "Corrélation de Pearson (relation linéaire)"
         r.resultats = [{"nom": "r", "valeur": fr(coef, 2)}, {"nom": "IC 95 %", "valeur": f"[{fr(ci.low, 2)} ; {fr(ci.high, 2)}]"},
-                       {"nom": "p", "valeur": fp(p)}, {"nom": "Part de variance commune (r²)", "valeur": f"{coef ** 2:.0%}"}]
+                       {"nom": "p", "valeur": fp(p)}, {"nom": "Part de variance commune (r²)", "valeur": f"{pc(coef ** 2, 0)}"}]
     else:
         res = st.spearmanr(x, y)
         coef, p = float(res.statistic), float(res.pvalue)
@@ -415,6 +437,9 @@ def correlation(x: np.ndarray, y: np.ndarray, xname: str, yname: str, force: str
         f"({'r' if test == 'pearson' else 'ρ'} = {fr(coef, 2)}).", sig_sentence(p)]
     idx = np.random.default_rng(0).choice(n, min(n, 5000), replace=False)
     r.graph = {"type": "nuage", "x": x[idx].tolist(), "y": y[idx].tolist(), "xname": xname, "yname": yname}
+    slope, icpt = np.polyfit(x, y, 1) if np.ptp(x) else (0.0, float(np.mean(y)))
+    r.fd = {"kind": "nuage", "x": x, "y": y, "xname": xname, "yname": yname,
+            "line": (float(icpt), float(slope)) if test == "pearson" else None}
     r.limites = ["Corrélation ne veut pas dire causalité : une troisième variable (saison, zone, engin…) peut expliquer les deux.",
                  COMMON_LIMITS[1]]
     return r
@@ -503,13 +528,13 @@ def regression(data: dict, yname: str, xnames: list[str], cat: set[str], force: 
         r.alternative = None
         r.checks.append(Check("Conseil", False, "info", "Pour des comptages ou des valeurs très asymétriques, une "
                               "transformation (LOG1P dans une formule) ou un modèle linéaire généralisé est plus adapté."))
-    r.resultats = [{"nom": "R²", "valeur": f"{r2:.1%}"}, {"nom": "R² ajusté", "valeur": f"{r2a:.1%}"},
+    r.resultats = [{"nom": "R²", "valeur": f"{pc(r2, 1)}"}, {"nom": "R² ajusté", "valeur": f"{pc(r2a, 1)}"},
                    {"nom": "F global", "valeur": f"{fr(fstat)} ({fpe(fp_)})"}, {"nom": "n", "valeur": fr(n)}]
     r.tableaux.append({"titre": "Coefficients", "colonnes": ["Terme", "Estimation", "IC 95 %", "p", "Significatif ?"],
                        "lignes": [[nm, fr(float(b)), f"[{fr(float(b - tcrit * s))} ; {fr(float(b + tcrit * s))}]", fp(float(pv)),
                                    "oui" if pv < ALPHA else "non"] for nm, b, s, pv in zip(names, beta, se, pvals)]})
     sig = [(nm, b) for nm, b, pv in zip(names[1:], beta[1:], pvals[1:]) if pv < ALPHA]
-    r.interpretation = [f"Le modèle explique {r2:.0%} des variations de « {yname} »."]
+    r.interpretation = [f"Le modèle explique {pc(r2, 0)} des variations de « {yname} »."]
     for nm, b in sig[:8]:
         if " = " in nm:
             r.interpretation.append(f"{nm} : « {yname} » est en moyenne {'plus élevé' if b > 0 else 'plus faible'} de {fr(abs(float(b)))}, "
@@ -521,6 +546,7 @@ def regression(data: dict, yname: str, xnames: list[str], cat: set[str], force: 
         r.interpretation.append("Aucune variable explicative n'a d'effet statistiquement significatif.")
     idx = np.random.default_rng(0).choice(n, min(n, 5000), replace=False)
     r.graph = {"type": "residus", "x": fitted[idx].tolist(), "y": resid[idx].tolist(), "xname": "Valeurs prédites", "yname": "Résidus"}
+    r.fd = {"kind": "residus", "fitted": fitted, "resid": resid, "y": yname, "cook": cook}
     r.limites = ["Une relation dans un modèle n'est pas une preuve de causalité.",
                  "Le modèle ne vaut que dans la plage des valeurs observées : pas d'extrapolation."] + COMMON_LIMITS[1:]
     return r
@@ -640,31 +666,169 @@ def _need_num(schema, col):
         raise RecipeError(f"« {col} » n'est pas numérique : convertissez son type d'abord.")
 
 
-def method_md(res: dict, spec: dict, dataset_name: str, author: str, justification: str | None) -> str:
-    L = [f"# Fiche méthode statistique : {res['titre']}", "",
-         f"- **Jeu de données** : {dataset_name} (voir sa fiche méthode pour les traitements)",
-         f"- **Analyste** : {author}", f"- **Test** : {res['test_label']}",
-         f"- **Observations utilisées** : {res['effectifs'].get('lignes_utilisees')} sur {res['effectifs'].get('lignes_total')}"]
-    if spec.get("filtres_desc"):
-        L.append(f"- **Filtre** : {spec['filtres_desc']}")
-    L += ["", "## Vérification des conditions", ""]
+# --------------------------------------------------------------------------- fiche méthode
+
+TEST_INFO: dict[str, tuple[str, tuple[str, ...]]] = {
+    "t_welch": ("Le test t de Welch compare les moyennes de deux groupes sans supposer que leurs variances sont égales ; "
+                "il est recommandé par défaut à la place du test t de Student, dont il ne diffère presque pas quand les "
+                "variances sont égales. La taille d'effet est le d de Cohen (écart des moyennes en écarts-types)",
+                ("welch1947", "delacre2017", "cohen1988")),
+    "mann_whitney": ("Le test de Mann-Whitney compare deux distributions à partir des rangs des valeurs : il ne suppose pas "
+                     "de loi normale et résiste aux valeurs extrêmes. Il teste si une valeur tirée d'un groupe tend à être "
+                     "plus grande qu'une valeur tirée de l'autre. La taille d'effet est la corrélation rang-bisériale",
+                     ("mannwhitney1947",)),
+    "anova": ("L'analyse de variance (ANOVA) à un facteur compare les moyennes de plusieurs groupes en supposant des "
+              "distributions normales de même variance. La taille d'effet η² est la part de la variabilité totale expliquée "
+              "par les groupes. Si le test est significatif, les groupes sont comparés deux à deux (tests t de Welch) avec "
+              "correction de Holm", ("cohen1988", "holm1979")),
+    "welch_anova": ("L'ANOVA de Welch compare les moyennes de plusieurs groupes sans supposer l'égalité des variances. Si "
+                    "elle est significative, les groupes sont comparés deux à deux (tests t de Welch) avec correction de Holm",
+                    ("welch1951", "holm1979")),
+    "kruskal": ("Le test de Kruskal-Wallis compare plusieurs distributions à partir des rangs, sans hypothèse de normalité. "
+                "La taille d'effet ε² est fondée sur les rangs. Si le test est significatif, les groupes sont comparés deux "
+                "à deux (Mann-Whitney) avec correction de Holm", ("kruskal1952", "mannwhitney1947", "holm1979")),
+    "chi2": ("Le test du χ² d'indépendance compare les effectifs observés du tableau croisé aux effectifs attendus si les "
+             "deux variables étaient indépendantes. Il suppose des effectifs attendus suffisants (au moins 5 dans 80 % "
+             "des cases, aucun sous 1). L'intensité du lien est mesurée par le V de Cramér (0 = aucun lien, 1 = lien total) ; "
+             "les résidus standardisés supérieurs à 2 en valeur absolue désignent les combinaisons sur- ou sous-représentées",
+             ("cochran1954", "cramer1946")),
+    "fisher": ("Le test exact de Fisher calcule directement la probabilité du tableau 2 × 2 observé ; il reste valable avec de "
+               "petits effectifs. L'intensité du lien est donnée par le rapport des cotes", ("fisher1922",)),
+    "pearson": ("Le coefficient de corrélation de Pearson mesure l'intensité d'une relation linéaire entre deux mesures "
+                "(de −1 à 1) ; son test suppose des distributions proches de la normale et est sensible aux valeurs "
+                "extrêmes", ("cohen1988",)),
+    "spearman": ("Le coefficient de Spearman est la corrélation de Pearson calculée sur les rangs : il mesure une relation "
+                 "monotone (toujours croissante ou toujours décroissante), sans hypothèse de normalité, et résiste aux valeurs "
+                 "extrêmes", ("spearman1904",)),
+    "ols": ("La régression linéaire multiple (moindres carrés) estime l'effet de chaque facteur sur la mesure, à autres "
+            "facteurs constants. Les facteurs à catégories sont codés par indicatrices par rapport à une modalité de "
+            "référence. Les conditions vérifiées sont la normalité et la variance constante des résidus (test de "
+            "Breusch-Pagan), la colinéarité entre facteurs (VIF) et l'influence de chaque observation (distance de Cook)",
+            ("breusch1979", "cook1977", "zuur2010")),
+    "poisson": ("Le modèle linéaire généralisé (GLM) de Poisson à lien logarithmique décrit des comptages : les effets sont "
+                "multiplicatifs. Il suppose une variance égale à la moyenne ; une variance plus forte (surdispersion) rend "
+                "les p-values trop optimistes. Les facteurs sont testés par rapport de vraisemblance, en retirant chacun "
+                "d'eux du modèle", ("mccullagh1989", "venables2004")),
+    "quasi_poisson": ("Le GLM quasi-Poisson garde la structure du modèle de Poisson mais estime un paramètre de dispersion "
+                      "(variance proportionnelle à la moyenne) ; les facteurs sont testés par des tests F", ("mccullagh1989",
+                                                                                                          "verhoef2007")),
+    "binomiale_negative": ("Le GLM binomial négatif (lien logarithmique, variance μ + μ²/θ) décrit des comptages plus "
+                           "dispersés que ne le permet la loi de Poisson, situation habituelle pour des captures. Le "
+                           "paramètre θ est estimé par maximum de vraisemblance, en alternance avec les coefficients, comme "
+                           "dans la fonction glm.nb de R ; les facteurs sont testés par rapport de vraisemblance à θ fixé",
+                           ("venables2002", "verhoef2007", "venables2004")),
+    "gamma": ("Le GLM Gamma à lien logarithmique décrit des quantités strictement positives et asymétriques (poids "
+              "débarqués, CPUE positives), avec une variance qui croît comme le carré de la moyenne ; les effets sont "
+              "multiplicatifs et la dispersion est estimée (tests F)", ("mccullagh1989", "venables2004")),
+    "logistique": ("La régression logistique (GLM binomial, lien logit) modélise la probabilité d'un événement (présence de "
+                   "l'espèce, oui / non). Les effets s'expriment en rapports de cotes", ("mccullagh1989",)),
+}
+
+CHECK_REFS = {"Normalité": ("shapiro1965",), "Égalité des variances": ("levene1960", "brown1974"),
+              "Effectifs théoriques": ("cochran1954",), "Colinéarité": ("zuur2010",),
+              "Variance constante des résidus": ("breusch1979",), "Points influents": ("cook1977",),
+              "Surdispersion": ("verhoef2007", "zuur2009"), "Zéros": ("martin2005",),
+              "Ajustement (résidus quantiles)": ("dunn1996",)}
+
+STATUS = {True: "Respectée", "bloquant": "Non respectée (bloquante)", "avertissement": "À surveiller", "info": "Information"}
+
+
+def method_fiche(res: dict, spec: dict, dataset_name: str, author: str, justification: str | None, fd: dict | None = None):
+    from . import figures
+    from .fiche import Fiche
+
+    fd = fd or {}
+    f = Fiche(f"Fiche méthode statistique : {res['titre']}")
+    var_labels = {v["role"]: v["label"] for v in ANALYSES.get(spec.get("analyse"), {}).get("variables", [])}
+    vars_ = spec.get("variables") or {}
+    eff = res.get("effectifs", {})
+    f.meta = [("Jeu de données", f"{dataset_name} (traitements décrits dans sa propre fiche méthode)"), ("Analyste", author),
+              ("Date", __import__("datetime").datetime.now().strftime("%d/%m/%Y %H:%M"))]
+
+    f.h("Question et données")
+    f.p(ANALYSES.get(spec.get("analyse"), {}).get("titre", "") + ".")
+    f.kv([(var_labels.get(k, k), ", ".join(v) if isinstance(v, list) else str(v)) for k, v in vars_.items() if v]
+         + [("Restriction des données", spec.get("filtres_desc") or "aucune"),
+            ("Observations utilisées", f"{eff.get('lignes_utilisees', '?')} sur {eff.get('lignes_total', '?')} lignes "
+                                       "(lignes incomplètes pour ces variables écartées)")])
+
+    f.h("Méthode")
+    chosen = "imposé par l'analyste" if spec.get("test") else "choisi automatiquement d'après les conditions vérifiées"
+    info = TEST_INFO.get(res.get("test"), ("", ()))
+    f.p(f"Test retenu : **{res['test_label']}** ({chosen}). {info[0]} {f.cite(*info[1])}.".replace(" .", "."))
+    f.p(f"Seuil de significativité : 5 %. Une p-value mesure la compatibilité des données avec l'absence d'effet ; elle "
+        f"ne mesure ni la taille ni l'importance de l'effet, d'où le report systématique des tailles d'effet et des "
+        f"intervalles de confiance {f.cite('wasserstein2016')}.")
+
+    f.h("Conditions d'application")
+    rows = []
     for c in res["checks"]:
-        mark = "✅" if c["ok"] else {"bloquant": "⛔", "avertissement": "⚠️"}.get(c["niveau"], "ℹ️")
-        L.append(f"- {mark} **{c['nom']}** : {c['message']}")
+        key = next((k for k in CHECK_REFS if c["nom"].startswith(k)), None)
+        refs = f" {f.cite(*CHECK_REFS[key])}" if key else ""
+        status = STATUS[True] if c["ok"] else STATUS.get(c["niveau"], c["niveau"])
+        rows.append([c["nom"], status, c["message"] + refs])
+    f.table(["Condition", "Statut", "Détail"], rows, "Conditions vérifiées avant l'analyse.")
     if res["bloque"]:
-        L += ["", f"> ⛔ Une condition bloquante n'est pas remplie. Analyse menée malgré tout. Justification : "
-                  f"{justification or '(non renseignée)'}"]
-    L += ["", "## Résultats", ""]
-    for r in res["resultats"]:
-        L.append(f"- **{r['nom']}** : {r['valeur']}")
+        f.note(f"Une condition bloquante n'est pas remplie : l'analyse a été menée malgré tout, à la demande de l'analyste. "
+               f"Justification : {justification or '(non renseignée)'}.")
+
+    f.h("Résultats")
+    if res["resultats"]:
+        f.kv([(r["nom"], r["valeur"]) for r in res["resultats"]])
     for t in res["tableaux"]:
-        L += ["", f"**{t['titre']}**", "", "| " + " | ".join(map(str, t["colonnes"])) + " |",
-              "|" + "---|" * len(t["colonnes"])]
-        L += ["| " + " | ".join(map(str, row)) + " |" for row in t["lignes"]]
-    L += ["", "## Interprétation", ""] + [f"- {p}" for p in res["interpretation"]]
-    L += ["", "## Limites", ""] + [f"- {p}" for p in res["limites"]]
-    L += ["", f"Seuil de significativité : 5 %. Calculs : SciPy {__import__('scipy').__version__}."]
-    return "\n".join(L)
+        al = "l" + "r" * (len(t["colonnes"]) - 1)
+        f.table([str(c) for c in t["colonnes"]], t["lignes"], t["titre"] + ".", al)
+    _figures(f, fd, figures)
+
+    f.h("Interprétation")
+    f.ul(res["interpretation"])
+    f.h("Limites")
+    f.ul(res["limites"])
+    import scipy
+
+    f.p(f"Calculs : Moanui, NumPy {np.__version__}, SciPy {scipy.__version__}.")
+    return f
+
+
+def _figures(f, fd: dict, figures) -> None:
+    k = fd.get("kind")
+    if k == "boites":
+        f.fig("boites", figures.boxplot(fd["levels"], fd["groups"], fd["y"], fd["g"]),
+              f"Distribution de « {fd['y']} » selon « {fd['g']} ». Boîte : quartiles ; trait épais : médiane ; losange : "
+              "moyenne ; moustaches : 1,5 fois l'écart interquartile ; points : valeurs individuelles ou extrêmes.")
+    elif k == "empile":
+        tab = np.asarray(fd["table"], dtype=float)
+        props = tab / np.where(tab.sum(axis=1, keepdims=True) > 0, tab.sum(axis=1, keepdims=True), 1)
+        f.fig("repartition", figures.stacked(fd["xs"], fd["ys"], props, f"Répartition de « {fd['y']} » (%)", fd["y"]),
+              f"Répartition de « {fd['y']} » au sein de chaque modalité de « {fd['x']} » (pourcentages en ligne). Sans lien "
+              "entre les variables, toutes les barres auraient la même composition.")
+    elif k == "nuage":
+        f.fig("nuage", figures.scatter(fd["x"], fd["y"], fd["xname"], fd["yname"], line=fd.get("line")),
+              f"« {fd['yname']} » en fonction de « {fd['xname']} »"
+              + (" ; droite des moindres carrés en orange." if fd.get("line") else "."))
+    elif k in ("residus", "glm"):
+        res_ = fd["resid"] if k == "residus" else fd["rq"]
+        lab = "Résidus" if k == "residus" else "Résidus quantiles"
+        xlab = "Valeurs prédites" + (" (échelle log)" if fd.get("log") else "")
+        f.fig("residus", figures.scatter(fd["fitted"], res_, xlab, lab, hline=0.0, smooth=True),
+              f"{lab} en fonction des valeurs prédites, avec leur moyenne glissante (orange). Un nuage sans forme autour de "
+              "zéro indique un modèle adapté ; un entonnoir signale une variance non constante, une courbe un effet non "
+              "linéaire oublié.")
+        f.fig("qq", figures.qqplot(res_, lab),
+              f"Diagramme quantile-quantile des {lab.lower()} : les points doivent suivre la diagonale."
+              + (" Pour un GLM, les résidus quantiles randomisés suivent une loi normale si la famille est adaptée "
+                 f"{f.cite('dunn1996')}." if k == "glm" else ""))
+        ix = fd.get("index")
+        if ix and ix["rows"]:
+            labels = [r[0] for r in ix["rows"]]
+            f.fig("indice", figures.bars(labels, [r[1] for r in ix["rows"]], ix["what"], ix["factor"],
+                                         lo=[r[2] for r in ix["rows"]], hi=[r[3] for r in ix["rows"]]),
+                  f"Valeurs prédites par « {ix['factor']} », autres facteurs à leur moyenne, avec intervalle de confiance à "
+                  f"95 % : c'est l'indice standardisé {f.cite('maunder2004', 'campbell2004', 'searle1980')}.")
+
+
+def method_md(res: dict, spec: dict, dataset_name: str, author: str, justification: str | None) -> str:
+    return method_fiche(res, spec, dataset_name, author, justification).markdown()
 
 
 # --------------------------------------------------------------------------- modèles linéaires généralisés
@@ -859,8 +1023,8 @@ def glm_analysis(data: dict, yname: str, xnames: list[str], cat: set[str], offse
     q = st.t.ppf(0.975, dof) if est_phi else st.norm.ppf(0.975)
     pvals = 2 * (st.t.sf(np.abs(beta / se), dof) if est_phi else st.norm.sf(np.abs(beta / se)))
     eff = "Rapport de cotes" if fam == "logistique" else "Effet multiplicatif"
-    r.resultats = [{"nom": "Déviance expliquée", "valeur": f"{expl:.1%}"},
-                   {"nom": "AIC", "valeur": fr(m["aic"], 1) if m["aic"] is not None else "— (quasi-vraisemblance)"},
+    r.resultats = [{"nom": "Déviance expliquée", "valeur": f"{pc(expl, 1)}"},
+                   {"nom": "AIC", "valeur": fr(m["aic"], 1) if m["aic"] is not None else "non défini (quasi-vraisemblance)"},
                    {"nom": "n", "valeur": fr(n)}]
     if est_phi:
         r.resultats.append({"nom": "Dispersion estimée", "valeur": fr(m["phi"], 3)})
@@ -871,8 +1035,8 @@ def glm_analysis(data: dict, yname: str, xnames: list[str], cat: set[str], offse
     r.tableaux.append({"titre": "Coefficients",
                        "colonnes": ["Terme", "Estimation (échelle " + ("logit" if fam == "logistique" else "log") + ")",
                                     eff, "IC 95 %", "p"],
-                       "lignes": [[nm, fr(float(b)), fr(math.exp(b)) if abs(b) < 50 else "—",
-                                   f"[{fr(math.exp(b - q * s))} ; {fr(math.exp(b + q * s))}]" if abs(b) < 50 else "—",
+                       "lignes": [[nm, fr(float(b)), fr(math.exp(b)) if abs(b) < 50 else "–",
+                                   f"[{fr(math.exp(b - q * s))} ; {fr(math.exp(b + q * s))}]" if abs(b) < 50 else "–",
                                    fp(float(pv))]
                                   for nm, b, s, pv in zip(names, beta, se, pvals)]})
     # --- valeurs prédites par modalité du premier facteur catégoriel (indice standardisé, ex. CPUE par année)
@@ -887,6 +1051,7 @@ def glm_analysis(data: dict, yname: str, xnames: list[str], cat: set[str], offse
                     base[idx] = X[:, idx].mean(axis=0)
         rows = []
         cat_idx = dict(terms)[first_cat]
+        index_num: list[tuple] = []
         for i, lv in enumerate(levels[first_cat]):
             x0 = base.copy()
             x0[cat_idx] = 0.0
@@ -897,19 +1062,34 @@ def glm_analysis(data: dict, yname: str, xnames: list[str], cat: set[str], offse
             inv = (lambda e: 1 / (1 + math.exp(-e))) if fam == "logistique" else math.exp
             rows.append([lv, fr(inv(eta)), f"[{fr(inv(eta - q * s))} ; {fr(inv(eta + q * s))}]",
                          int(np.sum(data[first_cat].astype(str) == lv))])
+            index_num.append((str(lv), inv(eta), inv(eta - q * s), inv(eta + q * s)))
         what = ("probabilité de présence" if fam == "logistique" else
                 f"« {yname} » par unité de « {offset_name} »" if offset_name else f"« {yname} » moyen")
         rows.sort(key=lambda r_: str(r_[0]))
-        r.tableaux.append({"titre": f"Valeurs prédites par « {first_cat} » ({what}, autres facteurs à leur moyenne) — "
+        index_num.sort(key=lambda t: t[0])
+        r.fd["index"] = {"factor": first_cat, "what": what, "rows": index_num}
+        r.tableaux.append({"titre": f"Valeurs prédites par « {first_cat} » ({what}, autres facteurs à leur moyenne) : "
                                     "indice standardisé",
                            "colonnes": [first_cat, "Prédiction", "IC 95 %", "n"], "lignes": rows})
     # --- interprétation
     sig_terms = [t[0] for t in term_rows if t[4] == "oui"]
-    r.interpretation = [f"Le modèle explique {expl:.0%} de la déviance de « {yname} » (part de la variabilité prise en compte)."]
-    if sig_terms:
-        r.interpretation.append("Facteurs ayant un effet significatif : " + ", ".join(f"« {t} »" for t in sig_terms) + ".")
-    else:
-        r.interpretation.append("Aucun facteur n'a d'effet statistiquement significatif.")
+    r.interpretation = [f"{glm.FAMILIES[fam]} ajusté sur {fr(n)} observations : il explique {pc(expl, 0)} de la déviance "
+                        f"de « {yname} » (part de la variabilité prise en compte par les facteurs)."]
+    for t in term_rows:
+        r.interpretation.append(f"Effet de « {t[0]} » ({t[1]} ddl) : {t[2]}, p {t[3] if t[3].startswith('<') else '= ' + t[3]}"
+                                f" : {'effet significatif' if t[4] == 'oui' else 'pas d’effet mis en évidence'}.")
+    if not sig_terms:
+        r.interpretation.append("Aucun facteur n'a d'effet statistiquement significatif : les écarts observés entre "
+                                "modalités restent compatibles avec le hasard.")
+    ix = r.fd.get("index")
+    if ix and len(ix["rows"]) >= 2:
+        hi_ = max(ix["rows"], key=lambda t: t[1])
+        lo_ = min(ix["rows"], key=lambda t: t[1])
+        if lo_[1] > 0:
+            r.interpretation.append(
+                f"Valeurs prédites par « {ix['factor']} » : la plus élevée pour « {hi_[0]} » ({fr(hi_[1])}), la plus faible "
+                f"pour « {lo_[0]} » ({fr(lo_[1])}), soit un rapport de {fr(hi_[1] / lo_[1], 2)}"
+                + ("." if ix["factor"] in sig_terms else " ; cet écart n'est pas significatif."))
     unit = (f"« {yname} » par unité de « {offset_name} »" if offset_name else f"« {yname} »")
     for nm, b, pv in list(zip(names[1:], beta[1:], pvals[1:])):
         if pv >= ALPHA or abs(b) > 50:
@@ -932,6 +1112,8 @@ def glm_analysis(data: dict, yname: str, xnames: list[str], cat: set[str], offse
     r.graph = {"type": "residus", "x": np.log(mu[idx]).tolist() if fam != "logistique" else mu[idx].tolist(),
                "y": rq[idx].tolist(), "xname": "Valeurs prédites" + (" (échelle log)" if fam != "logistique" else ""),
                "yname": "Résidus quantiles"}
+    r.fd.update({"kind": "glm", "fitted": np.log(mu) if fam != "logistique" else mu, "rq": rq, "y": yname,
+                 "log": fam != "logistique", "family": fam, "offset": offset_name, "disp": m["disp"]})
     r.limites = ["Un effet dans un modèle n'est pas une preuve de causalité.",
                  "Les lignes d'un même navire ou d'une même marée ne sont pas indépendantes : un modèle mixte (effet navire) "
                  "serait plus rigoureux ; à défaut, interprétez les p-values avec prudence.",

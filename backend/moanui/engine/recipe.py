@@ -650,6 +650,149 @@ def compile_step(s: dict, prev: str, schema: Schema) -> str:
     return d.compile(prev, s.get("params") or {}, schema)
 
 
+# --------------------------------------------------------------------------- transformations de colonnes
+
+TRANSFORMS = {
+    "majuscules": ("mettre en majuscules", "texte"),
+    "minuscules": ("mettre en minuscules", "texte"),
+    "espaces": ("supprimer les espaces en trop (début, fin, doubles)", "texte"),
+    "arrondir": ("arrondir", "nombre"),
+    "abs": ("prendre la valeur absolue", "nombre"),
+    "ln": ("prendre le logarithme népérien (valeurs ≤ 0 laissées vides)", "nombre"),
+    "log1p": ("prendre log(1 + x) (adapté aux données avec des zéros)", "nombre"),
+    "log10": ("prendre le logarithme décimal (valeurs ≤ 0 laissées vides)", "nombre"),
+    "racine": ("prendre la racine carrée (valeurs négatives laissées vides)", "nombre"),
+    "classes_egales": ("découper en classes de même largeur", "nombre"),
+    "classes_quantiles": ("découper en classes de même effectif (quantiles)", "nombre"),
+}
+
+
+def _transform_expr(op: str, col: str, t: str, p: dict, prev: str) -> str:
+    c = ident(col)
+    kind = TRANSFORMS[op][1]
+    if kind == "nombre" and not is_numeric_type(t):
+        raise RecipeError(f"« {col} » n'est pas numérique : changez d'abord son type.")
+    txt = f"CAST({c} AS VARCHAR)"
+    if op == "majuscules":
+        return f"upper({txt})"
+    if op == "minuscules":
+        return f"lower({txt})"
+    if op == "espaces":
+        return f"nullif(trim(regexp_replace({txt}, '\\s+', ' ', 'g')), '')"
+    if op == "arrondir":
+        d = int(p.get("digits", 0))
+        if not -6 <= d <= 10:
+            raise RecipeError("Nombre de décimales entre -6 et 10.")
+        return f"round({c}, {d})"
+    if op == "abs":
+        return f"abs({c})"
+    if op == "ln":
+        return f"CASE WHEN {c} > 0 THEN ln({c}) END"
+    if op == "log10":
+        return f"CASE WHEN {c} > 0 THEN log10({c}) END"
+    if op == "log1p":
+        return f"CASE WHEN {c} > -1 THEN ln(1 + {c}) END"
+    if op == "racine":
+        return f"CASE WHEN {c} >= 0 THEN sqrt({c}) END"
+    k = int(p.get("k", 4))
+    if not 2 <= k <= 50:
+        raise RecipeError("Nombre de classes entre 2 et 50.")
+    if op == "classes_egales":
+        lo, hi = f"(SELECT min({c}) FROM {prev})", f"(SELECT max({c}) FROM {prev})"
+        w = f"(({hi} - {lo}) / {k})"
+        i = f"least(CAST(floor(({c} - {lo}) / nullif({w}, 0)) AS INTEGER), {k - 1})"
+        a, b = f"({lo} + {i} * {w})", f"({lo} + ({i} + 1) * {w})"
+        return (f"CASE WHEN {c} IS NOT NULL THEN '[' || CAST(round({a}, 2) AS VARCHAR) || ' ; ' || "
+                f"CAST(round({b}, 2) AS VARCHAR) || CASE WHEN {i} = {k - 1} THEN ']' ELSE '[' END END")
+    # quantiles : classe numérotée Q1..Qk, avec ses bornes observées
+    q = f"ntile({k}) OVER (ORDER BY {c})"
+    return q
+
+
+@step("transform", "Transformer des colonnes")
+def _transform(prev, p, schema):
+    op = p.get("op")
+    if op not in TRANSFORMS:
+        raise RecipeError("Choisissez une transformation.")
+    cols = p.get("columns") or ([p["column"]] if p.get("column") else [])
+    if not cols:
+        raise RecipeError("Choisissez au moins une colonne.")
+    suffix = (p.get("suffix") or "").strip()
+    reps, adds = [], []
+    for col in cols:
+        t = _need(schema, col)
+        if col == ROW_ID:
+            raise RecipeError("Le numéro de ligne d'origine ne peut pas être transformé.")
+        e = _transform_expr(op, col, t, p, prev)
+        if suffix:
+            name = _need_new_name(col + suffix)
+            if name in schema:
+                raise RecipeError(f"La colonne « {name} » existe déjà.")
+            adds.append((name, e))
+        else:
+            reps.append((col, e))
+    if op == "classes_quantiles":
+        # ntile n'ignore pas les vides : on les remet à vide, et on étiquette la classe par ses bornes
+        k = int(p.get("k", 4))
+        inner_cols = [(n, col) for (n, _), col in zip(adds or reps, cols)]
+        sel = ", ".join(f"CASE WHEN {ident(col)} IS NOT NULL THEN ntile({k}) OVER (PARTITION BY {ident(col)} IS NULL "
+                        f"ORDER BY {ident(col)}) END AS {ident('__q_' + col)}" for _, col in inner_cols)
+        base = f"(SELECT *, {sel} FROM {prev})"
+        lab = []
+        for n, col in inner_cols:
+            qc = ident("__q_" + col)
+            lab.append((n, f"CASE WHEN {qc} IS NOT NULL THEN 'Q' || {qc} || ' [' || CAST(min({ident(col)}) OVER (PARTITION BY {qc}) AS VARCHAR) "
+                           f"|| ' ; ' || CAST(max({ident(col)}) OVER (PARTITION BY {qc}) AS VARCHAR) || ']' END"))
+        drop = ", ".join(ident("__q_" + col) for _, col in inner_cols)
+        if suffix:
+            extra = ", ".join(f"{e} AS {ident(n)}" for n, e in lab)
+            return f"SELECT * EXCLUDE ({drop}), {extra} FROM {base} ORDER BY {ident(ROW_ID) if ROW_ID in schema else '1'}"
+        rep = ", ".join(f"{e} AS {ident(n)}" for n, e in lab)
+        return f"SELECT * EXCLUDE ({drop}) REPLACE ({rep}) FROM {base} ORDER BY {ident(ROW_ID) if ROW_ID in schema else '1'}"
+    sql = f"SELECT *"
+    if reps:
+        sql += f" REPLACE ({', '.join(f'{e} AS {ident(n)}' for n, e in reps)})"
+    if adds:
+        sql += ", " + ", ".join(f"{e} AS {ident(n)}" for n, e in adds)
+    return sql + f" FROM {prev}"
+
+
+@_transform
+def _(p):
+    cols = p.get("columns") or ([p["column"]] if p.get("column") else [])
+    op = p.get("op")
+    what = TRANSFORMS.get(op, (op,))[0]
+    if op == "arrondir":
+        what += f" à {p.get('digits', 0)} décimale(s)"
+    if op in ("classes_egales", "classes_quantiles"):
+        what += f" ({p.get('k', 4)} classes)"
+    where = (f" ; résultat dans de nouvelles colonnes suffixées « {p['suffix']} »" if p.get("suffix")
+             else " (colonnes remplacées)")
+    return f"{what[0].upper()}{what[1:]} : {', '.join('« ' + c + ' »' for c in cols)}{where}."
+
+
+@step("coalesce", "Fusionner des colonnes (combler les vides)")
+def _coalesce(prev, p, schema):
+    cols = p.get("columns") or []
+    if len(cols) < 2:
+        raise RecipeError("Choisissez au moins deux colonnes, par ordre de priorité.")
+    types = [_need(schema, c) for c in cols]
+    same = len({is_numeric_type(t) for t in types}) == 1 and len({t.upper()[:4] for t in types}) == 1
+    parts = [ident(c) if same else f"CAST({ident(c)} AS VARCHAR)" for c in cols]
+    name = _need_new_name(p.get("name") or cols[0])
+    e = f"coalesce({', '.join(parts)})"
+    if name in schema:
+        return f"SELECT * REPLACE ({e} AS {ident(name)}) FROM {prev}"
+    return f"SELECT *, {e} AS {ident(name)} FROM {prev}"
+
+
+@_coalesce
+def _(p):
+    cols = p.get("columns") or []
+    return (f"Colonne « {p.get('name') or (cols[0] if cols else '')} » : première valeur non vide parmi "
+            f"{', '.join('« ' + c + ' »' for c in cols)} (par ordre de priorité).")
+
+
 # --------------------------------------------------------------------------- jointures et empilements
 # Ces étapes font appel à d'autres jeux de données : leur requête est fournie
 # par un « résolveur » (contexte d'exécution), qui applique aussi leurs recettes.

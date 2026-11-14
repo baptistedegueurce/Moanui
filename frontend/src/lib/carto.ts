@@ -1,5 +1,6 @@
 // Cartographie : modèle d'une carte, styles MapLibre, légende et export image.
 import type { Theme } from './types';
+import { fontOf } from './theme';
 
 export type Basemap = 'ign' | 'osm' | 'horsligne' | 'aucun';
 
@@ -249,7 +250,7 @@ export async function composeMapImage(map: any, spec: MapSpec, theme: Theme, opt
   canvas.height = (H + head + foot) * ratio;
   const ctx = canvas.getContext('2d')!;
   ctx.scale(ratio, ratio);
-  const font = theme.font || 'sans-serif';
+  const font = fontOf(theme);
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, W, H + head + foot);
   if (t.title) {

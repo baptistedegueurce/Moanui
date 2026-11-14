@@ -47,8 +47,12 @@ backend/moanui/
                      dataset_shares, journal, analyses, charts, + carto)
   security.py        scrypt, jetons de session
   themes.py themes/  chartes prédéfinies
-  methods.py         fiche méthode des jeux
-  stats.py           statistiques guidées (scipy/numpy)
+  methods.py         fiche méthode des jeux (contenu)
+  fiche.py           modèle commun des fiches : Markdown + HTML imprimable + ZIP (figures SVG)
+  figures.py         figures SVG sans dépendance (boîtes, nuage, QQ, barres avec IC, barres empilées…)
+  biblio.py          références bibliographiques (source unique : fiches + guide via /api/meta « biblio »)
+  stats.py           statistiques guidées (scipy/numpy) + fiche méthode statistique (method_fiche)
+  glm.py             GLM (IRLS)
   engine/
     store.py         import CSV/XLSX → copie brute RO + Parquet typé (__ligne = n° de ligne d'origine)
     sql.py           identifiants, littéraux, RecipeError
@@ -61,8 +65,9 @@ backend/moanui/
   referentiels/*.json engins_fao, engins_coherents, engins_metiers (régénérés par outils/)
   api/               auth, admin, datasets, charts, analyses, (geo)
 frontend/src/
-  pages/             Home, Datasets, Dataset (grille + recette), Charts, Stats, Carto, Structure, Admin, Guide
-  components/        DataGrid (AG Grid infini), RecipePanel, StepForm, StepModal, ImportModal…
+  pages/             Home, Datasets, Dataset (grille + panneau de traitement), Charts, Stats, Carto, Structure, Admin, Guide
+  components/        DataGrid (AG Grid infini, en-têtes typés), TreatmentPanel (onglets Colonnes / Lignes / Créer /
+                     Regrouper / Pêche / Historique), RecipePanel (historique), StepForm, StepModal, ImportModal…
   lib/               api, types, chart (buildFigure Plotly), theme, format, auth
 packaging/           PyInstaller (moanui.spec, lanceur.py, icône, LISEZMOI)
 .github/workflows/   tests.yml (pytest + build front), windows.yml (exe + test de démarrage)
@@ -83,7 +88,7 @@ Principes clés :
 ## 4. Lancer / tester
 
 ```bash
-cd backend && uv sync --extra dev && uv run pytest -q      # tests (28)
+cd backend && uv sync --extra dev && uv run pytest -q      # tests (31)
 cd frontend && npm ci && npm run build                      # compile vers backend/moanui/static
 cd backend && uv run moanui --home ../.moanui-dev           # http://127.0.0.1:8765
 cd frontend && npm run dev                                  # dev avec proxy /api → 8765
@@ -126,6 +131,30 @@ cd frontend && npm run dev                                  # dev avec proxy /ap
   Bilan avant validation (`pipeline.catch_split_report`) : part attribuée par niveau, captures sans
   position. Formulaire `CatchSplitForm` avec propositions de colonnes SACROIS.
 
+- **Ergonomie du traitement (nov. 2026)** : juste milieu avec l'ancienne appli R. Panneau à droite du tableau,
+  onglets **Colonnes** (liste cochable avec type abc/123/date, renommer, type, transformer, recoder, remplir les
+  vides, fusionner, garder / supprimer), **Lignes** (filtre direct garder/supprimer, doublons, vides, tri),
+  **Créer** (formule, si/alors, fusion, dates, unités, référentiel, CIEM), **Regrouper** (agrégat, jointure,
+  empilement), **Pêche** (modèles SACROIS/VMS, engins, VMS, anonymiser), **Historique** (recette + « Annuler la
+  dernière opération »). Les opérations simples s'appliquent directement (notification avec « Annuler »), les
+  autres ouvrent le formulaire avec aperçu. Clic sur le nom d'une colonne dans l'en-tête = sélection, flèche = tri.
+  Nouvelles étapes `transform` (majuscules, minuscules, espaces, arrondir, abs, ln, log1p, log10, racine, classes
+  égales / quantiles ; en place ou avec suffixe) et `coalesce` (fusion de colonnes).
+- **Fiches méthode (nov. 2026)** : toutes construites avec `fiche.Fiche` (sections numérotées, tableaux et figures
+  numérotés, citations auteur-date, liste de références). Jeu : sources, traitements (tableau + figure lignes par
+  étape), méthodes employées selon les étapes (avec références), données obtenues (profil + figure des manques),
+  confidentialité, SQL lisible. Stats : question, méthode (texte par test + références), conditions (tableau),
+  résultats, figures (boîtes, barres empilées, nuage + droite, résidus + QQ, indice standardisé avec IC),
+  interprétation détaillée, limites. Graphique : SVG du graphique joint (Plotly toImage), encodage, calcul,
+  justification du choix (Cleveland & McGill…). Carte : PNG composé joint, couches et sources/licences, projection,
+  méthodes (classes, VMS, secret). Routes `…/method.md|html|zip` ; l'export de données joint MD + HTML + figures.
+  Aucun émoji dans les sorties (testé).
+- **Visuel (nov. 2026)** : police IBM Plex Sans/Mono embarquée (@fontsource, hors ligne ; les chartes « Inter »
+  basculent dessus), en-tête blanc, barre latérale sobre (repère d'onglet actif), rayons 4 px, boutons « default »,
+  accueil utile (derniers jeux, graphiques, analyses, cartes via `/api/recent`), guide en document avec sommaire
+  et références, page Statistiques sans cartes « marketing », nombres du tableau au format français sans perte de
+  précision, notifications en bas à droite. Tirets cadratins et émojis retirés des textes.
+
 ## 6. En cours / à faire (ordre proposé)
 
 1. Carto suite : bande des 3 milles (licence OFB/CNSP à vérifier), étiquettes (polices embarquées),
@@ -166,3 +195,5 @@ vraies listes de corrections d'engins, retours de test de l'exécutable sur un p
 - 2026-11 : référentiel engins FAO + engins cohérents (26 espèces) ; PROGRESS.md.
 - 2026-11 : cartographie + VMS (moteur, API, interface, étapes, couches de contexte, exe).
 - 2026-11 : croisement VMS × SACROIS (répartition des captures) ; GLM guidés.
+- 2026-11 : panneau de traitement par colonnes / lignes (inspiré de l'appli R), fiches méthode avec figures et
+  bibliographie, guide référencé, refonte visuelle (IBM Plex, accueil, navigation).

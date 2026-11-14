@@ -36,12 +36,13 @@ import {
   IconFocus2,
   IconLayersSubtract,
   IconPhoto,
+  IconFileText,
   IconPlus,
   IconTrash,
   IconUpload,
 } from '@tabler/icons-react';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { api, download, saveBlob } from '../lib/api';
+import { api, download, downloadPost, saveBlob } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import {
   AggParams,
@@ -328,6 +329,13 @@ export default function CartoPage() {
     if (!c.integree) fit(c.bbox);
   };
 
+  // ouverture d'une carte enregistrée (?map=…), depuis l'accueil
+  const mapParam = params.get('map');
+  useEffect(() => {
+    if (mapParam && saved.some((m) => m.id === mapParam) && current?.id !== mapParam && mapRef.current) openMap(mapParam);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapParam, saved, mapReady]);
+
   // ouverture depuis un jeu de données (?dataset=…)
   const dsParam = params.get('dataset');
   useEffect(() => {
@@ -370,6 +378,30 @@ export default function CartoPage() {
     }
   };
 
+  const exportMethod = async () => {
+    const map = mapRef.current;
+    let png: string | undefined;
+    try {
+      if (map) {
+        const masked = Object.fromEntries(spec.layers.map((l) => [l.uid, !!runtime[l.uid]?.masked]));
+        const blob = await composeMapImage(map, spec, theme, { logoUrl, masked, attribution: BASEMAPS.find((b) => b.value === spec.basemap)?.attribution || '' });
+        png = await new Promise<string>((ok_, ko) => {
+          const r = new FileReader();
+          r.onload = () => ok_(String(r.result));
+          r.onerror = ko;
+          r.readAsDataURL(blob);
+        });
+      }
+    } catch {
+      png = undefined; // fond en ligne non copiable : la fiche est produite sans l'image
+    }
+    try {
+      await downloadPost('/api/geo/maps/method.zip', { name: spec.template.title || current?.name || 'carte', spec, png }, 'carte_methode.zip');
+    } catch (e) {
+      fail(e);
+    }
+  };
+
   const visibleLegend = spec.layers.filter((l) => l.visible);
 
   return (
@@ -383,7 +415,7 @@ export default function CartoPage() {
           {canWrite && (
             <Menu>
               <Menu.Target>
-                <Button size="xs" variant="light" leftSection={<IconDeviceFloppy size={16} />} rightSection={<IconChevronDown size={14} />}>
+                <Button size="xs" variant="default" leftSection={<IconDeviceFloppy size={16} />} rightSection={<IconChevronDown size={14} />}>
                   Enregistrer
                 </Button>
               </Menu.Target>
@@ -398,6 +430,9 @@ export default function CartoPage() {
               </Menu.Dropdown>
             </Menu>
           )}
+          <Button size="xs" variant="default" leftSection={<IconFileText size={16} />} onClick={exportMethod} disabled={!mapReady}>
+            Fiche méthode
+          </Button>
           <Button size="xs" leftSection={<IconPhoto size={16} />} onClick={exportPng} disabled={!mapReady}>
             Exporter en image
           </Button>
@@ -672,7 +707,7 @@ function LayerEditor({ layer: l, rt, catalog, datasets, palette, seq, onLayer, o
       {l.kind === 'agregat' && l.datasetId && (
         <Menu>
           <Menu.Target>
-            <Button size="compact-xs" variant="light" leftSection={<IconDownload size={14} />}>
+            <Button size="compact-xs" variant="default" leftSection={<IconDownload size={14} />}>
               Exporter les mailles
             </Button>
           </Menu.Target>
@@ -809,7 +844,7 @@ function AddDataModal({ opened, onClose, datasets, initial, onAdd }: { opened: b
   const valid = !!did && (mode === 'ciem' ? !!agg.rect_column : !!(lon && lat)) && (!['somme', 'moyenne', 'max'].includes(agg.agg) || !!agg.value);
 
   const add = () => {
-    const title = `${ds?.name || 'Jeu'} — ${mode === 'points' ? 'positions' : mode === 'grille' ? 'carroyage' : 'rectangles CIEM'}`;
+    const title = `${ds?.name || 'Jeu'} : ${mode === 'points' ? 'positions' : mode === 'grille' ? 'carroyage' : 'rectangles CIEM'}`;
     const base = { uid: uid(), title, visible: true, datasetId: did!, lon: lon || undefined, lat: lat || undefined };
     if (mode === 'points') onAdd({ ...base, kind: 'points', geom: 'point', style: { ...styleFor('point', palette[0]), radius: 3 } });
     else onAdd({ ...base, kind: 'agregat', geom: 'polygone', agg: { ...agg, mode }, style: { ...styleFor('polygone', palette[0]), fill: 0.75, width: 0.5 } });

@@ -64,16 +64,16 @@ export default function ColumnDrawer({ datasetId, column, columns, canWrite, onC
                 Actions sur toute la colonne (ajoutées à la recette, réversibles) :
               </Text>
               <Group gap={6}>
-                <Button size="xs" variant="light" leftSection={<IconTransform size={14} />} onClick={() => go({ type: 'cast', params: { column } })}>
+                <Button size="xs" variant="default" leftSection={<IconTransform size={14} />} onClick={() => go({ type: 'cast', params: { column } })}>
                   Changer le type
                 </Button>
-                <Button size="xs" variant="light" leftSection={<IconPencil size={14} />} onClick={() => go({ type: 'rename', params: { mapping: { [column!]: '' } } })}>
+                <Button size="xs" variant="default" leftSection={<IconPencil size={14} />} onClick={() => go({ type: 'rename', params: { mapping: { [column!]: '' } } })}>
                   Renommer
                 </Button>
-                <Button size="xs" variant="light" leftSection={<IconSparkles size={14} />} onClick={() => go({ type: 'clean_text', params: { columns: [column], trim: true, empty_to_null: true, case: 'none' } })}>
+                <Button size="xs" variant="default" leftSection={<IconSparkles size={14} />} onClick={() => go({ type: 'clean_text', params: { columns: [column], trim: true, empty_to_null: true, case: 'none' } })}>
                   Nettoyer
                 </Button>
-                <Button size="xs" variant="light" color="red" leftSection={<IconTrash size={14} />} onClick={() => go({ type: 'drop_columns', params: { columns: [column] } })}>
+                <Button size="xs" variant="default" color="red" leftSection={<IconTrash size={14} />} onClick={() => go({ type: 'drop_columns', params: { columns: [column] } })}>
                   Supprimer
                 </Button>
               </Group>
@@ -109,7 +109,7 @@ export default function ColumnDrawer({ datasetId, column, columns, canWrite, onC
               <Button size="xs" color="orange" leftSection={<IconFilterOff size={14} />} onClick={() => go({ type: 'filter', params: { keep: false, logic: 'and', conditions: [{ column, op: 'in', values: sel }] } })}>
                 Exclure
               </Button>
-              <Button size="xs" variant="light" leftSection={<IconReplace size={14} />} onClick={() => go({ type: 'replace_values', params: { column, pairs: sel.map((s) => ({ from: s, to: '' })) } })}>
+              <Button size="xs" variant="default" leftSection={<IconReplace size={14} />} onClick={() => go({ type: 'replace_values', params: { column, pairs: sel.map((s) => ({ from: s, to: '' })) } })}>
                 Remplacer…
               </Button>
             </Group>

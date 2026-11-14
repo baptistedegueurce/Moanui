@@ -1,5 +1,5 @@
-import { ActionIcon, Badge, Button, Group, Menu, Stack, Switch, Text, Tooltip, ScrollArea } from '@mantine/core';
-import { IconPlus, IconTrash, IconPencil, IconArrowUp, IconArrowDown, IconEye } from '@tabler/icons-react';
+import { ActionIcon, Badge, Group, Stack, Switch, Text, Tooltip } from '@mantine/core';
+import { IconTrash, IconPencil, IconArrowUp, IconArrowDown, IconEye } from '@tabler/icons-react';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { fmtDate, fmtNumber } from '../lib/format';
@@ -7,19 +7,8 @@ import { fail } from '../lib/notify';
 import type { Step } from '../lib/types';
 import type { StepDraft } from './StepModal';
 
-const GROUPS: { label: string; types: string[] }[] = [
-  { label: 'Lignes', types: ['filter', 'sort', 'dedupe'] },
-  { label: 'Colonnes', types: ['select_columns', 'drop_columns', 'rename', 'cast'] },
-  { label: 'Corriger', types: ['replace_values', 'clean_text', 'fill_null'] },
-  { label: 'Calculer', types: ['formula', 'case_when', 'date_parts', 'aggregate'] },
-  { label: 'Combiner', types: ['join', 'union'] },
-  { label: 'Halieutique', types: ['lookup', 'unit_convert', 'gear_check'] },
-  { label: 'Géographie / VMS', types: ['vms_activity', 'ciem_rect', 'zone_tag', 'vms_catch_split'] },
-  { label: 'Protéger', types: ['anonymize'] },
-];
-
-export default function RecipePanel({ datasetId, steps, canWrite, onAdd, onChanged, viewUpto, setViewUpto, onTemplate }: {
-  onTemplate: (id: string) => void;
+/** Historique des opérations (recette) : chaque étape peut être vue, désactivée, modifiée, déplacée ou supprimée. */
+export default function RecipePanel({ datasetId, steps, canWrite, onAdd, onChanged, viewUpto, setViewUpto }: {
   datasetId: string;
   steps: Step[];
   canWrite: boolean;
@@ -51,39 +40,7 @@ export default function RecipePanel({ datasetId, steps, canWrite, onAdd, onChang
   };
 
   return (
-    <Stack gap="xs" h="100%">
-      <Group justify="space-between">
-        <Text fw={700}>Recette</Text>
-        {canWrite && (
-          <Menu position="bottom-end" width={260} withinPortal>
-            <Menu.Target>
-              <Button size="xs" leftSection={<IconPlus size={14} />}>
-                Ajouter une étape
-              </Button>
-            </Menu.Target>
-            <Menu.Dropdown>
-              <Menu.Label>Modèles de traitement</Menu.Label>
-              {Object.entries(meta?.templates || {}).map(([k, t]) => (
-                <Menu.Item key={k} fw={600} onClick={() => onTemplate(k)}>
-                  {t.nom}…
-                </Menu.Item>
-              ))}
-              <Menu.Divider />
-              {GROUPS.map((g) => (
-                <div key={g.label}>
-                  <Menu.Label>{g.label}</Menu.Label>
-                  {g.types.map((t) => (
-                    <Menu.Item key={t} onClick={() => onAdd({ type: t })}>
-                      {label(t)}
-                    </Menu.Item>
-                  ))}
-                </div>
-              ))}
-            </Menu.Dropdown>
-          </Menu>
-        )}
-      </Group>
-      <ScrollArea style={{ flex: 1 }} offsetScrollbars>
+    <Stack gap="xs">
         <Stack gap={6}>
           {steps.map((s) => {
             const active = viewUpto !== null ? s.index === viewUpto : false;
@@ -95,7 +52,7 @@ export default function RecipePanel({ datasetId, steps, canWrite, onAdd, onChang
                       {s.index}
                     </Badge>
                     <Text size="xs" fw={600}>
-                      {s.id ? label(s.type || '') : 'Fichier brut (intact)'}
+                      {s.id ? label(s.type || '') : 'Fichier d’origine (intact)'}
                     </Text>
                   </Group>
                   {s.n_rows !== undefined && (
@@ -175,11 +132,10 @@ export default function RecipePanel({ datasetId, steps, canWrite, onAdd, onChang
           })}
           {real.length === 0 && (
             <Text size="xs" c="dimmed">
-              Aucune étape : la donnée est telle qu’importée. Cliquez sur un en-tête de colonne ou sur « Ajouter une étape ».
+              Aucune opération : la donnée est telle qu’importée.
             </Text>
           )}
         </Stack>
-      </ScrollArea>
     </Stack>
   );
 }

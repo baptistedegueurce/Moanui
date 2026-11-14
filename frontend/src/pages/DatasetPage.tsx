@@ -39,16 +39,15 @@ import {
   IconMathFunction,
   IconMap2,
 } from '@tabler/icons-react';
-import { api, download, saveText } from '../lib/api';
+import { api, download } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { fmtDate, fmtNumber, fmtSize, typeLabel } from '../lib/format';
 import { fail, ok } from '../lib/notify';
 import type { Dataset, Warning } from '../lib/types';
 import DataGrid, { GridHandle, PendingEdit } from '../components/DataGrid';
-import RecipePanel from '../components/RecipePanel';
+import TreatmentPanel, { TreatTab } from '../components/TreatmentPanel';
 import StepModal, { StepDraft } from '../components/StepModal';
 import ColumnDrawer from '../components/ColumnDrawer';
-import Markdown from '../components/Markdown';
 import TemplateModal from '../components/TemplateModal';
 
 const LEVEL_COLOR: Record<string, string> = { info: 'blue', attention: 'orange', alerte: 'red' };
@@ -235,6 +234,8 @@ export default function DatasetPage() {
   const [notes, setNotes] = useState('');
   const [viewUpto, setViewUpto] = useState<number | null>(null);
   const [viewCols, setViewCols] = useState<Dataset['schema'] | null>(null);
+  const [treatTab, setTreatTab] = useState<TreatTab>('colonnes');
+  const [selected, setSelected] = useState<string[]>([]);
   const grid = useRef<GridHandle>(null);
 
   const load = useCallback(async () => {
@@ -267,7 +268,7 @@ export default function DatasetPage() {
       .catch(fail);
   }, [viewUpto, id]);
   useEffect(() => {
-    if (tab === 'methode' && id) api.get<string>(`/api/datasets/${id}/method.md`).then(setMethod).catch(fail);
+    if (tab === 'methode' && id) api.get<string>(`/api/datasets/${id}/method.html`).then(setMethod).catch(fail);
   }, [tab, id, ds]);
 
   if (!ds)
@@ -314,13 +315,13 @@ export default function DatasetPage() {
           </Text>
         </div>
         <Group gap="xs" wrap="nowrap">
-          <Button variant="light" leftSection={<IconChartBar size={16} />} onClick={() => nav(`/graphiques?dataset=${ds.id}`)}>
+          <Button variant="default" leftSection={<IconChartBar size={16} />} onClick={() => nav(`/graphiques?dataset=${ds.id}`)}>
             Graphique
           </Button>
-          <Button variant="light" leftSection={<IconMathFunction size={16} />} onClick={() => nav(`/statistiques?dataset=${ds.id}`)}>
+          <Button variant="default" leftSection={<IconMathFunction size={16} />} onClick={() => nav(`/statistiques?dataset=${ds.id}`)}>
             Statistiques
           </Button>
-          <Button variant="light" leftSection={<IconMap2 size={16} />} onClick={() => nav(`/cartographie?dataset=${ds.id}`)}>
+          <Button variant="default" leftSection={<IconMap2 size={16} />} onClick={() => nav(`/cartographie?dataset=${ds.id}`)}>
             Carte
           </Button>
           <Button leftSection={<IconDownload size={16} />} onClick={() => setExportOpen(true)}>
@@ -333,7 +334,7 @@ export default function DatasetPage() {
               </Button>
             </Menu.Target>
             <Menu.Dropdown>
-              <Menu.Item leftSection={<IconFileText size={16} />} onClick={() => api.get<string>(`/api/datasets/${ds.id}/method.md`).then((t) => saveText(t, `${ds.name}_methode.md`)).catch(fail)}>
+              <Menu.Item leftSection={<IconFileText size={16} />} onClick={() => download(`/api/datasets/${ds.id}/method.zip`).catch(fail)}>
                 Télécharger la fiche méthode
               </Menu.Item>
               <Menu.Item leftSection={<IconCopy size={16} />} onClick={() => api.post(`/api/datasets/${ds.id}/duplicate`).then((r) => nav(`/donnees/${r.id}`)).catch(fail)}>
@@ -402,7 +403,7 @@ export default function DatasetPage() {
                     </Badge>
                   )}
                   {fmtNumber(total)} lignes · {ds.schema.filter((c) => !c.name.startsWith('__')).length} colonnes
-                  {canWrite && ' · double-clic sur une cellule pour corriger'}
+                  {canWrite && ' · double-clic pour corriger une cellule'}
                 </Text>
               </Group>
               {pending.length > 0 && (
@@ -440,15 +441,36 @@ export default function DatasetPage() {
                   editable={canWrite && viewUpto === null}
                   pending={pending}
                   onEdit={(e) => setPending((p) => [...p.filter((x) => !(x.row === e.row && x.column === e.column)), e])}
-                  onHeaderClick={setColOpen}
+                  onHeaderClick={(c) => {
+                    setTreatTab('colonnes');
+                    setSelected(selected.includes(c) ? selected.filter((x) => x !== c) : [...selected, c]);
+                  }}
+                  selected={selected}
                   onTotal={setTotal}
                   upto={viewUpto}
                 />
                 )}
               </div>
             </Stack>
-            <Paper withBorder p="sm" w={340} style={{ flexShrink: 0, background: 'var(--mo-bg)' }}>
-              <RecipePanel datasetId={ds.id} steps={ds.steps} canWrite={canWrite} onAdd={setDraft} onChanged={changed} viewUpto={viewUpto} setViewUpto={setViewUpto} onTemplate={setTemplate} />
+            <Paper withBorder w={372} style={{ flexShrink: 0, overflow: 'hidden' }}>
+              <TreatmentPanel
+                datasetId={ds.id}
+                columns={ds.schema}
+                steps={ds.steps}
+                canWrite={canWrite}
+                tab={treatTab}
+                setTab={setTreatTab}
+                selected={selected}
+                setSelected={setSelected}
+                onAdd={setDraft}
+                onChanged={changed}
+                onValues={setColOpen}
+                viewUpto={viewUpto}
+                setViewUpto={(n) => {
+                  setViewUpto(n);
+                }}
+                onTemplate={setTemplate}
+              />
             </Paper>
           </div>
         </Tabs.Panel>
@@ -496,10 +518,10 @@ export default function DatasetPage() {
           </Stack>
         </Tabs.Panel>
 
-        <Tabs.Panel value="methode" pt="sm" style={{ overflow: 'auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 360px', gap: 16 }}>
-            <Paper withBorder p="md">
-              <Markdown text={method} />
+        <Tabs.Panel value="methode" pt="sm" style={{ flex: 1, minHeight: 0 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 340px', gap: 16, height: '100%' }}>
+            <Paper withBorder style={{ overflow: 'hidden', minHeight: 500 }}>
+              <iframe title="Fiche méthode" className="mo-fiche-frame" srcDoc={method} sandbox="allow-same-origin" />
             </Paper>
             <Stack>
               <Textarea
@@ -516,9 +538,12 @@ export default function DatasetPage() {
                   Enregistrer les notes
                 </Button>
               )}
-              <Button variant="light" leftSection={<IconFileText size={16} />} onClick={() => saveText(method, `${ds.name}_methode.md`)}>
-                Télécharger la fiche (.md)
+              <Button variant="default" leftSection={<IconFileText size={16} />} onClick={() => download(`/api/datasets/${ds.id}/method.zip`).catch(fail)}>
+                Télécharger la fiche (zip)
               </Button>
+              <Text size="xs" c="dimmed">
+                Le zip contient la fiche en HTML (à ouvrir dans un navigateur, imprimable en PDF), en Markdown (modifiable) et les figures en SVG.
+              </Text>
             </Stack>
           </div>
         </Tabs.Panel>

@@ -166,7 +166,7 @@ coh = {
  "sources": [
    "FAO CWP (2016). Handbook of Fishery Statistical Standards, Annex M : International Standard Classification of Fishing Gears (ISSCFG Rev.1).",
    "He P., Chopin F., Suuronen P., Ferro R.S.T., Lansley J. (2021). Classification and illustrated definition of fishing gears. FAO Fisheries and Aquaculture Technical Paper 672.",
-   "Commission européenne — DCF / EU-MAP : codification des métiers (niveaux 4 à 6), liste de référence des RCG.",
+   "Commission européenne, DCF / EU-MAP : codification des métiers (niveaux 4 à 6), liste de référence des RCG.",
    "Ifremer, Système d'Informations Halieutiques : synthèses annuelles des flottilles de pêche et activité des navires par façade.",
    "CIEM (ICES) : rapports WGBIE et WGCSE (sole, merlu, cardines, baudroies, langoustine, raies), WGBASS / WGCSE (bar), WGWIDE (maquereau).",
    "Quéro J.-C., Vayne J.-J. (1997). Les poissons de mer des pêches françaises. Delachaux et Niestlé.",

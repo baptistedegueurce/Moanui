@@ -62,7 +62,7 @@ export default function App() {
 
   return (
     <MantineProvider theme={mtheme}>
-      <Notifications position="top-right" />
+      <Notifications position="bottom-right" limit={4} />
       <div style={{ ...cssVars(theme), height: '100%' } as React.CSSProperties}>{content}</div>
     </MantineProvider>
   );

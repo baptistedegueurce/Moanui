@@ -1,5 +1,6 @@
 // Construction des figures Plotly à partir d'une spécification simple + charte de la structure.
 import type { Theme } from './types';
+import { fontOf } from './theme';
 
 export type ChartType =
   | 'barres'
@@ -322,7 +323,7 @@ export function buildFigure(s: ChartSpec, d: Data, theme: Theme, opts: { logoUrl
     height: t.height,
     paper_bgcolor: theme.chart.background,
     plot_bgcolor: theme.chart.background,
-    font: { family: theme.font, color: ink, size: 13 },
+    font: { family: fontOf(theme), color: ink, size: 13 },
     margin: { l: 72, r: s.measures.some((m) => m.axis === 'y2') ? 72 : 32, t: top, b: bottom },
     title: {
       text: `<b>${esc(t.title || '')}</b>${t.subtitle ? `<br><span style="font-size:13px;color:${muted}">${esc(t.subtitle)}</span>` : ''}`,

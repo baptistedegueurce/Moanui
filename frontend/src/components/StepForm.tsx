@@ -54,7 +54,7 @@ function Rows<T>({ items, onChange, render, empty, addLabel }: {
           </ActionIcon>
         </Group>
       ))}
-      <Button size="xs" variant="light" leftSection={<IconPlus size={14} />} onClick={() => onChange([...items, empty])} w="fit-content">
+      <Button size="xs" variant="default" leftSection={<IconPlus size={14} />} onClick={() => onChange([...items, empty])} w="fit-content">
         {addLabel}
       </Button>
     </Stack>
@@ -327,7 +327,7 @@ function CaseWhenForm({ params, set, columns, datasetId }: FormProps) {
           />
         </Paper>
       ))}
-      <Button size="xs" variant="light" leftSection={<IconPlus size={14} />} onClick={() => set({ ...params, rules: [...rules, { conditions: [{ column: '', op: 'eq', value: '' }], value: '' }] })} w="fit-content">
+      <Button size="xs" variant="default" leftSection={<IconPlus size={14} />} onClick={() => set({ ...params, rules: [...rules, { conditions: [{ column: '', op: 'eq', value: '' }], value: '' }] })} w="fit-content">
         Ajouter une règle
       </Button>
       <TextInput label="Sinon (valeur par défaut, vide possible)" value={params.default ?? ''} onChange={(e) => set({ ...params, default: e.currentTarget.value === '' ? null : e.currentTarget.value })} />
@@ -732,7 +732,7 @@ function GearCheckForm({ params, set, columns, datasetId }: FormProps) {
               <Tooltip
                 multiline
                 w={320}
-                label={ref[sp] ? `${ref[sp].nom} (${ref[sp].nom_latin}) — engins ciblants : ${(ref[sp].principaux || []).join(', ')}${ref[sp].note ? '. ' + ref[sp].note : ''}` : 'Espèce ajoutée à la main'}
+                label={ref[sp] ? `${ref[sp].nom} (${ref[sp].nom_latin}). Engins ciblants : ${(ref[sp].principaux || []).join(', ')}${ref[sp].note ? '. ' + ref[sp].note : ''}` : 'Espèce ajoutée à la main'}
               >
                 <Text size="xs" w={150} truncate>
                   <b>{sp}</b> {ref[sp]?.nom || ''}
@@ -772,7 +772,7 @@ function GearCheckForm({ params, set, columns, datasetId }: FormProps) {
             Corrections connues ({corrections.length})
           </Text>
           <Group gap={4}>
-            <Button size="xs" variant="light" loading={loading} disabled={!params.species_column || !params.gear_column} onClick={load}>
+            <Button size="xs" variant="default" loading={loading} disabled={!params.species_column || !params.gear_column} onClick={load}>
               Charger les incohérences du jeu
             </Button>
             <Button
@@ -993,7 +993,7 @@ function CatchSplitForm({ params, set, columns, datasetId }: FormProps) {
   return (
     <Stack>
       <Text size="xs" c="dimmed">
-        Répartit les captures déclarées (SACROIS, journal de bord) d'un navire et d'un jour entre ses positions de pêche du même jour — et du même rectangle CIEM si
+        Répartit les captures déclarées (SACROIS, journal de bord) d'un navire et d'un jour entre ses positions de pêche du même jour, et du même rectangle CIEM si
         disponible. Méthode usuelle (VMStools, Hintzen et al. 2012). Résultat : une ligne par position et par espèce, prête pour la carte (somme par maille).
       </Text>
       <Select
@@ -1065,6 +1065,58 @@ function CatchSplitForm({ params, set, columns, datasetId }: FormProps) {
   );
 }
 
+function TransformForm({ params, set, columns }: FormProps) {
+  const { meta } = useAuth();
+  const ops = meta?.transforms || {};
+  const kind = ops[params.op]?.kind;
+  const cols = visible(columns).filter((c) => !kind || kind === 'texte' || isNumericType(c.type));
+  return (
+    <Stack>
+      <MultiSelect label="Colonnes" searchable data={cols.map((c) => c.name)} value={params.columns || []} onChange={(v) => set({ ...params, columns: v })} />
+      <Select
+        label="Transformation"
+        data={[
+          { group: 'Texte', items: Object.entries(ops).filter(([, o]) => o.kind === 'texte').map(([k, o]) => ({ value: k, label: o.label })) },
+          { group: 'Nombres', items: Object.entries(ops).filter(([, o]) => o.kind === 'nombre').map(([k, o]) => ({ value: k, label: o.label })) },
+        ]}
+        value={params.op || null}
+        onChange={(v) => set({ ...params, op: v })}
+      />
+      {params.op === 'arrondir' && <NumberInput label="Décimales" min={-6} max={10} value={params.digits ?? 0} onChange={(v) => set({ ...params, digits: Number(v) })} />}
+      {(params.op === 'classes_egales' || params.op === 'classes_quantiles') && (
+        <NumberInput label="Nombre de classes" min={2} max={50} value={params.k ?? 4} onChange={(v) => set({ ...params, k: Number(v) })} />
+      )}
+      <Switch
+        label="Garder la colonne d’origine (résultat dans une nouvelle colonne)"
+        checked={!!params.suffix}
+        onChange={(e) => set({ ...params, suffix: e.currentTarget.checked ? `_${params.op || 'transf'}` : '' })}
+      />
+      {params.suffix ? <TextInput label="Suffixe des nouvelles colonnes" value={params.suffix} onChange={(e) => set({ ...params, suffix: e.currentTarget.value })} /> : null}
+    </Stack>
+  );
+}
+
+function CoalesceForm({ params, set, columns }: FormProps) {
+  return (
+    <Stack>
+      <MultiSelect
+        label="Colonnes, par ordre de priorité"
+        description="Pour chaque ligne, la première valeur non vide est retenue (ex. engin déclaré, sinon engin du référentiel)."
+        searchable
+        data={colData(columns)}
+        value={params.columns || []}
+        onChange={(v) => set({ ...params, columns: v, name: params.name || v[0] || '' })}
+      />
+      <TextInput
+        label="Colonne résultat"
+        description="Le nom d’une colonne existante la remplace ; un nouveau nom crée une colonne."
+        value={params.name ?? ''}
+        onChange={(e) => set({ ...params, name: e.currentTarget.value })}
+      />
+    </Stack>
+  );
+}
+
 export default function StepForm(props: FormProps & { type: string }) {
   switch (props.type) {
     case 'filter':
@@ -1113,6 +1165,10 @@ export default function StepForm(props: FormProps & { type: string }) {
       return <VmsForm {...props} />;
     case 'zone_tag':
       return <ZoneForm {...props} />;
+    case 'transform':
+      return <TransformForm {...props} />;
+    case 'coalesce':
+      return <CoalesceForm {...props} />;
     case 'vms_catch_split':
       return <CatchSplitForm {...props} />;
     case 'edit_cells':
@@ -1143,5 +1199,7 @@ export const DEFAULT_PARAMS: Record<string, any> = {
   ciem_rect: { name: 'rectangle_ciem' },
   vms_activity: { preset: 'chalut_fond', min: 2, max: 5, max_gap_min: 120, speed_unit: 'noeud' },
   zone_tag: { name: 'zone' },
+  transform: { op: 'majuscules', digits: 0, k: 4, suffix: '' },
+  coalesce: {},
   vms_catch_split: { weight: 'egal', activity_value: 'pêche' },
 };

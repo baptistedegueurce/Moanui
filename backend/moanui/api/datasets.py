@@ -15,10 +15,12 @@ from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, Field
 
 from .. import methods
+from ..biblio import REFS
+from ..fiche import _short
 from ..db import Database, new_id, now
 from ..engine import halieutique, pipeline, sensitivity, store
 from ..engine.formula import function_help
-from ..engine.recipe import CAST_TYPES, JOIN_KINDS, OPS, describe_step, step_types
+from ..engine.recipe import CAST_TYPES, JOIN_KINDS, OPS, TRANSFORMS, describe_step, step_types
 from ..engine.sql import RecipeError, ident, string_lit
 from .deps import (
     User,
@@ -95,12 +97,14 @@ def meta(_: User = Depends(current_user)):
         "steps": step_types(),
         "operators": OPS,
         "cast_types": {k: v[1] for k, v in CAST_TYPES.items()},
+        "transforms": {k: {"label": v[0], "kind": v[1]} for k, v in TRANSFORMS.items()},
         "join_kinds": {k: v[1] for k, v in JOIN_KINDS.items()},
         "functions": function_help(),
         "units": {k: {u: halieutique.UNIT_LABELS[u] for u in v} for k, v in halieutique.UNITS.items()},
         "referentiels": {k: {"nom": r["nom"], "description": r["description"], "colonnes": r.get("colonnes", []),
                              "especes": r.get("especes")} for k, r in halieutique.referentiels().items()},
         "templates": {k: {"nom": t["nom"], "description": t["description"]} for k, t in halieutique.TEMPLATES.items()},
+        "biblio": {k: {"court": _short(v), "complet": v} for k, v in REFS.items()},
     }
 
 
@@ -594,23 +598,48 @@ def structures_directory(_: User = Depends(current_user), db: Database = Depends
 # --------------------------------------------------------------------------- fiches méthode et exports
 
 
-def _method_md(db, settings, user, ds, purpose=None) -> tuple[str, object]:
+def _method_md(db, settings, user, ds, purpose=None) -> tuple[object, object]:
+    """Fiche méthode du jeu (objet Fiche) et plan de la recette."""
     raw = raw_of(db, ds)
     structure = db.one("SELECT * FROM structures WHERE id = ?", (ds["structure_id"],))
     with Workspace(db, settings, user) as ws:
         plan = ws.plan(ds)
         pipeline.step_counts(ws.con, plan)
-    md = methods.dataset_method(ds, raw, structure, _users_map(db), plan, sensitivity.detect(list(plan.schema)),
-                                user.display_name, purpose)
-    return md, plan
+        prof = None
+        if not plan.error:
+            try:
+                prof = pipeline.profile(ws.con, plan)
+            except Exception:  # noqa: BLE001 - la fiche reste utile sans le profil
+                prof = None
+    fiche = methods.dataset_method(ds, raw, structure, _users_map(db), plan, sensitivity.detect(list(plan.schema)),
+                                   user.display_name, purpose, prof)
+    return fiche, plan
 
 
 @router.get("/datasets/{did}/method.md")
 def method_md(did: str, user: User = Depends(current_user), db: Database = Depends(get_db),
               settings=Depends(get_settings)):
     ds, _ = dataset_access(db, user, did)
-    md, _ = _method_md(db, settings, user, ds)
-    return Response(md, media_type="text/markdown; charset=utf-8")
+    fiche, _ = _method_md(db, settings, user, ds)
+    return Response(fiche.markdown(), media_type="text/markdown; charset=utf-8")
+
+
+@router.get("/datasets/{did}/method.html")
+def method_html(did: str, user: User = Depends(current_user), db: Database = Depends(get_db),
+                settings=Depends(get_settings)):
+    ds, _ = dataset_access(db, user, did)
+    fiche, _ = _method_md(db, settings, user, ds)
+    return Response(fiche.html(), media_type="text/html; charset=utf-8")
+
+
+@router.get("/datasets/{did}/method.zip")
+def method_zip(did: str, user: User = Depends(current_user), db: Database = Depends(get_db),
+               settings=Depends(get_settings)):
+    ds, _ = dataset_access(db, user, did)
+    fiche, _ = _method_md(db, settings, user, ds)
+    base = f"{_safe_filename(ds['name'])}_methode"
+    return Response(fiche.zip(base), media_type="application/zip",
+                    headers={"Content-Disposition": f'attachment; filename="{base}.zip"'})
 
 
 def _safe_filename(name: str) -> str:
@@ -625,7 +654,7 @@ def export(did: str, fmt: str = "csv", confirm_sensitive: bool = False, include_
     if fmt not in ("csv", "xlsx", "parquet"):
         raise HTTPException(400, "Format d'export inconnu (csv, xlsx ou parquet).")
     ds, _ = dataset_access(db, user, did)
-    md, plan = _method_md(db, settings, user, ds)
+    fiche, plan = _method_md(db, settings, user, ds)
     if plan.error:
         raise HTTPException(400, f"La recette contient une erreur (étape {plan.error['index']}) : corrigez-la avant "
                                  "d'exporter.")
@@ -671,7 +700,10 @@ def export(did: str, fmt: str = "csv", confirm_sensitive: bool = False, include_
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
             z.write(data_path, data_path.name)
-            z.writestr(f"{base}_methode.md", md)
+            z.writestr(f"{base}_methode.md", fiche.markdown())
+            z.writestr(f"{base}_methode.html", fiche.html())
+            for fname, svg in fiche.figures().items():
+                z.writestr(f"figures/{fname}.svg", svg)
         db.log("export", user_id=user.id, structure_id=ds["structure_id"], dataset_id=did, fmt=fmt,
                sensitive_confirmed=bool(exposed))
         buf.seek(0)
@@ -689,5 +721,5 @@ def integrity(did: str, user: User = Depends(current_user), db: Database = Depen
     ok = store.verify_integrity(settings.raw_dir, raw["sha256"])
     return {"ok": ok, "sha256": raw["sha256"],
             "message": "Le fichier brut est intact." if ok else
-            "⚠️ Le fichier brut a été modifié ou supprimé hors de Moanui."}
+            "Le fichier brut a été modifié ou supprimé hors de Moanui."}
 

@@ -25,7 +25,7 @@ import {
   Modal,
 } from '@mantine/core';
 import { IconPlus, IconTrash, IconPhoto, IconFileText, IconDeviceFloppy, IconTable, IconBulb, IconVectorBezier } from '@tabler/icons-react';
-import { api, saveText } from '../lib/api';
+import { api, downloadPost } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { buildFigure, CHART_TYPES, chartAdvice, ChartSpec, dataRequest, defaultSpec, measureLabel, RAW_TYPES } from '../lib/chart';
 import { fmtNumber, isNumericType } from '../lib/format';
@@ -67,8 +67,20 @@ export default function ChartsPage() {
   useEffect(() => {
     if (!dsId) return;
     api.get(`/api/datasets/${dsId}`).then((d) => setColumns(d.schema.filter((c: Column) => !c.name.startsWith('__')))).catch(fail);
-    api.get<Saved[]>(`/api/datasets/${dsId}/charts`).then(setSaved).catch(() => setSaved([]));
+    const want = params.get('chart');
+    api
+      .get<Saved[]>(`/api/datasets/${dsId}/charts`)
+      .then((l) => {
+        setSaved(l);
+        const s = want ? l.find((x) => x.id === want) : null;
+        if (s) {
+          setCurrent(s);
+          setSpec(s.spec);
+        }
+      })
+      .catch(() => setSaved([]));
     setCurrent(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dsId]);
 
   const set = (patch: Partial<ChartSpec>) => setSpec((s) => ({ ...s, ...patch }));
@@ -147,8 +159,15 @@ export default function ChartsPage() {
 
   const exportMethod = async () => {
     try {
-      const md = await api.post<string>(`/api/datasets/${dsId}/charts/method.md`, { name: spec.template.title || 'graphique', spec });
-      saveText(md, `${spec.template.title || 'graphique'}_methode.md`);
+      // le graphique tel qu'affiché est joint à la fiche (SVG vectoriel)
+      let svg: string | undefined;
+      const Plotly = await loadPlotly();
+      if (plotRef.current) {
+        const url: string = await Plotly.toImage(plotRef.current, { format: 'svg', width: spec.template.width, height: spec.template.height });
+        const i = url.indexOf(',');
+        svg = url.startsWith('data:image/svg+xml;base64,') ? atob(url.slice(i + 1)) : decodeURIComponent(url.slice(i + 1));
+      }
+      await downloadPost(`/api/datasets/${dsId}/charts/method.zip`, { name: spec.template.title || 'graphique', spec, svg }, 'graphique_methode.zip');
     } catch (e) {
       fail(e);
     }
@@ -286,7 +305,7 @@ export default function ChartsPage() {
                           </Paper>
                         ))}
                         {['barres', 'barres_h', 'lignes', 'aires', 'combine'].includes(spec.type) && (
-                          <Button size="xs" variant="light" leftSection={<IconPlus size={14} />} onClick={() => set({ measures: [...spec.measures, { agg: 'somme', axis: 'y', mark: 'lignes' }] })}>
+                          <Button size="xs" variant="default" leftSection={<IconPlus size={14} />} onClick={() => set({ measures: [...spec.measures, { agg: 'somme', axis: 'y', mark: 'lignes' }] })}>
                             Ajouter une mesure
                           </Button>
                         )}
