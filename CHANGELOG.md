@@ -6,7 +6,8 @@ publiée automatiquement ; au passage d'une version stable, elle est renommée `
 ## Non publié
 
 - **Publication automatique** : chaque modification produit une version téléchargeable dans
-  Releases (Moanui-windows.zip) avec ses notes de version ; le numéro de version s'affiche dans l'application.
+  Releases (Moanui-windows.zip) avec ses notes de version ; le numéro de version s'affiche dans l'application
+  (en bas de la barre latérale).
 - **Traitement des données** : panneau à onglets Colonnes, Lignes, Créer, Regrouper, Pêche et Historique ;
   opérations simples appliquées directement avec « Annuler » ; nouvelles opérations « Transformer des colonnes »
   et « Fusionner des colonnes ».

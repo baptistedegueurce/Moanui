@@ -32,6 +32,9 @@ jobs:
         run: |
           git fetch --tags --force
           python outils/notes_de_version.py version
+          $tag = ((python outils/notes_de_version.py version) | Select-String '^tag=').ToString().Substring(4)
+          $cible = if (git tag --list $tag) { git rev-list -n 1 $tag } else { "" }
+          if ($cible -and $cible -ne (git rev-parse HEAD)) { throw "L'étiquette $tag existe déjà sur un autre commit ($cible)" }
           python outils/notes_de_version.py stamp
           $deja = git tag --points-at HEAD --list "v*"
           if ($deja) { "publier=false" >> $env:GITHUB_OUTPUT; "Déjà publié : $deja" } else { "publier=true" >> $env:GITHUB_OUTPUT }

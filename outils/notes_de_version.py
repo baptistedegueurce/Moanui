@@ -58,7 +58,7 @@ def changelog_section(title: str) -> str:
         if line.startswith("## "):
             if on:
                 break
-            on = line[3:].strip().lower().startswith(title.lower())
+            on = line[3:].strip().lstrip("[").lower().startswith(title.lower())
             continue
         if on:
             out.append(line)
