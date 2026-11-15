@@ -73,3 +73,26 @@ def test_chart_fiche_multi_axes_and_refs(client):
     # chart-data : le style des mesures n'est pas envoyé, mais des champs en plus ne gênent pas
     r = client.post(f"/api/datasets/{did}/chart-data", json={"x": "engin_cod", "measures": spec["measures"], "filters": []})
     assert r.status_code == 200, r.text
+
+
+def test_exports_word_et_pdf(client):
+    """Toutes les fiches s'exportent en Word et en PDF, figures comprises."""
+    import docx
+
+    did = upload(client, "logbook_2023.csv")["id"]
+    body = {"analyse": "comparer_groupes", "variables": {"y": "debarquement_Kg", "groupe": "engin_cod"}}
+    pdf = client.post(f"/api/datasets/{did}/stats/method.pdf", json=body)
+    assert pdf.status_code == 200 and pdf.content[:4] == b"%PDF" and len(pdf.content) > 20000
+    w = client.post(f"/api/datasets/{did}/stats/method.docx", json=body)
+    assert w.status_code == 200 and w.content[:2] == b"PK"
+    d = docx.Document(io.BytesIO(w.content))
+    heads = [p.text for p in d.paragraphs if p.style.name.startswith("Heading")]
+    assert "4. Résultats" in heads and "Références" in heads and len(d.inline_shapes) >= 1
+    assert client.get(f"/api/datasets/{did}/method.pdf").content[:4] == b"%PDF"
+    assert client.get(f"/api/datasets/{did}/method.docx").content[:2] == b"PK"
+    spec = {"type": "barres", "x": "engin_cod", "measures": [{"agg": "somme", "column": "debarquement_Kg"}],
+            "template": {"title": "Débarquements"}}
+    svg = '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100"><text x="10" y="50">Été</text></svg>'
+    assert client.post(f"/api/datasets/{did}/charts/method.pdf", json={"name": "g", "spec": spec, "svg": svg}).content[:4] == b"%PDF"
+    assert client.post("/api/geo/maps/method.docx", json={"spec": {"layers": [], "template": {"title": "C"}}}).content[:2] == b"PK"
+    assert client.post(f"/api/datasets/{did}/stats/method.exe", json=body).status_code == 404

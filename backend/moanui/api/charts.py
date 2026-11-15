@@ -177,6 +177,14 @@ def chart_method_zip(did: str, body: ChartIn, user: User = Depends(current_user)
                     headers={"Content-Disposition": 'attachment; filename="graphique_methode.zip"'})
 
 
+@router.post("/datasets/{did}/charts/method.{fmt}")
+def chart_method_export(did: str, fmt: str, body: ChartIn, user: User = Depends(current_user),
+                        db: Database = Depends(get_db)):
+    """Fiche méthode du graphique en Word (docx) ou PDF."""
+    ds, _ = dataset_access(db, user, did)
+    return _chart_fiche(ds, body, user).response(fmt, "graphique_methode")
+
+
 @router.get("/recent")
 def recent(user: User = Depends(current_user), db: Database = Depends(get_db)):
     """Derniers graphiques, analyses et cartes de la structure active (page d'accueil)."""

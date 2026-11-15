@@ -5,6 +5,9 @@ publiée automatiquement ; au passage d'une version stable, elle est renommée `
 
 ## Non publié
 
+- **Fiches méthode en PDF et en Word** (jeux de données, statistiques, graphiques, cartes) : bouton « Fiche méthode »
+  > PDF (à diffuser), Word (modifiable) ou archive (Markdown, HTML, figures SVG). Figures, tableaux numérotés,
+  références et polices intégrés : rendu identique sur tous les postes, sans Word ni logiciel à installer.
 - **Graphiques conservés d'une page à l'autre** : en revenant sur Graphiques, le dernier graphique (même non
   enregistré) réapparaît immédiatement, puis ses données sont revérifiées. Mémoire vidée à la déconnexion et au
   changement de structure, jamais écrite sur le disque.

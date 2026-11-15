@@ -36,7 +36,6 @@ import {
   IconFocus2,
   IconLayersSubtract,
   IconPhoto,
-  IconFileText,
   IconPlus,
   IconTrash,
   IconUpload,
@@ -71,6 +70,7 @@ import {
 import { fail, ok } from '../lib/notify';
 import { NEUTRAL } from '../lib/theme';
 import type { Column, DatasetSummary } from '../lib/types';
+import FicheMenu from '../components/FicheMenu';
 import LayerImportModal from '../components/LayerImportModal';
 
 let maplibrePromise: Promise<any> | null = null;
@@ -378,7 +378,7 @@ export default function CartoPage() {
     }
   };
 
-  const exportMethod = async () => {
+  const exportMethod = async (fmt: 'pdf' | 'docx' | 'zip' = 'zip') => {
     const map = mapRef.current;
     let png: string | undefined;
     try {
@@ -396,7 +396,7 @@ export default function CartoPage() {
       png = undefined; // fond en ligne non copiable : la fiche est produite sans l'image
     }
     try {
-      await downloadPost('/api/geo/maps/method.zip', { name: spec.template.title || current?.name || 'carte', spec, png }, 'carte_methode.zip');
+      await downloadPost(`/api/geo/maps/method.${fmt}`, { name: spec.template.title || current?.name || 'carte', spec, png }, `carte_methode.${fmt}`);
     } catch (e) {
       fail(e);
     }
@@ -430,9 +430,7 @@ export default function CartoPage() {
               </Menu.Dropdown>
             </Menu>
           )}
-          <Button size="xs" variant="default" leftSection={<IconFileText size={16} />} onClick={exportMethod} disabled={!mapReady}>
-            Fiche méthode
-          </Button>
+          <FicheMenu disabled={!mapReady} onExport={exportMethod} />
           <Button size="xs" leftSection={<IconPhoto size={16} />} onClick={exportPng} disabled={!mapReady}>
             Exporter en image
           </Button>

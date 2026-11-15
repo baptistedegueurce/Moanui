@@ -11,17 +11,18 @@ datas = [
     (os.path.join(PKG, "themes"), "moanui/themes"),
     (os.path.join(PKG, "referentiels"), "moanui/referentiels"),
     (os.path.join(PKG, "couches"), "moanui/couches"),
+    (os.path.join(PKG, "polices"), "moanui/polices"),
 ]
 # extension spatiale DuckDB (cartographie) : copiée par le workflow avant la construction
 _ext = os.path.join(SPECPATH, "duckdb_ext", "spatial.duckdb_extension")
 if os.path.exists(_ext):
     datas.append((_ext, "duckdb_ext"))
-datas += collect_data_files("openpyxl")
+datas += collect_data_files("openpyxl") + collect_data_files("docx") + collect_data_files("fpdf")
 
 hiddenimports = (
     collect_submodules("uvicorn")
     + collect_submodules("moanui")
-    + ["multipart", "python_multipart"]
+    + ["multipart", "python_multipart", "resvg_py"]
 )
 
 a = Analysis(
@@ -29,7 +30,7 @@ a = Analysis(
     pathex=[os.path.join(ROOT, "backend")],
     datas=datas,
     hiddenimports=hiddenimports,
-    excludes=["tkinter", "matplotlib", "pandas", "pyarrow", "IPython", "PIL", "yaml", "pytest", "scipy.datasets"],
+    excludes=["tkinter", "matplotlib", "pandas", "pyarrow", "IPython", "yaml", "pytest", "scipy.datasets"],
     noarchive=False,
 )
 pyz = PYZ(a.pure)

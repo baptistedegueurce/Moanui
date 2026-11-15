@@ -110,3 +110,10 @@ def stat_method_zip(did: str, body: StatIn, user: User = Depends(current_user), 
                     settings=Depends(get_settings)):
     return Response(_stat_fiche(db, settings, user, did, body).zip("analyse_methode"), media_type="application/zip",
                     headers={"Content-Disposition": 'attachment; filename="analyse_methode.zip"'})
+
+
+@router.post("/datasets/{did}/stats/method.{fmt}")
+def stat_method_export(did: str, fmt: str, body: StatIn, user: User = Depends(current_user),
+                       db: Database = Depends(get_db), settings=Depends(get_settings)):
+    """Fiche méthode statistique en Word (docx) ou PDF."""
+    return _stat_fiche(db, settings, user, did, body).response(fmt, "analyse_methode")

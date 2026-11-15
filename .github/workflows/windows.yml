@@ -144,6 +144,24 @@ jobs:
           if (-not $exe.HasExited) { Stop-Process -Id $exe.Id -Force }
           if (-not $ok) { throw "Moanui installé ne démarre pas" }
           if ($r.version -ne "${{ steps.v.outputs.version }}") { throw "Version installée $($r.version)" }
+          # exports Word et PDF depuis l'exe (polices, conversion des figures, modèles Word embarqués)
+          $exe = Start-Process -FilePath "$app\Moanui.exe" -ArgumentList "--no-browser","--no-pause","--port","8791","--home","$env:RUNNER_TEMP\moanui-export" -PassThru
+          $B = "http://127.0.0.1:8791"
+          for ($i = 0; $i -lt 30; $i++) { Start-Sleep -Seconds 2; try { if ((Invoke-RestMethod "$B/api/health").ok) { break } } catch {} }
+          $body = @{ username = "admin"; display_name = "Test"; password = "motdepasse1"; structure_name = "Structure test"; structure_short_name = "ST" } | ConvertTo-Json
+          Invoke-RestMethod "$B/api/setup" -Method Post -ContentType "application/json" -Body $body -SessionVariable s | Out-Null
+          $form = @{ file = Get-Item "exemples\donnees_demo\suivi_casiers_homard.csv" }
+          $ds = Invoke-RestMethod "$B/api/datasets/import" -Method Post -Form $form -WebSession $s
+          $q = @{ analyse = "glm"; variables = @{ y = "nb_homards"; x = @("zone"); effort = "nb_casiers" } } | ConvertTo-Json -Depth 4
+          foreach ($fmt in @("pdf", "docx")) {
+            $out = "$env:RUNNER_TEMP\fiche.$fmt"
+            Invoke-WebRequest "$B/api/datasets/$($ds.id)/stats/method.$fmt" -Method Post -ContentType "application/json" -Body $q -WebSession $s -OutFile $out
+            $head = [System.Text.Encoding]::ASCII.GetString([System.IO.File]::ReadAllBytes($out)[0..3])
+            "$fmt : $((Get-Item $out).Length) octets, début $head"
+            if (($fmt -eq "pdf" -and $head -ne "%PDF") -or ($fmt -eq "docx" -and $head.Substring(0,2) -ne "PK")) { Stop-Process -Id $exe.Id -Force; throw "Export $fmt invalide" }
+            if ((Get-Item $out).Length -lt 20000) { Stop-Process -Id $exe.Id -Force; throw "Export $fmt trop petit (figures absentes ?)" }
+          }
+          Stop-Process -Id $exe.Id -Force
           Start-Sleep -Seconds 2
           $su = New-Object System.Diagnostics.ProcessStartInfo -Property @{
             FileName = "$app\unins000.exe"; Arguments = "/VERYSILENT /SUPPRESSMSGBOXES"; UseShellExecute = $false }

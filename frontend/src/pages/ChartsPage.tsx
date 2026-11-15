@@ -26,7 +26,7 @@ import {
   ColorSwatch,
   CheckIcon,
 } from '@mantine/core';
-import { IconPlus, IconTrash, IconPhoto, IconFileText, IconDeviceFloppy, IconTable, IconBulb, IconVectorBezier } from '@tabler/icons-react';
+import { IconPlus, IconTrash, IconPhoto, IconDeviceFloppy, IconTable, IconBulb, IconVectorBezier } from '@tabler/icons-react';
 import { api, downloadPost } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { AXES, axisCfg, AxisCfg, AxisId, buildFigure, CHART_TYPES, chartAdvice, ChartSpec, dataRequest, defaultSpec, Measure, MARKS, markOf, measureLabel, RAW_TYPES, RefMark, SIZE_PRESETS, usedAxes } from '../lib/chart';
@@ -35,6 +35,7 @@ import { fail, ok } from '../lib/notify';
 import { NEUTRAL } from '../lib/theme';
 import { cacheGet, cacheSet, recall, remember } from '../lib/memo';
 import type { Column, DatasetSummary } from '../lib/types';
+import FicheMenu from '../components/FicheMenu';
 import { AGGS, Conditions } from '../components/StepForm';
 
 let plotlyPromise: Promise<any> | null = null;
@@ -202,7 +203,7 @@ export default function ChartsPage() {
     a.click();
   };
 
-  const exportMethod = async () => {
+  const exportMethod = async (fmt: 'pdf' | 'docx' | 'zip' = 'zip') => {
     try {
       // le graphique tel qu'affiché est joint à la fiche (SVG vectoriel)
       let svg: string | undefined;
@@ -212,7 +213,7 @@ export default function ChartsPage() {
         const i = url.indexOf(',');
         svg = url.startsWith('data:image/svg+xml;base64,') ? atob(url.slice(i + 1)) : decodeURIComponent(url.slice(i + 1));
       }
-      await downloadPost(`/api/datasets/${dsId}/charts/method.zip`, { name: spec.template.title || 'graphique', spec, svg }, 'graphique_methode.zip');
+      await downloadPost(`/api/datasets/${dsId}/charts/method.${fmt}`, { name: spec.template.title || 'graphique', spec, svg }, `graphique_methode.${fmt}`);
     } catch (e) {
       fail(e);
     }
@@ -596,9 +597,7 @@ export default function ChartsPage() {
                 Tableau
               </Button>
             </Tooltip>
-            <Button size="xs" variant="default" leftSection={<IconFileText size={14} />} disabled={!figure} onClick={exportMethod}>
-              Fiche méthode
-            </Button>
+            <FicheMenu disabled={!figure} onExport={exportMethod} />
             {canWrite && (
               <Button size="xs" variant="default" leftSection={<IconDeviceFloppy size={14} />} disabled={!figure} onClick={save}>
                 Enregistrer

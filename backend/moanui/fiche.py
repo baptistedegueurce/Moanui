@@ -182,6 +182,40 @@ class Fiche:
         H.append(f'<p class="foot">Fiche générée par Moanui le {datetime.now().strftime("%d/%m/%Y à %H:%M")}.</p>')
         return HTML_HEAD.replace("{title}", escape(self.title)) + "\n".join(H) + "</main></body></html>"
 
+    def options(self, **kw):
+        from .documents import DocOptions
+
+        return DocOptions(title=self.title, subtitle=self.subtitle, meta=self.meta,
+                          refs=[r[2:] for r in refs_md(self.refs)],
+                          footer=f"Fiche générée par Moanui le {datetime.now().strftime('%d/%m/%Y à %H:%M')}.",
+                          running_title=self.title, **kw)
+
+    def docx(self) -> bytes:
+        from .documents import to_docx
+
+        return to_docx(self.blocks, self.options())
+
+    def pdf(self) -> bytes:
+        from .documents import to_pdf
+
+        return to_pdf(self.blocks, self.options())
+
+    def response(self, fmt: str, base: str):
+        """Réponse HTTP d'export : md, html, zip, docx ou pdf."""
+        from fastapi import HTTPException
+        from fastapi.responses import Response
+
+        kinds = {"md": ("text/markdown; charset=utf-8", lambda: self.markdown()),
+                 "html": ("text/html; charset=utf-8", lambda: self.html()),
+                 "zip": ("application/zip", lambda: self.zip(base)),
+                 "docx": ("application/vnd.openxmlformats-officedocument.wordprocessingml.document", lambda: self.docx()),
+                 "pdf": ("application/pdf", lambda: self.pdf())}
+        if fmt not in kinds:
+            raise HTTPException(404, "Format inconnu.")
+        mt, make = kinds[fmt]
+        headers = {} if fmt in ("md", "html") else {"Content-Disposition": f'attachment; filename="{base}.{fmt}"'}
+        return Response(make(), media_type=mt, headers=headers)
+
     def zip(self, base: str) -> bytes:
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:

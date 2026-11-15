@@ -642,6 +642,15 @@ def method_zip(did: str, user: User = Depends(current_user), db: Database = Depe
                     headers={"Content-Disposition": f'attachment; filename="{base}.zip"'})
 
 
+@router.get("/datasets/{did}/method.{fmt}")
+def method_export(did: str, fmt: str, user: User = Depends(current_user), db: Database = Depends(get_db),
+                  settings=Depends(get_settings)):
+    """Fiche méthode du jeu en Word (docx) ou PDF."""
+    ds, _ = dataset_access(db, user, did)
+    fiche, _ = _method_md(db, settings, user, ds)
+    return fiche.response(fmt, f"{_safe_filename(ds['name'])}_methode")
+
+
 def _safe_filename(name: str) -> str:
     keep = "".join(ch if ch.isalnum() or ch in "-_ " else "_" for ch in name).strip().replace(" ", "_")
     return keep[:80] or "donnees"

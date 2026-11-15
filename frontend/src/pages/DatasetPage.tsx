@@ -48,6 +48,7 @@ import DataGrid, { GridHandle, PendingEdit } from '../components/DataGrid';
 import TreatmentPanel, { TreatTab } from '../components/TreatmentPanel';
 import StepModal, { StepDraft } from '../components/StepModal';
 import ColumnDrawer from '../components/ColumnDrawer';
+import FicheMenu from '../components/FicheMenu';
 import TemplateModal from '../components/TemplateModal';
 
 const LEVEL_COLOR: Record<string, string> = { info: 'blue', attention: 'orange', alerte: 'red' };
@@ -334,8 +335,11 @@ export default function DatasetPage() {
               </Button>
             </Menu.Target>
             <Menu.Dropdown>
-              <Menu.Item leftSection={<IconFileText size={16} />} onClick={() => download(`/api/datasets/${ds.id}/method.zip`).catch(fail)}>
-                Télécharger la fiche méthode
+              <Menu.Item leftSection={<IconFileText size={16} />} onClick={() => download(`/api/datasets/${ds.id}/method.pdf`).catch(fail)}>
+                Fiche méthode (PDF)
+              </Menu.Item>
+              <Menu.Item leftSection={<IconFileText size={16} />} onClick={() => download(`/api/datasets/${ds.id}/method.docx`).catch(fail)}>
+                Fiche méthode (Word)
               </Menu.Item>
               <Menu.Item leftSection={<IconCopy size={16} />} onClick={() => api.post(`/api/datasets/${ds.id}/duplicate`).then((r) => nav(`/donnees/${r.id}`)).catch(fail)}>
                 Faire une copie de travail
@@ -538,11 +542,9 @@ export default function DatasetPage() {
                   Enregistrer les notes
                 </Button>
               )}
-              <Button variant="default" leftSection={<IconFileText size={16} />} onClick={() => download(`/api/datasets/${ds.id}/method.zip`).catch(fail)}>
-                Télécharger la fiche (zip)
-              </Button>
+              <FicheMenu size="sm" label="Télécharger la fiche" onExport={(fmt) => download(`/api/datasets/${ds.id}/method.${fmt}`)} />
               <Text size="xs" c="dimmed">
-                Le zip contient la fiche en HTML (à ouvrir dans un navigateur, imprimable en PDF), en Markdown (modifiable) et les figures en SVG.
+                PDF pour diffuser, Word pour compléter le texte, ou archive (Markdown modifiable, HTML imprimable, figures SVG).
               </Text>
             </Stack>
           </div>

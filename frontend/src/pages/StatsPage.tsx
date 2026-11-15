@@ -19,13 +19,14 @@ import {
   Title,
   UnstyledButton,
 } from '@mantine/core';
-import { IconCheck, IconAlertTriangle, IconBan, IconInfoCircle, IconFileText, IconDeviceFloppy, IconPlayerPlay } from '@tabler/icons-react';
+import { IconCheck, IconAlertTriangle, IconBan, IconInfoCircle, IconDeviceFloppy, IconPlayerPlay } from '@tabler/icons-react';
 import { api, downloadPost } from '../lib/api';
 import { useAuth } from '../lib/auth';
 import { isNumericType } from '../lib/format';
 import { fail, ok } from '../lib/notify';
 import { NEUTRAL, fontOf } from '../lib/theme';
 import type { Column, DatasetSummary } from '../lib/types';
+import FicheMenu from '../components/FicheMenu';
 import { Conditions } from '../components/StepForm';
 
 interface Analyse {
@@ -338,13 +339,7 @@ export default function StatsPage() {
               </div>
               {(!res.bloque || res.force) && (
                 <Group gap="xs">
-                  <Button
-                    variant="default"
-                    leftSection={<IconFileText size={16} />}
-                    onClick={() => downloadPost(`/api/datasets/${dsId}/stats/method.zip`, body(forced), `analyse_${kind}.zip`).catch(fail)}
-                  >
-                    Fiche méthode
-                  </Button>
+                  <FicheMenu size="sm" onExport={(fmt) => downloadPost(`/api/datasets/${dsId}/stats/method.${fmt}`, body(forced), `analyse_${kind}.${fmt}`)} />
                   <Button leftSection={<IconDeviceFloppy size={16} />} onClick={() => run({ ...forced, save: true })}>
                     Enregistrer
                   </Button>
