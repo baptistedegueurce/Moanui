@@ -1,0 +1,76 @@
+{
+ "type": "FeatureCollection",
+ "name": "zone_eolienne_fictive",
+ "features": [
+  {
+   "type": "Feature",
+   "properties": {
+    "nom": "Zone d'étude éolienne FICTIVE - Sud Glénan",
+    "statut": "projet fictif",
+    "surface_km2": 200.1
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -3.95,
+       47.66
+      ],
+      [
+       -3.74,
+       47.66
+      ],
+      [
+       -3.7,
+       47.55
+      ],
+      [
+       -3.88,
+       47.53
+      ],
+      [
+       -3.95,
+       47.66
+      ]
+     ]
+    ]
+   }
+  },
+  {
+   "type": "Feature",
+   "properties": {
+    "nom": "Zone de raccordement FICTIVE",
+    "statut": "projet fictif",
+    "surface_km2": 20.1
+   },
+   "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+     [
+      [
+       -3.83,
+       47.74
+      ],
+      [
+       -3.8,
+       47.74
+      ],
+      [
+       -3.8,
+       47.66
+      ],
+      [
+       -3.83,
+       47.66
+      ],
+      [
+       -3.83,
+       47.74
+      ]
+     ]
+    ]
+   }
+  }
+ ]
+}

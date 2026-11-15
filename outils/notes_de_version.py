@@ -104,10 +104,16 @@ def notes(info: dict) -> str:
     if len(cs) == MAX_COMMITS:
         lines.append(f"- … (liste limitée aux {MAX_COMMITS} dernières modifications)")
     lines += ["", "## Installation", "",
-              "1. Télécharger **Moanui-windows.zip** ci-dessous et le décompresser (clic droit > Extraire tout).",
-              "2. Lancer **Moanui.exe** dans le dossier obtenu : l'application s'ouvre dans le navigateur.",
-              "3. Aucune installation ni droit administrateur requis ; les données restent dans "
-              "`%LOCALAPPDATA%\\Moanui` et sont conservées d'une version à l'autre.", ""]
+              "**Recommandé : Moanui-installation.exe** (ci-dessous). Installation pour l'utilisateur courant, "
+              "sans droits administrateur, avec raccourcis dans le menu Démarrer et sur le bureau. Au premier "
+              "lancement, Windows peut afficher « Windows a protégé votre ordinateur » (application non signée) : "
+              "cliquer sur « Informations complémentaires » puis « Exécuter quand même ». Pour mettre à jour, "
+              "lancer simplement le nouvel installateur.", "",
+              "**Version portable : Moanui-windows.zip.** Avant d'extraire, clic droit sur le zip > Propriétés > "
+              "cocher « Débloquer » > OK (sinon Windows refuse de charger les fichiers extraits et la fenêtre se "
+              "referme aussitôt). Puis Extraire tout et lancer Moanui.exe.", "",
+              "Dans les deux cas, les données restent dans `%LOCALAPPDATA%\\Moanui` et sont conservées d'une "
+              "version à l'autre (la désinstallation n'y touche pas).", ""]
     return "\n".join(lines)
 
 

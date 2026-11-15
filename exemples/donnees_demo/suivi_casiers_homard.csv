@@ -1,0 +1,397 @@
+﻿station;annee;mois;zone;profondeur_m;nb_casiers;immersion_h;nb_homards;nb_sous_taille;observateur_embarque
+S0001;2023;5;Chaussée de Sein;44,6;40;48;3;6;oui
+S0002;2023;5;Chaussée de Sein;23,3;20;48;7;6;non
+S0003;2023;5;Chaussée de Sein;24,8;25;72;2;1;non
+S0004;2023;5;Chaussée de Sein;40,2;20;24;3;1;non
+S0005;2023;5;Chaussée de Sein;31,8;25;24;1;0;oui
+S0006;2023;5;Chaussée de Sein;38,1;50;24;2;3;oui
+S0007;2023;5;Glénan;19,9;25;72;8;3;non
+S0008;2023;5;Glénan;17,6;20;24;14;11;non
+S0009;2023;5;Glénan;34,6;20;48;10;10;oui
+S0010;2023;5;Glénan;42,3;25;24;1;1;non
+S0011;2023;5;Glénan;11,3;50;24;9;5;non
+S0012;2023;5;Baie d'Audierne;20,0;25;48;4;1;oui
+S0013;2023;5;Baie d'Audierne;17,3;20;24;3;4;oui
+S0014;2023;5;Baie d'Audierne;28,1;20;72;8;6;non
+S0015;2023;5;Baie d'Audierne;33,4;25;24;2;1;non
+S0016;2023;5;Baie d'Audierne;40,5;25;24;1;3;non
+S0017;2023;5;Baie d'Audierne;15,3;50;24;3;2;oui
+S0018;2023;5;Baie d'Audierne;14,3;30;24;6;7;non
+S0019;2023;5;Iroise;32,8;20;24;4;2;oui
+S0020;2023;5;Iroise;38,8;30;24;1;1;non
+S0021;2023;5;Iroise;26,7;25;24;10;3;oui
+S0022;2023;5;Iroise;37,5;50;48;7;11;oui
+S0023;2023;5;Iroise;40,8;50;72;10;9;non
+S0024;2023;6;Chaussée de Sein;9,4;50;24;2;1;oui
+S0025;2023;6;Chaussée de Sein;10,8;50;24;5;3;non
+S0026;2023;6;Chaussée de Sein;32,7;20;72;3;3;oui
+S0027;2023;6;Chaussée de Sein;42,4;20;48;2;2;non
+S0028;2023;6;Chaussée de Sein;12,3;20;24;0;0;oui
+S0029;2023;6;Glénan;38,5;20;24;2;1;oui
+S0030;2023;6;Glénan;33,8;50;48;42;26;non
+S0031;2023;6;Glénan;25,5;30;24;1;1;non
+S0032;2023;6;Glénan;19,8;40;48;4;5;non
+S0033;2023;6;Glénan;8,1;40;72;3;3;oui
+S0034;2023;6;Glénan;39,3;50;72;3;5;oui
+S0035;2023;6;Glénan;9,8;25;72;3;0;non
+S0036;2023;6;Glénan;15,4;50;24;8;7;non
+S0037;2023;6;Baie d'Audierne;11,1;40;72;0;0;oui
+S0038;2023;6;Baie d'Audierne;17,3;25;24;3;6;non
+S0039;2023;6;Baie d'Audierne;17,0;30;24;3;4;oui
+S0040;2023;6;Baie d'Audierne;18,1;40;24;7;7;oui
+S0041;2023;6;Baie d'Audierne;21,9;20;24;9;6;non
+S0042;2023;6;Iroise;25,6;40;72;35;18;oui
+S0043;2023;6;Iroise;33,5;25;48;0;1;non
+S0044;2023;6;Iroise;12,8;40;48;18;12;non
+S0045;2023;6;Iroise;40,5;25;24;3;4;non
+S0046;2023;6;Iroise;40,4;20;24;1;0;non
+S0047;2023;6;Iroise;28,1;50;24;11;10;non
+S0048;2023;6;Iroise;43,4;40;72;12;5;oui
+S0049;2023;6;Iroise;12,3;50;48;8;3;oui
+S0050;2023;7;Chaussée de Sein;41,9;30;48;13;10;non
+S0051;2023;7;Chaussée de Sein;11,6;40;24;9;4;oui
+S0052;2023;7;Chaussée de Sein;20,1;30;72;13;9;non
+S0053;2023;7;Chaussée de Sein;14,4;40;48;2;0;non
+S0054;2023;7;Chaussée de Sein;44,4;40;72;5;1;non
+S0055;2023;7;Chaussée de Sein;39,5;25;72;9;2;non
+S0056;2023;7;Chaussée de Sein;9,3;25;48;0;0;non
+S0057;2023;7;Chaussée de Sein;8,7;20;24;5;6;non
+S0058;2023;7;Glénan;23,8;50;48;9;6;non
+S0059;2023;7;Glénan;10,7;50;24;8;4;oui
+S0060;2023;7;Glénan;15,3;20;48;2;4;non
+S0061;2023;7;Glénan;34,3;25;24;6;3;non
+S0062;2023;7;Glénan;18,0;50;72;7;3;oui
+S0063;2023;7;Glénan;30,2;25;24;19;14;non
+S0064;2023;7;Glénan;28,3;25;48;2;0;non
+S0065;2023;7;Glénan;33,7;20;72;2;1;non
+S0066;2023;7;Baie d'Audierne;23,3;25;48;0;0;oui
+S0067;2023;7;Baie d'Audierne;32,2;20;48;0;1;non
+S0068;2023;7;Baie d'Audierne;24,6;30;72;1;0;non
+S0069;2023;7;Baie d'Audierne;21,8;25;72;5;3;non
+S0070;2023;7;Baie d'Audierne;20,7;25;72;5;4;oui
+S0071;2023;7;Baie d'Audierne;17,8;30;72;1;1;non
+S0072;2023;7;Baie d'Audierne;13,2;50;48;21;15;non
+S0073;2023;7;Baie d'Audierne;10,1;40;72;1;0;non
+S0074;2023;7;Iroise;26,1;25;72;19;18;non
+S0075;2023;7;Iroise;32,8;40;24;5;6;oui
+S0076;2023;7;Iroise;18,2;50;24;7;4;non
+S0077;2023;7;Iroise;24,8;30;24;0;1;non
+S0078;2023;7;Iroise;45,0;20;24;2;1;non
+S0079;2023;7;Iroise;25,5;50;48;2;1;oui
+S0080;2023;7;Iroise;37,9;20;24;5;7;non
+S0081;2023;7;Iroise;8,5;40;48;1;0;oui
+S0082;2023;8;Chaussée de Sein;43,5;30;24;3;1;non
+S0083;2023;8;Chaussée de Sein;12,1;30;24;2;2;non
+S0084;2023;8;Chaussée de Sein;26,1;30;48;3;0;non
+S0085;2023;8;Chaussée de Sein;34,8;30;72;4;4;non
+S0086;2023;8;Chaussée de Sein;32,9;30;72;0;1;non
+S0087;2023;8;Chaussée de Sein;30,5;40;72;6;7;non
+S0088;2023;8;Chaussée de Sein;13,1;30;24;1;1;oui
+S0089;2023;8;Chaussée de Sein;16,9;50;48;4;1;non
+S0090;2023;8;Glénan;23,0;50;72;11;9;non
+S0091;2023;8;Glénan;9,5;30;72;17;7;non
+S0092;2023;8;Glénan;30,2;30;72;13;7;non
+S0093;2023;8;Glénan;14,4;50;24;0;0;non
+S0094;2023;8;Glénan;21,8;20;72;0;0;oui
+S0095;2023;8;Glénan;22,9;30;24;0;0;oui
+S0096;2023;8;Baie d'Audierne;25,1;25;24;0;1;oui
+S0097;2023;8;Baie d'Audierne;14,5;50;24;6;4;oui
+S0098;2023;8;Baie d'Audierne;26,4;40;24;2;0;non
+S0099;2023;8;Baie d'Audierne;29,9;25;72;7;5;non
+S0100;2023;8;Baie d'Audierne;23,6;50;24;11;6;non
+S0101;2023;8;Baie d'Audierne;34,7;30;24;6;7;non
+S0102;2023;8;Baie d'Audierne;38,7;40;48;1;1;non
+S0103;2023;8;Iroise;25,7;25;24;9;8;non
+S0104;2023;8;Iroise;25,5;25;24;0;0;non
+S0105;2023;8;Iroise;26,3;40;24;6;3;non
+S0106;2023;8;Iroise;17,8;30;24;9;4;non
+S0107;2023;8;Iroise;42,9;30;24;5;4;non
+S0108;2023;8;Iroise;36,9;30;24;10;8;non
+S0109;2023;9;Chaussée de Sein;36,9;25;24;1;0;non
+S0110;2023;9;Chaussée de Sein;33,3;20;24;0;0;non
+S0111;2023;9;Chaussée de Sein;21,9;25;48;0;0;oui
+S0112;2023;9;Chaussée de Sein;8,8;50;48;2;0;non
+S0113;2023;9;Chaussée de Sein;33,0;50;24;1;0;oui
+S0114;2023;9;Chaussée de Sein;43,0;25;24;1;0;non
+S0115;2023;9;Chaussée de Sein;10,4;25;72;6;0;oui
+S0116;2023;9;Chaussée de Sein;17,9;50;72;8;5;non
+S0117;2023;9;Glénan;31,1;25;24;13;7;oui
+S0118;2023;9;Glénan;11,1;50;24;2;1;oui
+S0119;2023;9;Glénan;42,1;25;24;0;0;non
+S0120;2023;9;Glénan;16,7;25;24;3;5;non
+S0121;2023;9;Glénan;9,7;40;48;4;2;oui
+S0122;2023;9;Glénan;38,2;30;72;9;7;oui
+S0123;2023;9;Glénan;15,3;25;48;0;0;non
+S0124;2023;9;Glénan;10,6;40;48;1;1;non
+S0125;2023;9;Baie d'Audierne;39,6;50;48;0;0;non
+S0126;2023;9;Baie d'Audierne;19,4;25;48;1;1;non
+S0127;2023;9;Baie d'Audierne;9,3;20;48;0;0;non
+S0128;2023;9;Baie d'Audierne;41,8;40;48;11;3;non
+S0129;2023;9;Baie d'Audierne;17,3;30;72;2;2;non
+S0130;2023;9;Baie d'Audierne;10,7;30;48;1;1;oui
+S0131;2023;9;Baie d'Audierne;42,5;40;48;8;6;oui
+S0132;2023;9;Baie d'Audierne;41,1;30;72;4;0;non
+S0133;2023;9;Iroise;19,5;25;48;1;2;oui
+S0134;2023;9;Iroise;17,6;20;24;1;3;oui
+S0135;2023;9;Iroise;40,3;40;48;3;3;non
+S0136;2023;9;Iroise;19,3;40;24;4;0;non
+S0137;2023;9;Iroise;39,0;30;48;3;2;non
+S0138;2023;9;Iroise;42,0;25;24;0;0;non
+S0139;2024;5;Chaussée de Sein;20,9;40;72;3;2;non
+S0140;2024;5;Chaussée de Sein;20,3;25;72;12;15;oui
+S0141;2024;5;Chaussée de Sein;11,6;20;48;2;0;oui
+S0142;2024;5;Chaussée de Sein;30,7;50;48;4;5;non
+S0143;2024;5;Chaussée de Sein;20,0;30;72;13;11;oui
+S0144;2024;5;Chaussée de Sein;39,0;25;24;2;3;oui
+S0145;2024;5;Chaussée de Sein;11,7;25;72;2;5;oui
+S0146;2024;5;Chaussée de Sein;23,5;40;48;6;4;non
+S0147;2024;5;Glénan;26,2;40;24;3;2;non
+S0148;2024;5;Glénan;24,2;30;24;5;3;non
+S0149;2024;5;Glénan;30,0;30;48;8;7;non
+S0150;2024;5;Glénan;36,6;25;48;4;0;oui
+S0151;2024;5;Glénan;40,0;30;72;12;14;non
+S0152;2024;5;Glénan;11,2;30;24;2;1;non
+S0153;2024;5;Glénan;28,5;50;24;2;2;oui
+S0154;2024;5;Glénan;27,0;25;24;15;8;non
+S0155;2024;5;Baie d'Audierne;19,2;25;24;2;3;non
+S0156;2024;5;Baie d'Audierne;36,2;50;24;3;1;non
+S0157;2024;5;Baie d'Audierne;24,8;30;48;5;3;non
+S0158;2024;5;Baie d'Audierne;43,7;20;24;3;2;non
+S0159;2024;5;Baie d'Audierne;30,5;40;48;8;3;oui
+S0160;2024;5;Baie d'Audierne;19,4;40;24;5;2;non
+S0161;2024;5;Iroise;27,1;25;48;8;6;non
+S0162;2024;5;Iroise;14,3;20;48;5;3;oui
+S0163;2024;5;Iroise;21,3;30;24;1;0;non
+S0164;2024;5;Iroise;39,4;40;48;1;1;oui
+S0165;2024;5;Iroise;35,4;20;24;4;3;non
+S0166;2024;5;Iroise;24,6;40;72;10;2;oui
+S0167;2024;6;Chaussée de Sein;13,2;50;24;1;1;non
+S0168;2024;6;Chaussée de Sein;43,9;25;48;9;5;oui
+S0169;2024;6;Chaussée de Sein;39,1;20;48;7;4;non
+S0170;2024;6;Chaussée de Sein;10,1;20;24;1;4;oui
+S0171;2024;6;Chaussée de Sein;10,4;20;24;2;1;non
+S0172;2024;6;Chaussée de Sein;18,9;40;72;19;12;non
+S0173;2024;6;Glénan;17,1;30;24;12;8;non
+S0174;2024;6;Glénan;44,0;50;72;10;8;oui
+S0175;2024;6;Glénan;39,7;50;24;16;11;non
+S0176;2024;6;Glénan;27,3;30;48;1;0;non
+S0177;2024;6;Glénan;42,2;50;24;8;13;oui
+S0178;2024;6;Glénan;42,6;20;24;2;1;non
+S0179;2024;6;Glénan;19,9;30;24;8;1;non
+S0180;2024;6;Baie d'Audierne;32,3;50;24;21;16;oui
+S0181;2024;6;Baie d'Audierne;22,8;50;48;14;7;non
+S0182;2024;6;Baie d'Audierne;18,2;20;72;12;11;non
+S0183;2024;6;Baie d'Audierne;29,6;50;72;3;2;oui
+S0184;2024;6;Baie d'Audierne;32,0;25;24;1;4;non
+S0185;2024;6;Baie d'Audierne;28,9;25;48;0;0;non
+S0186;2024;6;Iroise;9,4;40;48;4;4;non
+S0187;2024;6;Iroise;38,7;40;24;5;4;non
+S0188;2024;6;Iroise;40,7;20;72;3;0;non
+S0189;2024;6;Iroise;31,6;30;24;6;6;non
+S0190;2024;6;Iroise;10,6;40;24;4;2;non
+S0191;2024;6;Iroise;25,1;50;72;7;7;non
+S0192;2024;6;Iroise;14,8;50;48;7;1;oui
+S0193;2024;6;Iroise;22,7;20;24;5;2;non
+S0194;2024;7;Chaussée de Sein;30,3;30;48;11;10;oui
+S0195;2024;7;Chaussée de Sein;20,1;25;24;5;5;oui
+S0196;2024;7;Chaussée de Sein;25,0;20;48;14;19;non
+S0197;2024;7;Chaussée de Sein;14,1;25;48;3;4;oui
+S0198;2024;7;Chaussée de Sein;34,4;30;48;1;2;non
+S0199;2024;7;Glénan;9,6;40;24;6;3;non
+S0200;2024;7;Glénan;32,6;20;24;11;8;non
+S0201;2024;7;Glénan;8,2;50;24;8;3;non
+S0202;2024;7;Glénan;12,1;20;24;2;2;non
+S0203;2024;7;Glénan;25,6;25;24;25;9;non
+S0204;2024;7;Glénan;11,3;40;72;22;16;non
+S0205;2024;7;Glénan;23,5;40;24;7;5;oui
+S0206;2024;7;Baie d'Audierne;43,1;30;24;2;1;non
+S0207;2024;7;Baie d'Audierne;18,8;25;24;4;4;non
+S0208;2024;7;Baie d'Audierne;8,5;30;24;6;4;non
+S0209;2024;7;Baie d'Audierne;17,5;50;48;4;6;non
+S0210;2024;7;Baie d'Audierne;39,2;30;72;15;11;oui
+S0211;2024;7;Baie d'Audierne;21,9;20;72;1;0;non
+S0212;2024;7;Baie d'Audierne;42,3;25;48;7;4;oui
+S0213;2024;7;Baie d'Audierne;29,4;40;24;9;4;oui
+S0214;2024;7;Iroise;33,2;30;72;5;1;non
+S0215;2024;7;Iroise;38,6;20;24;2;2;non
+S0216;2024;7;Iroise;42,2;40;48;11;5;oui
+S0217;2024;7;Iroise;21,7;20;72;1;2;oui
+S0218;2024;7;Iroise;26,0;20;72;8;1;non
+S0219;2024;7;Iroise;28,3;20;48;10;3;non
+S0220;2024;7;Iroise;27,5;40;24;1;0;non
+S0221;2024;7;Iroise;37,4;40;24;6;3;non
+S0222;2024;8;Chaussée de Sein;34,9;25;48;6;3;non
+S0223;2024;8;Chaussée de Sein;20,2;25;24;2;1;oui
+S0224;2024;8;Chaussée de Sein;8,1;50;72;9;5;non
+S0225;2024;8;Chaussée de Sein;44,1;50;24;0;0;non
+S0226;2024;8;Chaussée de Sein;27,0;25;48;1;0;oui
+S0227;2024;8;Chaussée de Sein;40,1;50;48;7;3;non
+S0228;2024;8;Chaussée de Sein;29,9;40;24;4;5;oui
+S0229;2024;8;Chaussée de Sein;28,5;40;24;6;0;non
+S0230;2024;8;Glénan;19,9;30;24;7;2;non
+S0231;2024;8;Glénan;19,4;20;72;16;7;oui
+S0232;2024;8;Glénan;19,6;40;72;21;9;oui
+S0233;2024;8;Glénan;24,9;40;72;20;10;non
+S0234;2024;8;Glénan;42,7;50;72;9;6;non
+S0235;2024;8;Baie d'Audierne;23,8;40;24;20;9;non
+S0236;2024;8;Baie d'Audierne;44,4;25;24;1;1;non
+S0237;2024;8;Baie d'Audierne;39,4;25;72;8;5;non
+S0238;2024;8;Baie d'Audierne;22,9;20;24;4;0;non
+S0239;2024;8;Baie d'Audierne;38,8;25;72;6;4;non
+S0240;2024;8;Baie d'Audierne;19,3;25;24;2;0;oui
+S0241;2024;8;Baie d'Audierne;34,9;25;24;5;4;non
+S0242;2024;8;Baie d'Audierne;36,3;30;72;3;1;oui
+S0243;2024;8;Iroise;39,7;30;24;7;2;non
+S0244;2024;8;Iroise;12,4;50;48;11;10;non
+S0245;2024;8;Iroise;37,9;30;72;15;11;non
+S0246;2024;8;Iroise;34,7;20;24;2;1;oui
+S0247;2024;8;Iroise;14,7;20;24;0;0;oui
+S0248;2024;8;Iroise;25,9;40;24;18;9;non
+S0249;2024;8;Iroise;20,2;30;24;6;5;non
+S0250;2024;8;Iroise;21,3;40;48;3;1;non
+S0251;2024;9;Chaussée de Sein;29,8;50;48;0;0;non
+S0252;2024;9;Chaussée de Sein;23,7;40;24;7;3;non
+S0253;2024;9;Chaussée de Sein;42,1;25;24;9;9;non
+S0254;2024;9;Chaussée de Sein;21,3;25;24;4;7;non
+S0255;2024;9;Chaussée de Sein;15,1;25;24;0;0;non
+S0256;2024;9;Glénan;32,6;40;48;26;19;non
+S0257;2024;9;Glénan;16,6;40;24;15;10;non
+S0258;2024;9;Glénan;18,3;25;48;5;4;non
+S0259;2024;9;Glénan;10,5;50;24;3;1;non
+S0260;2024;9;Glénan;31,6;30;48;11;6;non
+S0261;2024;9;Glénan;22,6;20;48;1;2;oui
+S0262;2024;9;Glénan;24,0;50;48;7;3;non
+S0263;2024;9;Baie d'Audierne;38,8;30;72;5;5;oui
+S0264;2024;9;Baie d'Audierne;9,8;20;24;3;1;oui
+S0265;2024;9;Baie d'Audierne;38,4;20;24;0;0;non
+S0266;2024;9;Baie d'Audierne;8,4;50;24;3;4;non
+S0267;2024;9;Baie d'Audierne;38,6;20;72;1;1;non
+S0268;2024;9;Baie d'Audierne;22,5;50;72;5;2;non
+S0269;2024;9;Baie d'Audierne;18,4;40;48;2;3;oui
+S0270;2024;9;Iroise;38,5;50;72;12;5;non
+S0271;2024;9;Iroise;42,7;40;72;9;5;non
+S0272;2024;9;Iroise;18,5;25;48;0;0;non
+S0273;2024;9;Iroise;26,5;30;24;6;3;oui
+S0274;2024;9;Iroise;43,8;30;24;0;0;non
+S0275;2025;5;Chaussée de Sein;13,3;30;72;5;5;non
+S0276;2025;5;Chaussée de Sein;15,1;25;48;2;1;oui
+S0277;2025;5;Chaussée de Sein;19,1;40;24;13;7;non
+S0278;2025;5;Chaussée de Sein;14,0;25;24;6;8;non
+S0279;2025;5;Chaussée de Sein;15,0;30;72;7;7;non
+S0280;2025;5;Chaussée de Sein;37,2;50;24;2;3;oui
+S0281;2025;5;Glénan;24,8;50;72;12;13;non
+S0282;2025;5;Glénan;26,5;40;24;64;40;non
+S0283;2025;5;Glénan;23,6;50;24;12;6;non
+S0284;2025;5;Glénan;28,0;30;24;6;6;non
+S0285;2025;5;Glénan;25,1;50;24;8;6;oui
+S0286;2025;5;Glénan;13,4;40;24;1;1;oui
+S0287;2025;5;Baie d'Audierne;12,3;20;24;0;0;non
+S0288;2025;5;Baie d'Audierne;30,3;25;24;0;1;non
+S0289;2025;5;Baie d'Audierne;41,3;30;24;3;1;oui
+S0290;2025;5;Baie d'Audierne;38,8;20;72;1;2;non
+S0291;2025;5;Baie d'Audierne;10,4;20;48;0;0;oui
+S0292;2025;5;Iroise;16,8;30;72;1;0;non
+S0293;2025;5;Iroise;41,8;50;48;10;6;oui
+S0294;2025;5;Iroise;42,9;20;48;11;5;oui
+S0295;2025;5;Iroise;15,0;30;72;6;2;non
+S0296;2025;5;Iroise;33,8;25;48;2;1;non
+S0297;2025;5;Iroise;33,1;50;24;19;6;oui
+S0298;2025;5;Iroise;8,0;25;48;6;7;non
+S0299;2025;6;Chaussée de Sein;23,5;50;24;8;4;non
+S0300;2025;6;Chaussée de Sein;13,0;25;24;1;3;non
+S0301;2025;6;Chaussée de Sein;25,1;20;24;14;12;oui
+S0302;2025;6;Chaussée de Sein;40,3;20;24;0;0;non
+S0303;2025;6;Chaussée de Sein;18,9;30;48;22;10;oui
+S0304;2025;6;Chaussée de Sein;14,6;30;24;10;10;non
+S0305;2025;6;Glénan;37,9;20;24;2;1;non
+S0306;2025;6;Glénan;17,4;25;48;15;14;oui
+S0307;2025;6;Glénan;34,4;50;24;7;2;non
+S0308;2025;6;Glénan;17,2;20;48;10;7;oui
+S0309;2025;6;Glénan;8,5;25;24;16;4;oui
+S0310;2025;6;Glénan;33,5;50;24;20;17;oui
+S0311;2025;6;Baie d'Audierne;14,4;40;72;0;0;non
+S0312;2025;6;Baie d'Audierne;37,0;25;48;0;0;non
+S0313;2025;6;Baie d'Audierne;32,0;50;48;13;6;non
+S0314;2025;6;Baie d'Audierne;26,3;20;72;11;9;non
+S0315;2025;6;Baie d'Audierne;41,2;30;48;12;4;non
+S0316;2025;6;Iroise;19,5;40;24;9;6;oui
+S0317;2025;6;Iroise;36,9;50;24;14;7;oui
+S0318;2025;6;Iroise;11,1;40;24;1;1;non
+S0319;2025;6;Iroise;39,8;30;24;4;2;non
+S0320;2025;6;Iroise;44,1;25;72;3;1;oui
+S0321;2025;6;Iroise;15,6;50;72;34;11;non
+S0322;2025;6;Iroise;37,3;25;72;13;4;non
+S0323;2025;7;Chaussée de Sein;14,9;25;72;4;4;non
+S0324;2025;7;Chaussée de Sein;39,0;25;24;0;0;non
+S0325;2025;7;Chaussée de Sein;22,6;40;72;11;3;non
+S0326;2025;7;Chaussée de Sein;10,7;40;72;28;16;non
+S0327;2025;7;Chaussée de Sein;31,5;25;24;2;3;non
+S0328;2025;7;Chaussée de Sein;42,3;40;48;1;0;non
+S0329;2025;7;Glénan;22,5;25;24;6;2;non
+S0330;2025;7;Glénan;21,7;40;24;28;27;non
+S0331;2025;7;Glénan;11,4;30;48;20;8;non
+S0332;2025;7;Glénan;19,5;50;72;11;6;non
+S0333;2025;7;Glénan;39,3;50;48;9;8;non
+S0334;2025;7;Baie d'Audierne;29,5;25;24;10;10;non
+S0335;2025;7;Baie d'Audierne;40,8;20;24;1;0;non
+S0336;2025;7;Baie d'Audierne;30,1;50;48;7;5;non
+S0337;2025;7;Baie d'Audierne;43,3;30;24;3;2;oui
+S0338;2025;7;Baie d'Audierne;26,4;25;72;2;0;non
+S0339;2025;7;Baie d'Audierne;23,0;50;72;37;29;oui
+S0340;2025;7;Baie d'Audierne;25,6;30;24;11;9;non
+S0341;2025;7;Iroise;34,9;25;72;8;3;non
+S0342;2025;7;Iroise;40,6;40;72;3;0;oui
+S0343;2025;7;Iroise;20,0;25;72;0;0;oui
+S0344;2025;7;Iroise;25,7;30;24;5;5;non
+S0345;2025;7;Iroise;28,8;25;24;2;1;non
+S0346;2025;7;Iroise;35,1;50;24;14;5;non
+S0347;2025;7;Iroise;41,2;50;24;11;3;non
+S0348;2025;8;Chaussée de Sein;42,2;30;24;7;4;non
+S0349;2025;8;Chaussée de Sein;13,4;50;24;35;21;non
+S0350;2025;8;Chaussée de Sein;25,2;25;24;1;1;oui
+S0351;2025;8;Chaussée de Sein;38,1;50;24;7;4;oui
+S0352;2025;8;Chaussée de Sein;42,3;40;48;3;3;oui
+S0353;2025;8;Glénan;41,6;25;24;0;0;non
+S0354;2025;8;Glénan;14,6;20;72;4;2;oui
+S0355;2025;8;Glénan;21,1;30;72;5;0;non
+S0356;2025;8;Glénan;21,1;30;24;7;2;oui
+S0357;2025;8;Glénan;11,5;40;48;3;3;non
+S0358;2025;8;Glénan;32,1;40;24;15;13;non
+S0359;2025;8;Glénan;37,2;20;72;2;1;non
+S0360;2025;8;Glénan;8,3;50;24;4;3;non
+S0361;2025;8;Baie d'Audierne;40,1;20;24;1;1;oui
+S0362;2025;8;Baie d'Audierne;10,2;25;48;5;5;non
+S0363;2025;8;Baie d'Audierne;12,1;20;72;18;14;non
+S0364;2025;8;Baie d'Audierne;38,8;40;72;9;2;oui
+S0365;2025;8;Baie d'Audierne;26,6;20;24;6;6;non
+S0366;2025;8;Iroise;34,8;25;24;1;2;non
+S0367;2025;8;Iroise;21,4;25;72;27;12;non
+S0368;2025;8;Iroise;40,5;30;24;4;4;non
+S0369;2025;8;Iroise;44,5;25;24;2;2;oui
+S0370;2025;8;Iroise;28,0;30;48;9;10;non
+S0371;2025;9;Chaussée de Sein;29,3;20;72;10;2;non
+S0372;2025;9;Chaussée de Sein;25,0;40;72;6;3;non
+S0373;2025;9;Chaussée de Sein;15,0;50;72;13;3;non
+S0374;2025;9;Chaussée de Sein;35,0;25;24;2;2;non
+S0375;2025;9;Chaussée de Sein;25,6;50;24;3;2;non
+S0376;2025;9;Chaussée de Sein;33,6;50;72;2;1;non
+S0377;2025;9;Glénan;18,1;30;24;3;1;non
+S0378;2025;9;Glénan;33,8;25;72;2;2;non
+S0379;2025;9;Glénan;41,2;30;24;8;9;non
+S0380;2025;9;Glénan;34,1;20;24;2;0;non
+S0381;2025;9;Glénan;25,1;40;72;14;9;non
+S0382;2025;9;Glénan;18,9;20;24;1;1;non
+S0383;2025;9;Glénan;24,8;20;24;4;5;non
+S0384;2025;9;Glénan;16,8;20;24;5;5;oui
+S0385;2025;9;Baie d'Audierne;21,3;25;24;0;0;non
+S0386;2025;9;Baie d'Audierne;26,4;50;72;27;18;non
+S0387;2025;9;Baie d'Audierne;19,1;30;24;4;1;oui
+S0388;2025;9;Baie d'Audierne;17,5;25;48;9;2;non
+S0389;2025;9;Baie d'Audierne;15,7;50;72;12;4;oui
+S0390;2025;9;Baie d'Audierne;16,5;25;72;1;0;non
+S0391;2025;9;Iroise;14,2;20;72;2;2;non
+S0392;2025;9;Iroise;42,4;25;24;0;2;non
+S0393;2025;9;Iroise;9,5;25;72;3;1;oui
+S0394;2025;9;Iroise;13,4;30;48;1;0;non
+S0395;2025;9;Iroise;40,8;40;48;3;2;non
+S0396;2025;9;Iroise;9,2;20;24;6;1;non

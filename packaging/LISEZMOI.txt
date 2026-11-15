@@ -1,5 +1,11 @@
 MOANUI - données halieutiques
 
+Installation conseillée : Moanui-installation.exe (page Releases), sans droits administrateur.
+
+Version portable (ce dossier) : AVANT d'extraire le zip, clic droit sur Moanui-windows.zip > Propriétés >
+cocher « Débloquer » > OK. Sinon Windows refuse de charger les fichiers (erreur « Failed to load Python DLL »,
+la fenêtre se ferme aussitôt). Si c'est déjà extrait : supprimez le dossier, débloquez le zip et recommencez.
+
 Lancer : double-cliquez sur Moanui.exe.
 Moanui s'ouvre dans votre navigateur (adresse http://127.0.0.1:8765).
 La fenêtre noire doit rester ouverte pendant l'utilisation ; la fermer arrête Moanui.

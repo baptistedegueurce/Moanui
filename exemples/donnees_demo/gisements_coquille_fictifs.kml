@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2"><Document>
+  <Placemark><name>Gisement FICTIF de Morgat</name>
+   <ExtendedData><Data name="densite_kg_m2"><value>2.8</value></Data><Data name="campagne"><value>2025</value></Data></ExtendedData>
+   <Polygon><outerBoundaryIs><LinearRing><coordinates>-4.47,48.2,0 -4.43,48.2,0 -4.42,48.16,0 -4.47,48.16,0 -4.47,48.2,0</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>
+  <Placemark><name>Gisement FICTIF de Douarnenez</name>
+   <ExtendedData><Data name="densite_kg_m2"><value>1.6</value></Data><Data name="campagne"><value>2025</value></Data></ExtendedData>
+   <Polygon><outerBoundaryIs><LinearRing><coordinates>-4.4,48.165,0 -4.36,48.165,0 -4.36,48.14,0 -4.4,48.14,0 -4.4,48.165,0</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>
+</Document></kml>

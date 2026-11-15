@@ -106,10 +106,47 @@ jobs:
           Get-ChildItem -Recurse -Filter moanui-erreur.log $d, "$env:LOCALAPPDATA\Moanui" -ErrorAction SilentlyContinue | Get-Content
           if (-not $ok) { throw "Moanui.exe ne démarre pas depuis le zip extrait (code $($p.ExitCode))" }
 
+      - name: Installateur (Inno Setup, par utilisateur, sans droits administrateur)
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress; $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" }
+          & $iscc "/DMyVersion=${{ steps.v.outputs.version }}" packaging\moanui.iss
+          if ($LASTEXITCODE -ne 0) { throw "ISCC a échoué" }
+          Get-Item Moanui-installation.exe | Select-Object Name, Length
+
+      - name: Vérification de l'installateur (fichier marqué « téléchargé depuis Internet »)
+        shell: pwsh
+        run: |
+          Copy-Item Moanui-installation.exe "$env:RUNNER_TEMP\Moanui-installation.exe"
+          $inst = "$env:RUNNER_TEMP\Moanui-installation.exe"
+          Set-Content -Path $inst -Stream Zone.Identifier -Value "[ZoneTransfer]`r`nZoneId=3"
+          $p = Start-Process -FilePath $inst -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/CURRENTUSER" -PassThru -Wait
+          if ($p.ExitCode -ne 0) { throw "Installation silencieuse en échec (code $($p.ExitCode))" }
+          $app = "$env:LOCALAPPDATA\Programs\Moanui"
+          $dll = Get-ChildItem "$app\_internal" -Filter "python3*.dll" | Select-Object -First 1
+          if (-not $dll) { throw "python3xx.dll absente de $app" }
+          if (Get-Item $dll.FullName -Stream Zone.Identifier -ErrorAction SilentlyContinue) { throw "$($dll.Name) porte la marque Internet" }
+          $exe = Start-Process -FilePath "$app\Moanui.exe" -ArgumentList "--no-browser","--no-pause","--port","8790" -PassThru
+          $ok = $false
+          for ($i = 0; $i -lt 30; $i++) {
+            Start-Sleep -Seconds 2
+            if ($exe.HasExited) { break }
+            try { $r = Invoke-RestMethod "http://127.0.0.1:8790/api/health"; if ($r.ok) { $ok = $true; break } } catch {}
+          }
+          if (-not $exe.HasExited) { Stop-Process -Id $exe.Id -Force }
+          if (-not $ok) { throw "Moanui installé ne démarre pas" }
+          if ($r.version -ne "${{ steps.v.outputs.version }}") { throw "Version installée $($r.version)" }
+          Start-Sleep -Seconds 2
+          $un = Start-Process -FilePath "$app\unins000.exe" -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES" -PassThru -Wait
+          "Désinstallation : code $($un.ExitCode)"
+
       - uses: actions/upload-artifact@v4
         with:
           name: Moanui-windows
-          path: Moanui-windows.zip
+          path: |
+            Moanui-windows.zip
+            Moanui-installation.exe
 
       - name: Notes de version
         if: github.event_name == 'push' && steps.v.outputs.publier == 'true'
@@ -123,6 +160,8 @@ jobs:
           name: Moanui ${{ steps.v.outputs.version }}
           target_commitish: ${{ github.sha }}
           body_path: notes.md
-          files: Moanui-windows.zip
+          files: |
+            Moanui-installation.exe
+            Moanui-windows.zip
           prerelease: ${{ steps.v.outputs.kind == 'dev' }}
           make_latest: ${{ steps.v.outputs.kind == 'stable' }}

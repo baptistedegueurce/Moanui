@@ -5,6 +5,12 @@ publiée automatiquement ; au passage d'une version stable, elle est renommée `
 
 ## Non publié
 
+- **Installateur Windows** (`Moanui-installation.exe`) : installation pour l'utilisateur courant, sans droits
+  administrateur, raccourcis menu Démarrer et bureau, mise à jour en relançant l'installateur. Corrige la fenêtre
+  qui se fermait aussitôt (« Failed to load Python DLL ») après extraction du zip téléchargé ; le zip portable
+  reste proposé (le débloquer avant extraction).
+- **Données de démonstration** fictives (`exemples/donnees_demo`) : SACROIS 2023-2025, flotte, référentiels, VMS
+  Agiltech et CLS 2025, suivi au casier, couches SIG, avec un guide de scénarios de test.
 - **Démarrage** : en cas d'erreur au lancement, la fenêtre reste ouverte avec le message, et le détail est
   enregistré dans `moanui-erreur.log` (à côté de Moanui.exe). Test automatique ajouté : zip extrait dans un
   dossier avec espaces et accents, lancement comme un double-clic.

@@ -18,6 +18,11 @@ structures sans formation poussée en stats. Tout en **français**.
   Releases à chaque push** sur `main` ou `claude/**` : pré-version `v<base>-dev.<n° de commit>` tant que
   `__version__` finit par `.dev0`, version stable `v<version>` (« Latest ») quand on retire le suffixe.
   Notes = section « Non publié » de `CHANGELOG.md` + commits (`outils/notes_de_version.py`).
+  Deux fichiers : `Moanui-installation.exe` (Inno Setup `packaging/moanui.iss`, par utilisateur, programme dans
+  `%LOCALAPPDATA%\Programs\Moanui`) et le zip portable. Le zip téléchargé doit être « débloqué » avant extraction,
+  sinon Windows refuse `python312.dll` (Mark of the Web) : constaté sur le poste de l'utilisateur.
+- Données de démonstration fictives : `exemples/donnees_demo/` (générées par `outils/generer_donnees_demo.py`,
+  scénarios dans `LISEZMOI.md`, vérifiées par `backend/tests/test_donnees_demo.py`).
 
 ## 2. Choix validés avec l'utilisateur (ne pas remettre en cause)
 

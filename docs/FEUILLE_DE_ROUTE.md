@@ -41,6 +41,9 @@ formats ou de règles métier à vérifier auprès des structures (ne pas coder 
 
 ### Semaine 1 : distribution et premiers retours
 - [validé] Exécutable publié dans Releases à chaque push, avec notes de version (CHANGELOG + commits). **Fait.**
+- [proposé] Installateur Windows par utilisateur (évite le blocage des fichiers extraits du zip). **Fait.**
+- [proposé] **Signature de l'exécutable** (supprime l'alerte SmartScreen et le blocage Smart App Control) : offre à
+  choisir (certificat, service de signature en ligne, programme gratuit pour projets libres) [à confirmer : coût].
 - [validé] Retours de test de l'utilisateur sur l'exe : corrections au fil de l'eau.
 - [proposé] Page « Nouveautés » dans l'application (lit le CHANGELOG) et avis « une nouvelle version est
   disponible » (interroge Releases si Internet, sans rien installer seul).
