@@ -1,23 +1,40 @@
 name: Exécutable Windows
 
-# Construit Moanui-windows.zip (aucune installation ni droit administrateur requis).
-# Chaque push construit le zip (onglet Actions > « Exécutable Windows » > artefact Moanui-windows).
-# Version : pousser une étiquette vX.Y.Z publie le zip dans une Release GitHub.
+# Construit Moanui-windows.zip (aucune installation ni droit administrateur requis) et le publie dans
+# Releases à chaque push sur main ou claude/** (outils/notes_de_version.py) :
+# - __version__ sans « .dev » et étiquette absente -> version stable v<version> (« Latest ») ;
+# - sinon -> pré-version v<base>-dev.<n° de commit>, notes = CHANGELOG « Non publié » + commits.
+# Un commit déjà étiqueté (ex. main avancé jusqu'à la branche de travail) n'est pas republié.
 on:
   workflow_dispatch:
   pull_request:
   push:
-    tags: ["v*"]
-    branches: ["**"]
+    branches: ["main", "claude/**"]
 
 permissions:
   contents: write
+
+concurrency:
+  group: windows-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Version
+        id: v
+        shell: pwsh
+        run: |
+          git fetch --tags --force
+          python outils/notes_de_version.py version
+          python outils/notes_de_version.py stamp
+          $deja = git tag --points-at HEAD --list "v*"
+          if ($deja) { "publier=false" >> $env:GITHUB_OUTPUT; "Déjà publié : $deja" } else { "publier=true" >> $env:GITHUB_OUTPUT }
 
       - uses: actions/setup-node@v4
         with:
@@ -60,6 +77,7 @@ jobs:
           if (-not $ok) { throw "Moanui.exe ne répond pas" }
           $health | ConvertTo-Json
           if ($health.cartographie -ne "embarquee") { throw "Extension spatiale embarquée introuvable" }
+          if ($health.version -ne "${{ steps.v.outputs.version }}") { throw "Version affichée $($health.version) au lieu de ${{ steps.v.outputs.version }}" }
 
       - name: Archive
         shell: pwsh
@@ -72,9 +90,18 @@ jobs:
           name: Moanui-windows
           path: Moanui-windows.zip
 
+      - name: Notes de version
+        if: github.event_name == 'push' && steps.v.outputs.publier == 'true'
+        run: python outils/notes_de_version.py notes notes.md
+
       - name: Release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: github.event_name == 'push' && steps.v.outputs.publier == 'true'
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.v.outputs.tag }}
+          name: Moanui ${{ steps.v.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          body_path: notes.md
           files: Moanui-windows.zip
-          generate_release_notes: true
+          prerelease: ${{ steps.v.outputs.kind == 'dev' }}
+          make_latest: ${{ steps.v.outputs.kind == 'stable' }}

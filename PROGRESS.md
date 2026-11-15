@@ -14,8 +14,10 @@ structures sans formation poussée en stats. Tout en **français**.
   (exécutable sans droits admin), macOS plus tard.
 - Branche de travail : `claude/compassionate-johnson-0kgjax` (dépôt `baptistedegueurce/moanui`).
   Ne pas créer de PR sans demande. Pas d'identifiant de modèle dans les commits.
-- Exécutable Windows : construit par GitHub Actions (workflow « Exécutable Windows ») à chaque push,
-  artefact `Moanui-windows` (zip ~117 Mo avec l'extension spatiale). Release automatique sur étiquette `v*`.
+- Exécutable Windows : construit par GitHub Actions (workflow « Exécutable Windows ») et **publié dans
+  Releases à chaque push** sur `main` ou `claude/**` : pré-version `v<base>-dev.<n° de commit>` tant que
+  `__version__` finit par `.dev0`, version stable `v<version>` (« Latest ») quand on retire le suffixe.
+  Notes = section « Non publié » de `CHANGELOG.md` + commits (`outils/notes_de_version.py`).
 
 ## 2. Choix validés avec l'utilisateur (ne pas remettre en cause)
 
