@@ -162,6 +162,15 @@ cd frontend && npm run dev                                  # dev avec proxy /ap
   et références, page Statistiques sans cartes « marketing », nombres du tableau au format français sans perte de
   précision, notifications en bas à droite. Tirets cadratins et émojis retirés des textes.
 
+- **Gestion (nov. 2026)** : `moanui/gestion.py` (consommation de quota, projection linéaire, dépassements par
+  règle et unité de temps), `api/gestion.py` (suivis enregistrés `gestion_suivis` par structure, tableau de bord,
+  fiches, exports Excel), `pages/GestionPage.tsx`. Inspiré des sections 6.3-6.4 du guide de l'ancienne appli R.
+- **Exports PDF / Word (nov. 2026)** : `moanui/documents.py` (fpdf2, python-docx, resvg ; polices `moanui/polices`),
+  `Fiche.response(fmt)` ; routes `method.{pdf,docx}` partout ; vérifié dans l'exe par la CI.
+- **Fiches statistiques (nov. 2026)** : écriture normalisée, IC des tailles d'effet (bootstrap graine 2026),
+  résumé et discussion conditionnés (`stats.finalize`), reproductibilité.
+- **Cache des graphiques** : `lib/memo.ts` (mémoire par utilisateur et structure, jamais sur disque).
+
 ## 6. En cours / à faire (ordre proposé)
 
 1. Carto suite : bande des 3 milles (licence OFB/CNSP à vérifier), étiquettes (polices embarquées),

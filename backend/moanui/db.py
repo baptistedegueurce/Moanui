@@ -131,6 +131,17 @@ CREATE TABLE IF NOT EXISTS maps (
     updated_at TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS gestion_suivis (
+    id TEXT PRIMARY KEY,
+    structure_id TEXT NOT NULL REFERENCES structures(id) ON DELETE CASCADE,
+    kind TEXT NOT NULL CHECK (kind IN ('quota', 'limitations')),
+    name TEXT NOT NULL,
+    spec TEXT NOT NULL,
+    created_by TEXT NOT NULL REFERENCES users(id),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS charts (
     id TEXT PRIMARY KEY,
     dataset_id TEXT NOT NULL REFERENCES datasets(id) ON DELETE CASCADE,

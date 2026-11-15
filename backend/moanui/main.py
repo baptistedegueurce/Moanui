@@ -16,7 +16,7 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 
 from . import __version__
-from .api import admin, analyses, auth, charts, datasets, geo
+from .api import admin, analyses, auth, charts, datasets, geo, gestion
 from .config import Settings, load_settings
 from .db import Database
 from .engine.sql import RecipeError
@@ -56,7 +56,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             msgs.append(f"{loc} : {e.get('msg')}" if loc else e.get("msg"))
         return JSONResponse({"detail": "Données envoyées invalides : " + " ; ".join(msgs)}, status_code=422)
 
-    for r in (auth.router, admin.router, datasets.router, charts.router, analyses.router, geo.router):
+    for r in (auth.router, admin.router, datasets.router, charts.router, analyses.router, geo.router, gestion.router):
         app.include_router(r)
 
     @app.get("/api/health")

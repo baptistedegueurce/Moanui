@@ -6,6 +6,7 @@ import {
   IconChartBar,
   IconMap2,
   IconMathFunction,
+  IconScale,
   IconBook,
   IconSettings,
   IconPalette,
@@ -97,6 +98,7 @@ export default function Shell({ children }: { children: ReactNode }) {
           {nav('/graphiques', 'Graphiques', <IconChartBar size={17} />)}
           {nav('/cartographie', 'Cartographie', <IconMap2 size={17} />)}
           {nav('/statistiques', 'Statistiques', <IconMathFunction size={17} />)}
+          {nav('/gestion', 'Gestion', <IconScale size={17} />)}
           <div className="mo-nav-section">Aide</div>
           {nav('/guide', 'Bonnes pratiques', <IconBook size={17} />)}
           {(isStructureAdmin || me?.is_superadmin) && (

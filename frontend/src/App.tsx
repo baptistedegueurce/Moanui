@@ -16,6 +16,7 @@ import StructurePage from './pages/StructurePage';
 import GuidePage from './pages/GuidePage';
 import CartoPage from './pages/CartoPage';
 import StatsPage from './pages/StatsPage';
+import GestionPage from './pages/GestionPage';
 
 export default function App() {
   const { me, loading, needsSetup, structure } = useAuth();
@@ -51,6 +52,7 @@ export default function App() {
           <Route path="/graphiques" element={<ChartsPage />} />
           <Route path="/cartographie" element={<CartoPage />} />
           <Route path="/statistiques" element={<StatsPage />} />
+          <Route path="/gestion" element={<GestionPage />} />
           <Route path="/guide" element={<GuidePage />} />
           <Route path="/structure" element={<StructurePage />} />
           <Route path="/administration" element={<AdminPage />} />

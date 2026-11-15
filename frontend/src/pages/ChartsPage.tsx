@@ -36,10 +36,9 @@ import { NEUTRAL } from '../lib/theme';
 import { cacheGet, cacheSet, recall, remember } from '../lib/memo';
 import type { Column, DatasetSummary } from '../lib/types';
 import FicheMenu from '../components/FicheMenu';
+import { loadPlotly } from '../lib/plotly';
 import { AGGS, Conditions } from '../components/StepForm';
 
-let plotlyPromise: Promise<any> | null = null;
-const loadPlotly = () => (plotlyPromise ??= import('plotly.js-dist-min').then((m) => m.default || m));
 
 interface Saved {
   id: string;

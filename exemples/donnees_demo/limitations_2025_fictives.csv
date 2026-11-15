@@ -1,0 +1,6 @@
+﻿esp_cod_fao;type;limite_kg;debut;fin
+BSS;mois;250;2025-01-01;2025-12-31
+SCE;maree;600;2025-01-01;2025-03-31
+SCE;maree;600;2025-11-01;2025-12-31
+SOL;mois;0;2025-02-01;2025-02-28
+LBE;semaine;60;2025-05-01;2025-08-31

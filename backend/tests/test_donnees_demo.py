@@ -170,3 +170,46 @@ def test_couches_sig(client):
         assert lay["kind"] == kind and lay["n_features"] >= 2, (name, lay)
         if name.endswith(".zip"):
             assert lay["crs_source"] == "EPSG:2154"
+
+
+def test_gestion_quotas_et_depassements(client):
+    did = imp(client, "sacrois_2025.csv")["id"]
+    cols = client.get(f"/api/gestion/colonnes/{did}").json()
+    m = cols["proposition"]
+    assert m["espece"] == "esp_cod_fao" and m["date"] == "date_deb" and m["poids"] == "debarquement_Kg"
+    assert m["navire"] == "navire_cod" and m["maree"] == "num_maree"
+    spec = {"mapping": m, "especes": ["SOL"], "debut": "2025-01-01", "fin": "2025-12-31", "quota_kg": 20000,
+            "annonce_kg": 21000, "seuils": [80, 90, 100]}
+    r = client.post("/api/gestion/quota", json={"dataset_id": did, "spec": spec})
+    assert r.status_code == 200, r.text
+    q = r.json()
+    assert q["pct"] > 100 and q["alertes"] == [80, 90, 100] and q["atteint_le"]
+    assert abs(q["mois"][-1]["cumul"] - q["total_kg"]) < 1e-6 and len(q["mois"]) == 12
+    # quota non atteint : projection et date estimée
+    spec2 = dict(spec, especes=["HKE"], quota_kg=400000, fin="2026-06-30")
+    q2 = client.post("/api/gestion/quota", json={"dataset_id": did, "spec": spec2}).json()
+    assert q2["pct"] < 100 and q2["projection"]["fin_rythme_moyen"] > q2["total_kg"]
+    # suivis enregistrés et tableau de bord
+    spec["dataset_id"] = did
+    assert client.post("/api/gestion/suivis", json={"kind": "quota", "name": "Sole 2025", "spec": spec}).status_code == 200
+    tb = client.get("/api/gestion/tableau-de-bord").json()
+    assert tb[0]["name"] == "Sole 2025" and tb[0]["resultat"]["pct"] > 100
+    # limitations
+    rules = {"mapping": m, "regles": [
+        {"espece": "BSS", "type": "mois", "limite_kg": 250, "debut": "2025-01-01", "fin": "2025-12-31"},
+        {"espece": "SCE", "type": "maree", "limite_kg": 600, "debut": "2025-01-01", "fin": "2025-03-31"},
+        {"espece": "SOL", "type": "mois", "limite_kg": 0, "debut": "2025-02-01", "fin": "2025-02-28"}]}
+    o = client.post("/api/gestion/depassements", json={"dataset_id": did, "spec": rules})
+    assert o.status_code == 200, o.text
+    o = o.json()
+    assert o["total"]["depassements"] > 0 and len(o["par_regle"]) == 3
+    sole = o["par_regle"][2]
+    assert sole["depassements"] == sole["unites_controlees"] > 0  # fermeture : toute capture est un dépassement
+    assert all(d["kg"] > d["limite"] for d in o["detail"])
+    for fmt in ("pdf", "docx"):
+        r = client.post(f"/api/gestion/quota/method.{fmt}", json={"dataset_id": did, "spec": spec, "name": "Sole 2025"})
+        assert r.status_code == 200 and len(r.content) > 10000, r.text[:300]
+        r = client.post(f"/api/gestion/depassements/method.{fmt}", json={"dataset_id": did, "spec": rules})
+        assert r.status_code == 200, r.text[:300]
+    x = client.post("/api/gestion/depassements/export.xlsx", json={"dataset_id": did, "spec": rules})
+    assert x.status_code == 200 and x.content[:2] == b"PK"

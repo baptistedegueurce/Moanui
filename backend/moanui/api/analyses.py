@@ -53,6 +53,8 @@ def _run(db, settings, user, did: str, body: StatIn) -> tuple[dict, dict, dict]:
         if not body.force:
             # résultats masqués tant que l'utilisateur n'a pas choisi : alternative ou passage en force justifié
             res["resultats"], res["interpretation"] = [], []
+            res["rapport"], res["discussion"], res["resume"] = [], [], ""
+            res["discussion_src"], res["resume_src"] = [], ""
             res["tableaux"] = res["tableaux"][:1]
         res["force"] = body.force
     res["_fd"] = robj.fd

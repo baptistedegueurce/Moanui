@@ -313,3 +313,44 @@ def histogram(v, xname: str, bins: int = 30) -> str:
         p.add(f'<rect x="{p.X(a):.1f}" y="{p.Y(c):.1f}" width="{max(p.X(b) - p.X(a) - 1, 0.5):.1f}" '
               f'height="{p.Y(0) - p.Y(c):.1f}" fill="{BLUE}" fill-opacity="0.8"/>')
     return p.svg(f"Distribution de {xname}")
+
+
+def cumulative(days: list[float], cum: list[float], span: float, quota: float, months: list[tuple[float, str]],
+               announced: float | None = None, projection: tuple[float, float] | None = None,
+               yname: str = "Consommation cumulée (t)", scale: float = 1000.0) -> str:
+    """Consommation cumulée (marches) face au quota (ligne rouge), à l'annonce (tirets) et à la projection (pointillés).
+
+    days : jours depuis le début de période ; span : durée de la période (jours) ; valeurs en kg, affichées / scale."""
+    vals = [c / scale for c in cum]
+    top = max(vals + [quota / scale] + ([announced / scale] if announced else []) +
+              ([projection[1] / scale] if projection else []) + [1e-9])
+    p = _Plot(0, span, 0, top)
+    p.ylo = 0
+    p.yaxis(yname)
+    for x, lab in months:  # repères mensuels
+        px = p.X(x)
+        p.add(f'<line x1="{px:.1f}" x2="{px:.1f}" y1="{p.m["t"]}" y2="{p.h - p.m["b"]}" stroke="{GRID}"/>')
+        p.add(f'<text x="{px + 3:.1f}" y="{p.h - p.m["b"] + 16}" fill="{MUTED}" font-size="11">{escape(lab)}</text>')
+    p.frame()
+
+    def hline(v, color, dash, label):
+        y = p.Y(v / scale)
+        p.add(f'<line x1="{p.m["l"]}" x2="{p.w - p.m["r"]}" y1="{y:.1f}" y2="{y:.1f}" stroke="{color}" stroke-width="1.6"'
+              + (f' stroke-dasharray="{dash}"' if dash else "") + "/>")
+        p.add(f'<text x="{p.w - p.m["r"] - 4}" y="{y - 5:.1f}" text-anchor="end" fill="{color}" font-size="11">{escape(label)}</text>')
+
+    hline(quota, RED, "", f"Quota {fmt(quota / scale)}")
+    if announced:
+        hline(announced, MUTED, "6 4", f"Annoncé {fmt(announced / scale)}")
+    if days:
+        pts = [f"{p.X(0):.1f},{p.Y(0):.1f}"]
+        prev = 0.0
+        for d, v in zip(days, vals):
+            pts.append(f"{p.X(d):.1f},{p.Y(prev):.1f}")
+            pts.append(f"{p.X(d):.1f},{p.Y(v):.1f}")
+            prev = v
+        p.add(f'<polyline points="{" ".join(pts)}" fill="none" stroke="{BLUE}" stroke-width="2"/>')
+        if projection:
+            p.add(f'<line x1="{p.X(days[-1]):.1f}" y1="{p.Y(vals[-1]):.1f}" x2="{p.X(projection[0]):.1f}" '
+                  f'y2="{p.Y(projection[1] / scale):.1f}" stroke="{BLUE}" stroke-width="1.6" stroke-dasharray="2 3"/>')
+    return p.svg(yname)

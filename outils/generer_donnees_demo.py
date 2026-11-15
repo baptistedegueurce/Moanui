@@ -504,6 +504,14 @@ def main():
     write_csv(OUT / "suivi_casiers_homard.csv",
               ["station", "annee", "mois", "zone", "profondeur_m", "nb_casiers", "immersion_h", "nb_homards",
                "nb_sous_taille", "observateur_embarque"], suivi_casiers())
+    # gestion : quotas et limitations FICTIFS (valeurs choisies pour illustrer consommation, alerte et dépassements)
+    write_csv(OUT / "quotas_2025_fictifs.csv", ["esp_cod_fao", "quota_kg", "annonce_kg", "debut", "fin"],
+              [["SOL", "20000", "21000", "2025-01-01", "2025-12-31"], ["NEP", "70000", "", "2025-01-01", "2025-12-31"],
+               ["HKE", "400000", "360000", "2025-01-01", "2025-12-31"], ["BSS", "12000", "", "2025-01-01", "2025-12-31"]])
+    write_csv(OUT / "limitations_2025_fictives.csv", ["esp_cod_fao", "type", "limite_kg", "debut", "fin"],
+              [["BSS", "mois", "250", "2025-01-01", "2025-12-31"], ["SCE", "maree", "600", "2025-01-01", "2025-03-31"],
+               ["SCE", "maree", "600", "2025-11-01", "2025-12-31"], ["SOL", "mois", "0", "2025-02-01", "2025-02-28"],
+               ["LBE", "semaine", "60", "2025-05-01", "2025-08-31"]])
     write_layers()
     stats["vms"] = {"agiltech": len(agil), "cls": len(cls)}
     print(json.dumps(stats, ensure_ascii=False, default=str, indent=1)[:3000])

@@ -5,6 +5,16 @@ publiée automatiquement ; au passage d'une version stable, elle est renommée `
 
 ## Non publié
 
+- **Nouvelle partie Gestion** :
+  - *tableau de bord des quotas* : consommation de chaque quota enregistré (jauge colorée selon les seuils d'alerte),
+    dernière donnée, projection de fin de période ; import d'une liste de quotas (CSV) ;
+  - *suivi d'un quota* : espèces, période, quota et consommation annoncée (ex. DGAMPA) ; débarqué, part consommée,
+    reste, écart à l'annonce, courbe cumulée face au quota, consommation par mois, projection (rythme moyen et
+    30 derniers jours), date d'atteinte ; fiche de suivi PDF / Word et export Excel ;
+  - *limitations et dépassements* : règles par espèce à la marée, au jour, à la semaine, au mois, au trimestre, au
+    semestre ou à l'année, sur une période (0 kg = fermeture) ; dépassements par règle, par navire et par mois, lignes
+    en cause ; fiche de contrôle PDF / Word et export Excel ; jeux de règles enregistrés.
+- Graphiques et dates en français (mois, séparateurs) dans toutes les figures interactives.
 - **Fiches statistiques de niveau « article »** : résumé en tête ; résultat principal en écriture normalisée
   (statistique, degrés de liberté, p exacte, taille d'effet et intervalle de confiance à 95 %, par bootstrap
   reproductible quand il n'existe pas de formule) ; taille d'effet pour chaque paire de groupes ; discussion qui

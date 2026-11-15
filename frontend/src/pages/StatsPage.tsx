@@ -27,6 +27,7 @@ import { fail, ok } from '../lib/notify';
 import { NEUTRAL, fontOf } from '../lib/theme';
 import type { Column, DatasetSummary } from '../lib/types';
 import FicheMenu from '../components/FicheMenu';
+import { loadPlotly } from '../lib/plotly';
 import { Conditions } from '../components/StepForm';
 
 interface Analyse {
@@ -96,8 +97,6 @@ const GUIDES: Record<string, string[]> = {
   ],
 };
 
-let plotlyPromise: Promise<any> | null = null;
-const loadPlotly = () => (plotlyPromise ??= import('plotly.js-dist-min').then((m) => m.default || m));
 
 function StatGraph({ g }: { g: any }) {
   const { structure } = useAuth();

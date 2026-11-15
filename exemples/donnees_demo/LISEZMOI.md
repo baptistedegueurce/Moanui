@@ -20,6 +20,8 @@ identique à chaque fois). Le test `backend/tests/test_donnees_demo.py` vérifie
 | `vms_agiltech_2025.csv` | Positions VMS Agiltech 2025, toutes les 15 min environ (≈ 114 000 positions) | `Latitude, Longitude, Vitesse` (nœuds), date `jj/mm/aaaa hh:mm`, `navire` |
 | `vms_cls_2025.csv` | Positions VMS CLS 2025, toutes les heures environ (≈ 29 000 positions) | `LT, LG, SP` (dixièmes de nœud), `col_date`, `OP` |
 | `suivi_casiers_homard.csv` | Campagne fictive de suivi au casier (2023-2025) : homards par station | Comptages très dispersés, effort = nombre de casiers |
+| `quotas_2025_fictifs.csv` | Quotas 2025 fictifs (sole, langoustine, merlu, bar) avec consommation annoncée | À importer dans Gestion |
+| `limitations_2025_fictives.csv` | Limitations fictives : bar au mois, coquille à la marée, fermeture de la sole en février, homard à la semaine | À importer dans Gestion |
 | `zone_eolienne_fictive.geojson` | Zone d'étude éolienne fictive au sud des Glénan + raccordement | Recouvre un lieu de pêche des chalutiers |
 | `gisements_coquille_fictifs.kml` | Deux gisements fictifs de coquille en baie de Douarnenez | KML |
 | `cantonnements_fictifs_L93.zip` | Shapefile en **Lambert-93** (3 zones) | Reprojection automatique |
@@ -89,3 +91,13 @@ chalutier n'a aucune position (balise en panne) ; les caseyeurs, ligneurs et pet
    jour `date_heure` ↔ `date_deb`, rectangle `rectangle_ciem` ↔ `stat_rect`, espèce `esp_cod_fao`, poids et montants.
    Attendu : environ 80 % des captures attribuées, le reste expliqué (navires sans VMS, balise en panne).
    Ensuite : valeur pêchée dans la zone éolienne = filtre `zone_eol` non vide + somme des montants.
+
+### 10. Gestion : quotas et limitations
+1. Gestion > Suivi d'un quota : choisir `sacrois_2025` (colonnes proposées automatiquement), espèce `HKE`, quota
+   400 000 kg, annoncé 360 000 kg, puis Calculer. Attendu : environ 89 % consommés, seuil de 80 % franchi, courbe cumulée
+   sous le quota, consommation par mois. Enregistrer.
+2. Tableau de bord des quotas > Importer une liste de quotas : `quotas_2025_fictifs.csv`. Attendu : 4 quotas, la sole
+   dépasse 100 % (atteint en novembre), le bar approche 95 %.
+3. Limitations et dépassements : Importer des règles (CSV) `limitations_2025_fictives.csv`, Lancer le contrôle.
+   Attendu : une quarantaine de dépassements sur une trentaine de navires ; toutes les captures de sole de février sont des
+   dépassements (fermeture) ; détail par navire et par mois ; export Excel et fiche PDF / Word.
