@@ -21,6 +21,7 @@ concurrency:
 jobs:
   build:
     runs-on: windows-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
@@ -116,13 +117,19 @@ jobs:
           Get-Item Moanui-installation.exe | Select-Object Name, Length
 
       - name: Vérification de l'installateur (fichier marqué « téléchargé depuis Internet »)
+        timeout-minutes: 10
         shell: pwsh
         run: |
           Copy-Item Moanui-installation.exe "$env:RUNNER_TEMP\Moanui-installation.exe"
           $inst = "$env:RUNNER_TEMP\Moanui-installation.exe"
           Set-Content -Path $inst -Stream Zone.Identifier -Value "[ZoneTransfer]`r`nZoneId=3"
-          $p = Start-Process -FilePath $inst -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/CURRENTUSER" -PassThru -Wait
-          if ($p.ExitCode -ne 0) { throw "Installation silencieuse en échec (code $($p.ExitCode))" }
+          # lancement direct (sans ShellExecute : pas de fenêtre d'avertissement en session non interactive)
+          $si = New-Object System.Diagnostics.ProcessStartInfo -Property @{
+            FileName = $inst; Arguments = "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CURRENTUSER /LOG=`"$env:RUNNER_TEMP\inst.log`""
+            UseShellExecute = $false }
+          $p = [System.Diagnostics.Process]::Start($si)
+          if (-not $p.WaitForExit(300000)) { $p.Kill(); Get-Content "$env:RUNNER_TEMP\inst.log" -ErrorAction SilentlyContinue; throw "Installation bloquée" }
+          if ($p.ExitCode -ne 0) { Get-Content "$env:RUNNER_TEMP\inst.log"; throw "Installation silencieuse en échec (code $($p.ExitCode))" }
           $app = "$env:LOCALAPPDATA\Programs\Moanui"
           $dll = Get-ChildItem "$app\_internal" -Filter "python3*.dll" | Select-Object -First 1
           if (-not $dll) { throw "python3xx.dll absente de $app" }
@@ -138,8 +145,11 @@ jobs:
           if (-not $ok) { throw "Moanui installé ne démarre pas" }
           if ($r.version -ne "${{ steps.v.outputs.version }}") { throw "Version installée $($r.version)" }
           Start-Sleep -Seconds 2
-          $un = Start-Process -FilePath "$app\unins000.exe" -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES" -PassThru -Wait
-          "Désinstallation : code $($un.ExitCode)"
+          $su = New-Object System.Diagnostics.ProcessStartInfo -Property @{
+            FileName = "$app\unins000.exe"; Arguments = "/VERYSILENT /SUPPRESSMSGBOXES"; UseShellExecute = $false }
+          $un = [System.Diagnostics.Process]::Start($su)
+          [void]$un.WaitForExit(120000)
+          "Désinstallation lancée"
 
       - uses: actions/upload-artifact@v4
         with:
