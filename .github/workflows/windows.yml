@@ -70,7 +70,7 @@ jobs:
         run: |
           # sans l'extension installée dans le profil : seule la copie embarquée doit servir
           Remove-Item -Recurse -Force "$env:USERPROFILE\.duckdb" -ErrorAction SilentlyContinue
-          $p = Start-Process -FilePath "dist\Moanui\Moanui.exe" -ArgumentList "--no-browser","--port","8799","--home","$env:RUNNER_TEMP\moanui-test" -PassThru
+          $p = Start-Process -FilePath "dist\Moanui\Moanui.exe" -ArgumentList "--no-browser","--no-pause","--port","8799","--home","$env:RUNNER_TEMP\moanui-test" -PassThru
           $ok = $false
           for ($i = 0; $i -lt 30; $i++) {
             Start-Sleep -Seconds 2
@@ -87,6 +87,24 @@ jobs:
         run: |
           Copy-Item packaging\LISEZMOI.txt dist\Moanui\
           Compress-Archive -Path dist\Moanui -DestinationPath Moanui-windows.zip
+
+      - name: Vérification comme un utilisateur (zip extrait, double-clic, dossier par défaut)
+        shell: pwsh
+        run: |
+          # dossier avec espaces et accents, espace de travail par défaut (%LOCALAPPDATA%\Moanui), port par défaut
+          $d = Join-Path $env:RUNNER_TEMP "Téléchargements utilisateur"
+          Expand-Archive Moanui-windows.zip -DestinationPath $d -Force
+          $exe = Join-Path $d "Moanui\Moanui.exe"
+          $p = Start-Process -FilePath $exe -ArgumentList "--no-browser","--no-pause" -WorkingDirectory $d -PassThru
+          $ok = $false
+          for ($i = 0; $i -lt 30; $i++) {
+            Start-Sleep -Seconds 2
+            if ($p.HasExited) { break }
+            try { $r = Invoke-RestMethod "http://127.0.0.1:8765/api/health"; if ($r.ok) { $ok = $true; break } } catch {}
+          }
+          if (-not $p.HasExited) { Stop-Process -Id $p.Id -Force }
+          Get-ChildItem -Recurse -Filter moanui-erreur.log $d, "$env:LOCALAPPDATA\Moanui" -ErrorAction SilentlyContinue | Get-Content
+          if (-not $ok) { throw "Moanui.exe ne démarre pas depuis le zip extrait (code $($p.ExitCode))" }
 
       - uses: actions/upload-artifact@v4
         with:

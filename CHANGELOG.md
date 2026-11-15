@@ -5,6 +5,9 @@ publiée automatiquement ; au passage d'une version stable, elle est renommée `
 
 ## Non publié
 
+- **Démarrage** : en cas d'erreur au lancement, la fenêtre reste ouverte avec le message, et le détail est
+  enregistré dans `moanui-erreur.log` (à côté de Moanui.exe). Test automatique ajouté : zip extrait dans un
+  dossier avec espaces et accents, lancement comme un double-clic.
 - **Publication automatique** : chaque modification produit une version téléchargeable dans
   Releases (Moanui-windows.zip) avec ses notes de version ; le numéro de version s'affiche dans l'application
   (en bas de la barre latérale).
