@@ -56,6 +56,8 @@ interface Res {
   tableaux: { titre: string; colonnes: string[]; lignes: any[][] }[];
   interpretation: string[];
   limites: string[];
+  rapport?: string[];
+  discussion?: string[];
   graph: any;
   effectifs: Record<string, number>;
 }
@@ -450,6 +452,19 @@ export default function StatsPage() {
               </Group>
             )}
 
+            {!!res.rapport?.length && (
+              <Paper withBorder p="xs">
+                <Text size="xs" c="dimmed">
+                  Écriture normalisée (à reprendre telle quelle dans un rapport)
+                </Text>
+                {res.rapport.map((l) => (
+                  <Text size="sm" ff="monospace" key={l}>
+                    {l}
+                  </Text>
+                ))}
+              </Paper>
+            )}
+
             {res.graph && (!res.bloque || res.force) && (
               <Paper withBorder p="xs">
                 <StatGraph g={res.graph} />
@@ -483,6 +498,21 @@ export default function StatsPage() {
                 </ScrollArea>
               </Paper>
             ))}
+
+            {!!res.discussion?.length && (
+              <Paper withBorder p="md">
+                <Text fw={600} size="sm">
+                  Discussion
+                </Text>
+                <Stack gap={6} mt={4}>
+                  {res.discussion.map((d) => (
+                    <Text size="sm" key={d}>
+                      {d}
+                    </Text>
+                  ))}
+                </Stack>
+              </Paper>
+            )}
 
             {res.limites.length > 0 && (
               <Paper withBorder p="md">

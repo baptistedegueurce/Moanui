@@ -10,6 +10,7 @@ Principes :
 
 from __future__ import annotations
 
+import json
 import math
 from dataclasses import dataclass, field
 
@@ -105,6 +106,10 @@ class Result:
     graph: dict | None = None
     effectifs: dict = field(default_factory=dict)
     fd: dict = field(default_factory=dict)  # données des figures de la fiche méthode (non renvoyées à l'interface)
+    rapport: list[str] = field(default_factory=list)  # résultats au format normalisé (statistique, ddl, p, effet, IC)
+    resume: str = ""  # résumé de type « abstract »
+    discussion: list[str] = field(default_factory=list)  # avec appels de citation {{clé}}
+    sci: dict = field(default_factory=dict)  # p, taille d'effet qualifiée, n, bootstrap (pour le résumé / la discussion)
 
     def as_dict(self):
         return {
@@ -112,7 +117,96 @@ class Result:
             "checks": [c.as_dict() for c in self.checks], "bloque": self.bloque, "alternative": self.alternative,
             "resultats": self.resultats, "tableaux": self.tableaux, "interpretation": self.interpretation,
             "limites": self.limites, "graph": self.graph, "effectifs": self.effectifs,
+            "rapport": self.rapport, "resume": cites_text(self.resume),
+            "discussion": [cites_text(d) for d in self.discussion],
+            "resume_src": self.resume, "discussion_src": self.discussion,
         }
+
+
+def cites_text(text: str, cite=None) -> str:
+    """Remplace les appels {{clé1,clé2}} par « (Auteur, année) » (ou par la fonction cite d'une fiche)."""
+    import re as _re
+
+    from .biblio import REFS
+    from .fiche import _short
+
+    def rep(m):
+        keys = [k.strip() for k in m.group(1).split(",")]
+        if cite:
+            return cite(*keys)
+        return "(" + " ; ".join(_short(REFS[k]) for k in keys if k in REFS) + ")"
+
+    return _re.sub(r"\{\{([^}]+)\}\}", rep, text or "")
+
+
+# --------------------------------------------------------------------------- intervalles par bootstrap
+BOOT_B = 400
+BOOT_SEED = 2026
+
+
+def boot_groups(fn, groups, B: int | None = None):
+    """IC 95 % percentile d'une statistique de plusieurs groupes, rééchantillonnés séparément (graine fixe)."""
+    n = sum(len(g) for g in groups)
+    B = B or (BOOT_B if n <= 50000 else 150)
+    rng = np.random.default_rng(BOOT_SEED)
+    vals = []
+    for _ in range(B):
+        try:
+            v = fn(*[g[rng.integers(0, len(g), len(g))] for g in groups])
+        except Exception:  # noqa: BLE001
+            continue
+        if v is not None and math.isfinite(v):
+            vals.append(v)
+    if len(vals) < 0.8 * B:
+        return None
+    return float(np.percentile(vals, 2.5)), float(np.percentile(vals, 97.5))
+
+
+def boot_rows(fn, n: int, B: int | None = None):
+    """IC 95 % percentile d'une statistique calculée sur des lignes rééchantillonnées (indices)."""
+    B = B or (BOOT_B if n <= 50000 else 150)
+    rng = np.random.default_rng(BOOT_SEED)
+    vals = []
+    for _ in range(B):
+        try:
+            v = fn(rng.integers(0, n, n))
+        except Exception:  # noqa: BLE001
+            continue
+        if v is not None and math.isfinite(v):
+            vals.append(v)
+    if len(vals) < 0.8 * B:
+        return None
+    return float(np.percentile(vals, 2.5)), float(np.percentile(vals, 97.5))
+
+
+def ci_txt(ci, d: int = 3) -> str:
+    return f"[{fr(ci[0], d)} ; {fr(ci[1], d)}]" if ci else "non calculable"
+
+
+def p_txt(p: float) -> str:
+    return "p < 0,001" if p < 0.001 else f"p = {fr(p, 3)}"
+
+
+def eps2_kw(*groups) -> float:
+    n = sum(len(g) for g in groups)
+    return float(st.kruskal(*groups).statistic) / (n - 1)
+
+
+def eta2_of(*groups) -> float:
+    allv = np.concatenate(groups)
+    ss_t = float(np.sum((allv - allv.mean()) ** 2))
+    ss_b = sum(len(x) * (np.mean(x) - allv.mean()) ** 2 for x in groups)
+    return float(ss_b / ss_t) if ss_t else 0.0
+
+
+def rank_biserial(a, b) -> float:
+    """Corrélation rang-bisériale (Kerby, 2014) : part des paires où a > b moins part des paires où a < b."""
+    return float(2 * st.mannwhitneyu(a, b, alternative="two-sided").statistic / (len(a) * len(b)) - 1)
+
+
+def cohen_d(a, b) -> float:
+    sp = math.sqrt((np.var(a, ddof=1) + np.var(b, ddof=1)) / 2)
+    return float((np.mean(a) - np.mean(b)) / sp) if sp else 0.0
 
 
 def normality(x: np.ndarray, label: str) -> Check:
@@ -233,6 +327,13 @@ def compare_groups(y: np.ndarray, g: np.ndarray, yname: str, gname: str, force: 
             d = (np.mean(a) - np.mean(b)) / sp if sp else 0.0
             ci = res.confidence_interval(0.95)
             r.test_label = "Test t de Welch (comparaison de deux moyennes)"
+            n1, n2 = len(a), len(b)
+            se_d = math.sqrt((n1 + n2) / (n1 * n2) + d ** 2 / (2 * (n1 + n2)))  # Nakagawa et Cuthill (2007)
+            d_ci = (d - 1.96 * se_d, d + 1.96 * se_d)
+            r.rapport = [f"t({fr(float(res.df), 1)}) = {fr(float(res.statistic), 2)}, {p_txt(res.pvalue)} ; différence des "
+                         f"moyennes = {fr(means[0] - means[1])} [IC 95 % {fr(ci.low)} ; {fr(ci.high)}] ; d de Cohen = "
+                         f"{fr(d, 2)} [IC 95 % {fr(d_ci[0], 2)} ; {fr(d_ci[1], 2)}]."]
+            r.sci = {"p": float(res.pvalue), "effet": effect_words(d, (0.2, 0.5, 0.8)), "n": n1 + n2, "boot": False}
             r.resultats = [{"nom": "Différence des moyennes", "valeur": fr(means[0] - means[1])},
                            {"nom": "Intervalle de confiance à 95 %", "valeur": f"[{fr(ci.low)} ; {fr(ci.high)}]"},
                            {"nom": "t", "valeur": fr(float(res.statistic))}, {"nom": "ddl", "valeur": fr(float(res.df), 1)},
@@ -246,9 +347,15 @@ def compare_groups(y: np.ndarray, g: np.ndarray, yname: str, gname: str, force: 
                 f"{effect_words(d, (0.2, 0.5, 0.8))}."]
         else:
             res = st.mannwhitneyu(a, b, alternative="two-sided")
-            rb = 1 - 2 * res.statistic / (len(a) * len(b))
+            rb = rank_biserial(a, b)
             r.test_label = "Test de Mann-Whitney (comparaison de deux distributions, sans hypothèse de normalité)"
             p = res.pvalue
+            rb_ci = boot_groups(rank_biserial, [a, b])
+            md_ci = boot_groups(lambda u, v: float(np.median(u) - np.median(v)), [a, b])
+            r.rapport = [f"U = {fr(float(res.statistic), 1)}, {p_txt(p)} ; corrélation rang-bisériale r = {fr(rb, 2)} "
+                         f"[IC 95 % {ci_txt(rb_ci, 2)[1:-1]}] ; différence des médianes = {fr(meds[0] - meds[1])} "
+                         f"[IC 95 % {ci_txt(md_ci)[1:-1]}] (n = {fr(len(a))} et {fr(len(b))})."]
+            r.sci = {"p": float(p), "effet": effect_words(rb, (0.1, 0.3, 0.5)), "n": len(a) + len(b), "boot": True}
             r.resultats = [{"nom": "Médianes", "valeur": f"{fr(meds[0])} / {fr(meds[1])}"},
                            {"nom": "U", "valeur": fr(float(res.statistic))}, {"nom": "p", "valeur": fp(p)},
                            {"nom": "Taille d'effet (corrélation rang-bisériale)", "valeur": f"{fr(rb, 2)} ({effect_words(rb, (0.1, 0.3, 0.5))})"}]
@@ -265,17 +372,31 @@ def compare_groups(y: np.ndarray, g: np.ndarray, yname: str, gname: str, force: 
             r.test_label = "ANOVA à un facteur (comparaison de plusieurs moyennes)"
             stat_txt, p = f"F = {fr(float(res.statistic))}", res.pvalue
             eff = f"η² = {fr(eta2, 3)} ({effect_words(math.sqrt(eta2), (0.1, 0.25, 0.4))})"
+            e_ci = boot_groups(eta2_of, groups)
+            r.rapport = [f"F({k - 1} ; {n_tot - k}) = {fr(float(res.statistic), 2)}, {p_txt(p)} ; η² = {fr(eta2, 3)} "
+                         f"[IC 95 % {ci_txt(e_ci)[1:-1]}] (N = {fr(n_tot)}, {k} groupes)."]
+            r.sci = {"p": float(p), "effet": effect_words(math.sqrt(eta2), (0.1, 0.25, 0.4)), "n": n_tot, "boot": True}
         elif test == "welch_anova":
             stat, p, df1, df2 = welch_anova(groups)
             r.test_label = "ANOVA de Welch (moyennes, variances inégales)"
             stat_txt = f"F = {fr(stat)} (ddl {fr(df1, 1)} ; {fr(df2, 1)})"
-            eff = "–"
+            eta2 = eta2_of(*groups)
+            e_ci = boot_groups(eta2_of, groups)
+            eff = f"η² = {fr(eta2, 3)} (descriptif, {effect_words(math.sqrt(eta2), (0.1, 0.25, 0.4))})"
+            r.rapport = [f"F de Welch({fr(df1, 0)} ; {fr(df2, 1)}) = {fr(stat, 2)}, {p_txt(p)} ; η² = {fr(eta2, 3)} "
+                         f"[IC 95 % {ci_txt(e_ci)[1:-1]}] (N = {fr(n_tot)}, {k} groupes)."]
+            r.sci = {"p": float(p), "effet": effect_words(math.sqrt(eta2), (0.1, 0.25, 0.4)), "n": n_tot, "boot": True}
         else:
             res = st.kruskal(*groups)
-            eps2 = (res.statistic - k + 1) / (n_tot - k) if n_tot > k else 0.0
+            eps2 = float(res.statistic) / (n_tot - 1)  # ε² des rangs (Tomczak et Tomczak, 2014)
             r.test_label = "Test de Kruskal-Wallis (plusieurs distributions, sans hypothèse de normalité)"
             stat_txt, p = f"H = {fr(float(res.statistic))}", res.pvalue
             eff = f"ε² = {fr(eps2, 3)} ({effect_words(math.sqrt(max(eps2, 0)), (0.1, 0.25, 0.4))})"
+            e_ci = boot_groups(eps2_kw, groups)
+            r.rapport = [f"H({k - 1}) = {fr(float(res.statistic), 2)}, {p_txt(p)} ; ε² = {fr(eps2, 3)} "
+                         f"[IC 95 % {ci_txt(e_ci)[1:-1]}] (N = {fr(n_tot)}, {k} groupes)."]
+            r.sci = {"p": float(p), "effet": effect_words(math.sqrt(max(eps2, 0)), (0.1, 0.25, 0.4)), "n": n_tot,
+                     "boot": True}
         r.resultats = [{"nom": "Statistique", "valeur": stat_txt}, {"nom": "p", "valeur": fp(p)},
                        {"nom": "Taille d'effet", "valeur": eff}]
         loc = means if parametric else meds
@@ -289,9 +410,10 @@ def compare_groups(y: np.ndarray, g: np.ndarray, yname: str, gname: str, force: 
             r.interpretation.append(f"Taille d'effet : {eff}.")
         if p < ALPHA:
             pairs = pairwise(groups, levels, parametric)
-            r.tableaux.append({"titre": "Comparaisons deux à deux (correction de Holm)",
-                               "colonnes": ["Groupe A", "Groupe B", "p ajusté", "Différent ?"], "lignes": pairs})
-            diff = [f"{a} / {b}" for a, b, _, ok in pairs if ok == "oui"]
+            r.tableaux.append({"titre": "Comparaisons deux à deux (correction de Holm) avec taille d'effet de chaque paire",
+                               "colonnes": ["Groupe A", "Groupe B", "Taille d'effet", "p ajusté", "Différent ?"],
+                               "lignes": pairs})
+            diff = [f"{a} / {b}" for a, b, _, _, ok in pairs if ok == "oui"]
             r.interpretation.append(
                 "Paires de groupes qui diffèrent : " + (", ".join(diff[:12]) + (" …" if len(diff) > 12 else "")
                                                        if diff else "aucune après correction des comparaisons multiples."))
@@ -327,17 +449,23 @@ def holm(ps: list[float]) -> list[float]:
 
 
 def pairwise(groups, levels, parametric: bool):
-    pairs, ps = [], []
+    """Comparaisons deux à deux (Welch ou Mann-Whitney), p corrigées par Holm, avec la taille d'effet de chaque paire
+    (d de Cohen ou corrélation rang-bisériale)."""
+    pairs, ps, effs = [], [], []
     for i in range(len(groups)):
         for j in range(i + 1, len(groups)):
             if parametric:
                 p = st.ttest_ind(groups[i], groups[j], equal_var=False).pvalue
+                e = cohen_d(groups[i], groups[j])
+                effs.append(f"d = {fr(e, 2)} ({effect_words(e, (0.2, 0.5, 0.8))})")
             else:
                 p = st.mannwhitneyu(groups[i], groups[j], alternative="two-sided").pvalue
+                e = rank_biserial(groups[i], groups[j])
+                effs.append(f"r = {fr(e, 2)} ({effect_words(e, (0.1, 0.3, 0.5))})")
             pairs.append((str(levels[i]), str(levels[j])))
             ps.append(float(p))
     adj = holm(ps)
-    return [[a, b, fp(p), "oui" if p < ALPHA else "non"] for (a, b), p in zip(pairs, adj)]
+    return [[a, b, ef, fp(p), "oui" if p < ALPHA else "non"] for (a, b), ef, p in zip(pairs, effs, adj)]
 
 
 def association(x: np.ndarray, y: np.ndarray, xname: str, yname: str, force: str | None) -> Result:
@@ -371,9 +499,33 @@ def association(x: np.ndarray, y: np.ndarray, xname: str, yname: str, force: str
     if test == "fisher":
         odds, p = st.fisher_exact(table)
         r.test_label = "Test exact de Fisher"
+        try:
+            oci = st.contingency.odds_ratio(table).confidence_interval(0.95)
+            oci = (float(oci.low), float(oci.high))
+        except Exception:  # noqa: BLE001
+            oci = None
         r.resultats = [{"nom": "Rapport des cotes", "valeur": fr(float(odds))}, {"nom": "p", "valeur": fp(p)}]
+        r.rapport = [f"Test exact de Fisher : rapport des cotes = {fr(float(odds), 2)} [IC 95 % {ci_txt(oci, 2)[1:-1]}], "
+                     f"{p_txt(p)} (N = {fr(int(n))})."]
+        r.sci = {"p": float(p), "effet": None, "n": int(n), "boot": False}
     else:
         r.test_label = "Test du χ² d'indépendance"
+        xcode = np.array([xs.index(v) for v in x.tolist()]) if len(x) <= 200000 else None
+        ycode = np.array([ys.index(v) for v in y.tolist()]) if xcode is not None else None
+
+        def cramer(ix):
+            tb = np.zeros(table.shape)
+            np.add.at(tb, (xcode[ix], ycode[ix]), 1)
+            tb = tb[tb.sum(axis=1) > 0][:, tb.sum(axis=0) > 0]
+            if min(tb.shape) < 2:
+                return None
+            c2 = st.chi2_contingency(tb, correction=False)[0]
+            return math.sqrt(c2 / (tb.sum() * (min(tb.shape) - 1)))
+
+        v_ci = boot_rows(cramer, len(x)) if xcode is not None else None
+        r.rapport = [f"χ²({dof}, N = {fr(int(n))}) = {fr(float(chi2), 2)}, {p_txt(p)} ; V de Cramér = {fr(v, 2)} "
+                     f"[IC 95 % {ci_txt(v_ci, 2)[1:-1]}]."]
+        r.sci = {"p": float(p), "effet": effect_words(v, (0.1, 0.3, 0.5)), "n": int(n), "boot": v_ci is not None}
         r.resultats = [{"nom": "χ²", "valeur": fr(float(chi2))}, {"nom": "ddl", "valeur": str(dof)},
                        {"nom": "p", "valeur": fp(p)},
                        {"nom": "V de Cramér", "valeur": f"{fr(v, 2)} ({effect_words(v, (0.1, 0.3, 0.5))})"}]
@@ -426,11 +578,23 @@ def correlation(x: np.ndarray, y: np.ndarray, xname: str, yname: str, force: str
         r.test_label = "Corrélation de Pearson (relation linéaire)"
         r.resultats = [{"nom": "r", "valeur": fr(coef, 2)}, {"nom": "IC 95 %", "valeur": f"[{fr(ci.low, 2)} ; {fr(ci.high, 2)}]"},
                        {"nom": "p", "valeur": fp(p)}, {"nom": "Part de variance commune (r²)", "valeur": f"{pc(coef ** 2, 0)}"}]
+        r.rapport = [f"r({n - 2}) = {fr(coef, 2)} [IC 95 % {fr(ci.low, 2)} ; {fr(ci.high, 2)}], {p_txt(p)} ; r² = "
+                     f"{pc(coef ** 2, 1)} de variance commune."]
     else:
         res = st.spearmanr(x, y)
         coef, p = float(res.statistic), float(res.pvalue)
         r.test_label = "Corrélation de Spearman (relation monotone, sur les rangs)"
-        r.resultats = [{"nom": "ρ", "valeur": fr(coef, 2)}, {"nom": "p", "valeur": fp(p)}]
+        # IC par la transformation de Fisher avec l'erreur type de Bonett et Wright (2000)
+        if n > 4 and abs(coef) < 1:
+            se = math.sqrt((1 + coef ** 2 / 2) / (n - 3))
+            zc = math.atanh(coef)
+            rci = (math.tanh(zc - 1.96 * se), math.tanh(zc + 1.96 * se))
+        else:
+            rci = None
+        r.resultats = [{"nom": "ρ", "valeur": fr(coef, 2)}, {"nom": "IC 95 %", "valeur": ci_txt(rci, 2)},
+                       {"nom": "p", "valeur": fp(p)}]
+        r.rapport = [f"ρ de Spearman({n - 2}) = {fr(coef, 2)} [IC 95 % {ci_txt(rci, 2)[1:-1]}], {p_txt(p)}."]
+    r.sci = {"p": float(p), "effet": effect_words(coef, (0.1, 0.3, 0.5)), "n": n, "boot": False}
     sens = "augmente" if coef > 0 else "diminue"
     r.interpretation = [
         f"Quand « {xname} » augmente, « {yname} » {sens} en tendance : lien {effect_words(coef, (0.1, 0.3, 0.5))} "
@@ -530,6 +694,10 @@ def regression(data: dict, yname: str, xnames: list[str], cat: set[str], force: 
                               "transformation (LOG1P dans une formule) ou un modèle linéaire généralisé est plus adapté."))
     r.resultats = [{"nom": "R²", "valeur": f"{pc(r2, 1)}"}, {"nom": "R² ajusté", "valeur": f"{pc(r2a, 1)}"},
                    {"nom": "F global", "valeur": f"{fr(fstat)} ({fpe(fp_)})"}, {"nom": "n", "valeur": fr(n)}]
+    r.rapport = [f"F({p_ - 1} ; {dof}) = {fr(fstat, 2)}, {p_txt(fp_) if math.isfinite(fp_) else 'p non calculable'} ; "
+                 f"R² = {fr(r2, 3)}, R² ajusté = {fr(r2a, 3)} ; erreur type résiduelle = {fr(math.sqrt(sigma2))} (n = {n})."]
+    r.sci = {"p": fp_ if math.isfinite(fp_) else 1.0, "effet": effect_words(math.sqrt(max(r2, 0)), (0.1, 0.3, 0.5)),
+             "n": n, "boot": False}
     r.tableaux.append({"titre": "Coefficients", "colonnes": ["Terme", "Estimation", "IC 95 %", "p", "Significatif ?"],
                        "lignes": [[nm, fr(float(b)), f"[{fr(float(b - tcrit * s))} ; {fr(float(b + tcrit * s))}]", fp(float(pv)),
                                    "oui" if pv < ALPHA else "non"] for nm, b, s, pv in zip(names, beta, se, pvals)]})
@@ -549,6 +717,56 @@ def regression(data: dict, yname: str, xnames: list[str], cat: set[str], force: 
     r.fd = {"kind": "residus", "fitted": fitted, "resid": resid, "y": yname, "cook": cook}
     r.limites = ["Une relation dans un modèle n'est pas une preuve de causalité.",
                  "Le modèle ne vaut que dans la plage des valeurs observées : pas d'extrapolation."] + COMMON_LIMITS[1:]
+    return r
+
+
+# --------------------------------------------------------------------------- résumé et discussion
+
+
+def finalize(r: Result) -> Result:
+    """Résumé (type « abstract ») et discussion conditionnés aux résultats obtenus, jamais génériques."""
+    sci = r.sci
+    if not sci or not r.rapport:
+        return r
+    p, eff, n = sci.get("p", 1.0), sci.get("effet"), sci.get("n", 0)
+    signif = p < ALPHA
+    concl = r.interpretation[0] if r.interpretation else ""
+    r.resume = (f"{r.titre}. Méthode : {r.test_label[0].lower() + r.test_label[1:] if r.test_label else r.test} sur "
+                f"{fr(n)} observations. Résultat : {r.rapport[0]} {concl}"
+                + (" Le résultat est statistiquement significatif au seuil de 5 %" if signif else
+                   " Le résultat n'est pas statistiquement significatif au seuil de 5 %")
+                + (f", pour un effet {eff}." if eff else "."))
+    d = []
+    if signif and eff in ("négligeable", "faible"):
+        d.append(f"L'effet est statistiquement significatif mais {eff} : la significativité tient en partie à l'effectif "
+                 f"({fr(n)} observations). Avec de grands échantillons, des écarts minimes deviennent significatifs ; c'est la "
+                 "taille d'effet et son intervalle de confiance qui disent si l'écart compte en pratique {{lin2013,nakagawa2007}}.")
+    elif signif and eff in ("moyen", "fort"):
+        d.append(f"L'effet est à la fois statistiquement significatif et {eff} : l'écart est net. Sa portée pratique "
+                 "se juge sur les valeurs elles-mêmes (tableaux), au regard des enjeux de gestion {{nakagawa2007}}.")
+    elif signif:
+        d.append("Le résultat est statistiquement significatif ; son importance pratique se juge sur l'ampleur des effets "
+                 "estimés et de leurs intervalles de confiance {{nakagawa2007}}.")
+    else:
+        d.append("L'absence de significativité ne démontre pas l'absence d'effet : les intervalles de confiance indiquent "
+                 "les valeurs encore compatibles avec les données ; un effectif plus grand pourrait révéler un effet "
+                 "faible {{wasserstein2016,nakagawa2007}}.")
+    if r.bloque:
+        d.append("Les conditions d'application n'étaient pas toutes réunies (analyse menée à la demande de l'analyste) : les "
+                 "p-values et intervalles sont approximatifs et doivent être interprétés avec prudence.")
+    d.append("Les lignes d'un même navire, d'une même marée ou d'un même jour ne sont pas des réplicats indépendants : "
+             "traiter chaque ligne comme une observation indépendante (pseudo-réplication) rend les tests trop optimistes. "
+             "Agréger à l'unité d'échantillonnage pertinente, ou utiliser un modèle à effet aléatoire, limite ce biais "
+             "{{hurlbert1984,zuur2009}}.")
+    if sci.get("glm"):
+        d.append(f"Le modèle explique {pc(sci.get('expl', 0), 0)} de la déviance. Pour une standardisation de CPUE, l'indice "
+                 "obtenu reflète l'abondance seulement si l'effort, la zone et la saison sont correctement pris en compte et "
+                 "si la capturabilité est stable dans le temps {{maunder2004}}. La démarche suit le protocole de "
+                 "présentation des modèles de régression de Zuur et Ieno {{zuur2016}}.")
+    if sci.get("boot"):
+        d.append(f"Les intervalles de confiance des tailles d'effet sont obtenus par bootstrap percentile ({BOOT_B} "
+                 f"rééchantillonnages, graine {BOOT_SEED} : résultat reproductible) {{{{efron1993}}}}.")
+    r.discussion = d
     return r
 
 
@@ -652,6 +870,7 @@ def run(con, plan, spec: dict, filters_sql: str = "") -> Result:
         for c in cat:
             data[c] = data[c].astype(str)
         res = regression(data, y, xs, cat, force)
+    finalize(res)
     res.effectifs.update({"lignes_total": int(total), "lignes_utilisees": int(n)})
     if total > n:
         res.checks.insert(0, Check("Valeurs manquantes", True, "avertissement" if (total - n) / max(total, 1) > 0.1 else "info",
@@ -671,27 +890,34 @@ def _need_num(schema, col):
 TEST_INFO: dict[str, tuple[str, tuple[str, ...]]] = {
     "t_welch": ("Le test t de Welch compare les moyennes de deux groupes sans supposer que leurs variances sont égales ; "
                 "il est recommandé par défaut à la place du test t de Student, dont il ne diffère presque pas quand les "
-                "variances sont égales. La taille d'effet est le d de Cohen (écart des moyennes en écarts-types)",
-                ("welch1947", "delacre2017", "cohen1988")),
+                "variances sont égales. La taille d'effet est le d de Cohen (écart des moyennes en écarts-types), donné avec son intervalle de confiance "
+                "à 95 % (approximation normale de son erreur type)",
+                ("welch1947", "delacre2017", "cohen1988", "nakagawa2007")),
     "mann_whitney": ("Le test de Mann-Whitney compare deux distributions à partir des rangs des valeurs : il ne suppose pas "
                      "de loi normale et résiste aux valeurs extrêmes. Il teste si une valeur tirée d'un groupe tend à être "
-                     "plus grande qu'une valeur tirée de l'autre. La taille d'effet est la corrélation rang-bisériale",
-                     ("mannwhitney1947",)),
+                     "plus grande qu'une valeur tirée de l'autre. La taille d'effet est la corrélation rang-bisériale (part des paires "
+                     "favorables moins part des paires défavorables), avec la différence des médianes ; leurs intervalles de "
+                     "confiance à 95 % sont estimés par bootstrap",
+                     ("mannwhitney1947", "kerby2014", "efron1993")),
     "anova": ("L'analyse de variance (ANOVA) à un facteur compare les moyennes de plusieurs groupes en supposant des "
               "distributions normales de même variance. La taille d'effet η² est la part de la variabilité totale expliquée "
-              "par les groupes. Si le test est significatif, les groupes sont comparés deux à deux (tests t de Welch) avec "
-              "correction de Holm", ("cohen1988", "holm1979")),
+              "par les groupes (intervalle de confiance par bootstrap). Si le test est significatif, les groupes sont comparés "
+              "deux à deux (tests t de Welch, d de Cohen pour chaque paire) avec correction de Holm",
+              ("cohen1988", "holm1979", "efron1993")),
     "welch_anova": ("L'ANOVA de Welch compare les moyennes de plusieurs groupes sans supposer l'égalité des variances. Si "
                     "elle est significative, les groupes sont comparés deux à deux (tests t de Welch) avec correction de Holm",
                     ("welch1951", "holm1979")),
     "kruskal": ("Le test de Kruskal-Wallis compare plusieurs distributions à partir des rangs, sans hypothèse de normalité. "
-                "La taille d'effet ε² est fondée sur les rangs. Si le test est significatif, les groupes sont comparés deux "
-                "à deux (Mann-Whitney) avec correction de Holm", ("kruskal1952", "mannwhitney1947", "holm1979")),
+                "La taille d'effet ε² = H / (n − 1) est fondée sur les rangs, avec un intervalle de confiance par bootstrap. Si "
+                "le test est significatif, les groupes sont comparés deux à deux (Mann-Whitney, corrélation rang-bisériale "
+                "pour chaque paire) avec correction de Holm",
+                ("kruskal1952", "tomczak2014", "mannwhitney1947", "kerby2014", "holm1979", "efron1993")),
     "chi2": ("Le test du χ² d'indépendance compare les effectifs observés du tableau croisé aux effectifs attendus si les "
              "deux variables étaient indépendantes. Il suppose des effectifs attendus suffisants (au moins 5 dans 80 % "
              "des cases, aucun sous 1). L'intensité du lien est mesurée par le V de Cramér (0 = aucun lien, 1 = lien total) ; "
-             "les résidus standardisés supérieurs à 2 en valeur absolue désignent les combinaisons sur- ou sous-représentées",
-             ("cochran1954", "cramer1946")),
+             "les résidus standardisés supérieurs à 2 en valeur absolue désignent les combinaisons sur- ou sous-représentées. "
+             "L'intervalle de confiance du V est estimé par bootstrap",
+             ("cochran1954", "cramer1946", "efron1993")),
     "fisher": ("Le test exact de Fisher calcule directement la probabilité du tableau 2 × 2 observé ; il reste valable avec de "
                "petits effectifs. L'intensité du lien est donnée par le rapport des cotes", ("fisher1922",)),
     "pearson": ("Le coefficient de corrélation de Pearson mesure l'intensité d'une relation linéaire entre deux mesures "
@@ -699,7 +925,8 @@ TEST_INFO: dict[str, tuple[str, tuple[str, ...]]] = {
                 "extrêmes", ("cohen1988",)),
     "spearman": ("Le coefficient de Spearman est la corrélation de Pearson calculée sur les rangs : il mesure une relation "
                  "monotone (toujours croissante ou toujours décroissante), sans hypothèse de normalité, et résiste aux valeurs "
-                 "extrêmes", ("spearman1904",)),
+                 "extrêmes. Son intervalle de confiance utilise la transformation de Fisher avec l'erreur type de Bonett et Wright",
+                 ("spearman1904", "bonett2000")),
     "ols": ("La régression linéaire multiple (moindres carrés) estime l'effet de chaque facteur sur la mesure, à autres "
             "facteurs constants. Les facteurs à catégories sont codés par indicatrices par rapport à une modalité de "
             "référence. Les conditions vérifiées sont la normalité et la variance constante des résidus (test de "
@@ -745,6 +972,10 @@ def method_fiche(res: dict, spec: dict, dataset_name: str, author: str, justific
     f.meta = [("Jeu de données", f"{dataset_name} (traitements décrits dans sa propre fiche méthode)"), ("Analyste", author),
               ("Date", __import__("datetime").datetime.now().strftime("%d/%m/%Y %H:%M"))]
 
+    if res.get("resume_src"):
+        f.h("Résumé", numbered=False)
+        f.p(cites_text(res["resume_src"], f.cite))
+
     f.h("Question et données")
     f.p(ANALYSES.get(spec.get("analyse"), {}).get("titre", "") + ".")
     f.kv([(var_labels.get(k, k), ", ".join(v) if isinstance(v, list) else str(v)) for k, v in vars_.items() if v]
@@ -773,6 +1004,11 @@ def method_fiche(res: dict, spec: dict, dataset_name: str, author: str, justific
                f"Justification : {justification or '(non renseignée)'}.")
 
     f.h("Résultats")
+    if res.get("rapport"):
+        f.p("Résultat principal, présenté selon les recommandations de report des statistiques (statistique de test, "
+            f"degrés de liberté, p exacte, taille d'effet et intervalle de confiance) {f.cite('nakagawa2007', 'zuur2016')} :")
+        for line in res["rapport"]:
+            f.note(line)
     if res["resultats"]:
         f.kv([(r["nom"], r["valeur"]) for r in res["resultats"]])
     for t in res["tableaux"]:
@@ -782,11 +1018,24 @@ def method_fiche(res: dict, spec: dict, dataset_name: str, author: str, justific
 
     f.h("Interprétation")
     f.ul(res["interpretation"])
+    if res.get("discussion_src"):
+        f.h("Discussion")
+        for d in res["discussion_src"]:
+            f.p(cites_text(d, f.cite))
     f.h("Limites")
     f.ul(res["limites"])
     import scipy
 
-    f.p(f"Calculs : Moanui, NumPy {np.__version__}, SciPy {scipy.__version__}.")
+    from . import __version__
+
+    f.h("Reproductibilité")
+    f.kv([("Logiciel", f"Moanui {__version__} ; NumPy {np.__version__} ; SciPy {scipy.__version__}"),
+          ("Données", f"« {dataset_name} », résultat de sa recette (fichier brut inchangé, empreinte SHA-256 dans la fiche "
+                      "du jeu)"),
+          ("Paramètres", json.dumps(spec.get("variables") or {}, ensure_ascii=False)
+           + (f" ; test imposé : {spec['test']}" if spec.get("test") else "")),
+          ("Aléa", f"bootstrap {BOOT_B} rééchantillonnages, graine {BOOT_SEED} ; sous-échantillon de Shapiro-Wilk : graine 0"),
+          ("Seuil", "α = 0,05 (bilatéral)")])
     return f
 
 
@@ -999,6 +1248,7 @@ def glm_analysis(data: dict, yname: str, xnames: list[str], cat: set[str], offse
     est_phi = fam in glm.ESTIMATED_PHI
     dof = n - p_
     term_rows = []
+    glm_rep: list[tuple[str, float]] = []
     for name, idx in terms:
         keep = [j for j in range(p_) if j not in idx]
         if fam == "binomiale_negative":  # θ fixé à celui du modèle complet (comme anova.negbin)
@@ -1010,9 +1260,11 @@ def glm_analysis(data: dict, yname: str, xnames: list[str], cat: set[str], offse
         if est_phi:
             stat, pv = dd / k / m["phi"], float(st.f.sf(dd / k / m["phi"], k, dof))
             term_rows.append([name, k, f"F = {fr(stat)}", fp(pv), "oui" if pv < ALPHA else "non"])
+            glm_rep.append((f"« {name} » : F({k} ; {dof}) = {fr(stat, 2)}, {p_txt(pv)}", pv))
         else:
             pv = float(st.chi2.sf(dd, k))
             term_rows.append([name, k, f"χ² = {fr(dd)}", fp(pv), "oui" if pv < ALPHA else "non"])
+            glm_rep.append((f"« {name} » : χ²({k}) = {fr(dd, 2)}, {p_txt(pv)}", pv))
     # déviance nulle (constante seule) : part de déviance expliquée
     if fam == "binomiale_negative":
         _, mun, _, _ = glm.irls(X[:, :1], y, fam, off, m["theta"])
@@ -1020,6 +1272,12 @@ def glm_analysis(data: dict, yname: str, xnames: list[str], cat: set[str], offse
     else:
         dnull = glm.fit(X[:, :1], y, fam, off)["dev"]
     expl = 1 - m["dev"] / dnull if dnull > 0 else 0.0
+    r.rapport = [f"{glm.FAMILIES[fam]} (n = {n}) : déviance expliquée = {pc(expl, 1)}"
+                 + (f", AIC = {fr(m['aic'], 1)}" if m["aic"] is not None else "")
+                 + (f", θ = {fr(m['theta'], 3)}" if m["theta"] else "") + (f", dispersion = {fr(m['phi'], 3)}" if est_phi else "")
+                 + ". Tests par rapport de vraisemblance (facteur retiré) : " + " ; ".join(t for t, _ in glm_rep) + "."]
+    r.sci = {"p": min([pv for _, pv in glm_rep] or [1.0]), "effet": None, "n": n, "boot": False, "glm": True,
+             "expl": expl}
     q = st.t.ppf(0.975, dof) if est_phi else st.norm.ppf(0.975)
     pvals = 2 * (st.t.sf(np.abs(beta / se), dof) if est_phi else st.norm.sf(np.abs(beta / se)))
     eff = "Rapport de cotes" if fam == "logistique" else "Effet multiplicatif"

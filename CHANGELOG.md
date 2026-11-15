@@ -5,6 +5,12 @@ publiée automatiquement ; au passage d'une version stable, elle est renommée `
 
 ## Non publié
 
+- **Fiches statistiques de niveau « article »** : résumé en tête ; résultat principal en écriture normalisée
+  (statistique, degrés de liberté, p exacte, taille d'effet et intervalle de confiance à 95 %, par bootstrap
+  reproductible quand il n'existe pas de formule) ; taille d'effet pour chaque paire de groupes ; discussion qui
+  dépend des résultats (effet faible mais significatif sur grand échantillon, absence de preuve, pseudo-réplication,
+  standardisation de CPUE) ; partie reproductibilité. Références vérifiées (Nakagawa et Cuthill 2007, Zuur et Ieno
+  2016, Hurlbert 1984, Lin et al. 2013…). L'écriture normalisée et la discussion s'affichent aussi à l'écran.
 - **Fiches méthode en PDF et en Word** (jeux de données, statistiques, graphiques, cartes) : bouton « Fiche méthode »
   > PDF (à diffuser), Word (modifiable) ou archive (Markdown, HTML, figures SVG). Figures, tableaux numérotés,
   références et polices intégrés : rendu identique sur tous les postes, sans Word ni logiciel à installer.

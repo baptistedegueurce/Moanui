@@ -7,6 +7,22 @@ d'ici (format auteur-date, à la française). Ne citer que des références vér
 from __future__ import annotations
 
 REFS: dict[str, str] = {
+    # ------------------------------------------------------------------ présentation des résultats (vérifiées nov. 2026)
+    "nakagawa2007": "Nakagawa S., Cuthill I. C. (2007). Effect size, confidence interval and statistical significance: "
+                    "a practical guide for biologists. Biological Reviews, 82(4), 591-605.",
+    "lin2013": "Lin M., Lucas H. C., Shmueli G. (2013). Too big to fail: large samples and the p-value problem. "
+               "Information Systems Research, 24(4), 906-917.",
+    "hurlbert1984": "Hurlbert S. H. (1984). Pseudoreplication and the design of ecological field experiments. "
+                    "Ecological Monographs, 54(2), 187-211.",
+    "zuur2016": "Zuur A. F., Ieno E. N. (2016). A protocol for conducting and presenting results of regression-type "
+                "analyses. Methods in Ecology and Evolution, 7(6), 636-645.",
+    "efron1993": "Efron B., Tibshirani R. J. (1993). An Introduction to the Bootstrap. Chapman & Hall, New York.",
+    "tomczak2014": "Tomczak M., Tomczak E. (2014). The need to report effect size estimates revisited. An overview of "
+                   "some recommended measures of effect size. Trends in Sport Sciences, 21(1), 19-25.",
+    "bonett2000": "Bonett D. G., Wright T. A. (2000). Sample size requirements for estimating Pearson, Kendall and "
+                  "Spearman correlations. Psychometrika, 65(1), 23-28.",
+    "kerby2014": "Kerby D. S. (2014). The simple difference formula: an approach to teaching nonparametric correlation. "
+                 "Comprehensive Psychology, 3, 11.IT.3.1.",
     # ------------------------------------------------------------------ données, traçabilité
     "broman2018": "Broman K. W., Woo K. H. (2018). Data organization in spreadsheets. The American Statistician, 72(1), 2-10.",
     "wickham2014": "Wickham H. (2014). Tidy data. Journal of Statistical Software, 59(10), 1-23.",
