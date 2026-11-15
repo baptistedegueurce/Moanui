@@ -104,3 +104,113 @@ Analyse (déjà prévu) :
 Plateforme :
 - macOS, signature de l'exécutable Windows (évite l'alerte SmartScreen ; coût du certificat à voir).
 - Mode serveur partagé par structure, SSO ; export des recettes en script R et Python.
+
+## Catalogue des fonctions possibles (à prioriser)
+
+Liste ouverte, numérotée pour pouvoir répondre « on garde 3, 7, 12… ». Taille : **S** (≤ 1 jour), **M** (2 à 4 jours),
+**L** (1 semaine et plus). « Dépend de » = format, accès ou règle à obtenir avant de coder. Les sources servent
+d'inspiration ; aucun chiffre ni règle n'en est repris sans lecture du document original.
+
+### A. Prise en main et accompagnement
+| N° | Fonction | Ce que ça apporte | Taille | Dépend de / source |
+|---|---|---|---|---|
+| A1 | Assistant « Que voulez-vous faire ? » (parcours guidés de bout en bout) | Un débutant produit un bilan sans connaître les menus | L | idée sans source |
+| A2 | Données de démonstration intégrées à l'appli + visite guidée | Essayer sans ses propres fichiers | S | `exemples/donnees_demo` (fait) |
+| A3 | Aide en contexte sur chaque opération (exemple avant / après, pièges) | Moins d'erreurs de manipulation | M | idée sans source |
+| A4 | Glossaire halieutique (marée, métier DCF, effort, CPUE, secret statistique…) | Vocabulaire commun dans les fiches | S | idée sans source |
+| A5 | Correction proposée en un clic sur chaque alerte qualité | Corriger sans chercher l'étape | M | idée sans source |
+| A6 | Page « Nouveautés » + avis de nouvelle version | Les utilisateurs suivent les évolutions | S | CHANGELOG (fait) |
+| A7 | Mode « explication » des statistiques : schéma animé de ce que fait le test | Comprendre avant de conclure | M | idée sans source |
+
+### B. Sources de données et imports
+| N° | Fonction | Ce que ça apporte | Taille | Dépend de / source |
+|---|---|---|---|---|
+| B1 | Profils d'import par émetteur SACROIS (colonnes renommées et typées automatiquement) | Plus de mise en forme manuelle chaque mois | M | exemples réels des structures |
+| B2 | Import des ventes en criée (données VISIOMer, ex-RIC, de FranceAgriMer) | Prix et volumes par halle à marée, espèce, calibre | M | format d'extraction à obtenir ([FranceAgriMer](https://www.franceagrimer.fr/sites/default/files/2025-06/BIL-MER-VENTES_HAM-A24.pdf)) |
+| B3 | Import des journaux de bord électroniques (ERS) et fiches de pêche des moins de 10 m | Données plus fines que SACROIS, plus rapides | L | format d'export [à confirmer] ([arrêté du 18/03/2015](https://www.dm.sud-ocean-indien.developpement-durable.gouv.fr/IMG/pdf/arrete_du_18_mars_2015_relatif_aux_obligations_declaratives_peche_maritime_cle5593d6-1.pdf)) |
+| B4 | Import des enquêtes d'activité type VALPENA (zones fréquentées par navire et par mois) | Cartographier l'activité des navires sans VMS | L | méthode et format du GIS VALPENA ([présentation](https://www.agglo-larochelle.fr/documents/10839/11884269/VALPENA.pdf/b00cc3e7-781d-4c10-b4bd-1b891ced7614)) |
+| B5 | Import des observations à bord (ObsMer : rejets, captures accidentelles) | Analyses de captures accessoires | M | accès aux données Ifremer [à confirmer] ([fiche ObsMer](https://sextant.ifremer.fr/geonetwork/srv/api/records/24538369-ea5a-48d7-a89b-0c9530247ed2)) |
+| B6 | Fichier flotte (FPC / flotte UE) intégré comme référentiel navires | Longueur, puissance, port d'attache sans saisie | M | fichier public UE à télécharger |
+| B7 | Fichiers multiples d'un coup (dossier mensuel) avec empilement automatique | Gain de temps sur les séries | S | idée sans source |
+| B8 | Saisie directe dans l'appli (formulaires de campagne, enquêtes) | Structures qui collectent elles-mêmes | L | idée sans source |
+| B9 | Connexion à une base existante (PostgreSQL, Access, partage réseau) | Éviter les exports manuels | M | besoin à confirmer |
+
+### C. Traitement et qualité
+| N° | Fonction | Ce que ça apporte | Taille | Dépend de / source |
+|---|---|---|---|---|
+| C1 | Recettes enregistrées comme modèles, appliquées au fichier du mois suivant | Traitement mensuel en un clic | M | prévu |
+| C2 | Corrections d'engins / espèces partagées par structure | Les corrections servent à tous | M | prévu |
+| C3 | Règles de contrôle personnalisées (« taille > 24 m interdit dans la bande des 3 milles »…) | Contrôles propres à chaque structure | M | idée sans source |
+| C4 | Comparaison de deux versions d'un fichier (lignes ajoutées / modifiées) | Suivre les révisions des exports | M | idée sans source |
+| C5 | Export de la recette en script R et Python | Reproductibilité, passage aux scientifiques | M | prévu |
+| C6 | Identification automatique des métiers par classification (méthode DCF) | Métiers sans table manuelle | L | [vmstools](https://research.wur.nl/en/publications/vmstools-open-source-software-for-the-processing-analysis-and-vis/) |
+
+### D. Analyse des flottilles (SACROIS, ventes)
+| N° | Fonction | Ce que ça apporte | Taille | Dépend de / source |
+|---|---|---|---|---|
+| D1 | Tableau de bord flottille : débarquements, valeur, prix, effort, navires actifs, N / N-1 | Réponse immédiate aux questions courantes | M | inspiré des fiches SIH ([Ifremer](https://archimer.ifremer.fr/doc/00912/102420/113688.pdf)) |
+| D2 | Fiches automatiques par port, quartier, flottille ou espèce | Restitution type « fiche SIH » à la charte de la structure | M | même source |
+| D3 | Dépendance économique des navires à une espèce, une zone, un port | Arguments chiffrés pour les concertations | M | idée sans source |
+| D4 | Saisonnalité et calendrier d'activité par métier | Voir quand chaque métier travaille | S | idée sans source |
+| D5 | Analyse des prix (évolution, effet volume / prix, comparaison entre criées) | Suivi de marché pour les OP | M | dépend de B2 |
+| D6 | Indicateurs économiques simples (chiffre d'affaires, valeur par jour de mer) | Évaluer la rentabilité d'un métier | M | coûts non disponibles dans SACROIS |
+
+### E. Spatial et VMS
+| N° | Fonction | Ce que ça apporte | Taille | Dépend de / source |
+|---|---|---|---|---|
+| E1 | **Analyse d'impact d'une zone** (éolien, AMP, extraction) : activité, valeur, navires, métiers touchés, rapport type | Besoin récurrent dans les débats publics | L | pratiques des études VMS × SACROIS ([Cerema / Normandie](https://www.energiesdelamer.eu/wp-content/uploads/2022/01/etude_peche_VMS_VDef.pdf), [enjeux pêche Bretagne Sud](https://eolbretsud.debatpublic.fr/wp-content/uploads/enjeux-peche.pdf)) |
+| E2 | Combinaison VMS + enquêtes pour les navires non équipés | Pallier la couverture partielle du VMS | L | limite signalée par les comités ([CRPMEM PACA](https://eos.debatpublic.fr/wp-content/uploads/EOS-CA-CRPMEM-PACA.pdf)) ; dépend de B4 |
+| E3 | Trajectoires interpolées par marée, VMS × SACROIS par marée | Répartition plus juste des captures | M | [vmstools](https://research.wur.nl/en/publications/vmstools-open-source-software-for-the-processing-analysis-and-vis/) |
+| E4 | Zones d'activité par noyau de densité, comparaison entre années | Cartes de fréquentation lissées | M | prévu |
+| E5 | Bande des 3 milles, étiquettes, polices hors ligne | Cartes complètes | M | licence OFB / CNSP à vérifier |
+| E6 | Atlas : une carte par espèce, mois ou métier en un clic | Rapports cartographiques rapides | M | idée sans source |
+| E7 | Sensibilité au choix de la maille (grille, mois, trimestre) | Robustesse des cartes d'effort | S | [vmstools / DTU](https://orbit.dtu.dk/en/projects/development-of-tools-for-logbook-and-vms-data-analysis-38751/) |
+
+### F. Gestion des pêcheries
+| N° | Fonction | Ce que ça apporte | Taille | Dépend de / source |
+|---|---|---|---|---|
+| F1 | **Licences et contingents** : registre, demandes, critères d'attribution, listes éditées | Cœur du travail des comités (délibérations par gisement) | L | règles par délibération ([exemple CNPMEM coquille](https://www.comite-peches.fr/wp-content/uploads/B26-2018_Db-coquillages-cadre.pdf)) [à confirmer] |
+| F2 | Suivi de consommation des quotas / sous-quotas, alertes de seuil | Anticiper les fermetures | M | format des données quotas ; exemple de publications ([Royaume-Uni](https://www.gov.uk/government/statistical-data-sets/quota-use-statistics)) |
+| F3 | Évaluation des gisements (campagnes de prospection, estimateurs stratifiés, cartes de densité) | Base pour fixer les ouvertures | L | protocole de campagne ([exemple Belle-Île / Quiberon, Ifremer](https://archimer.ifremer.fr/doc/00289/39988/79639.pdf)) |
+| F4 | Calendrier des mesures (fermetures, tailles, zones) et contrôle des déclarations | Repérer les déclarations hors règles | M | textes réglementaires par structure |
+| F5 | Captures accidentelles et espèces protégées : saisie et synthèse | Obligations de suivi | M | dépend de B5 |
+| F6 | Suivi des engins perdus / macrodéchets | Programmes environnementaux | S | idée sans source |
+
+### G. Statistiques
+| N° | Fonction | Ce que ça apporte | Taille | Dépend de / source |
+|---|---|---|---|---|
+| G1 | Modèle delta assisté (présence + quantité) | Standardiser des CPUE avec zéros | M | prévu |
+| G2 | GLMM (effet navire), GAM | Indices plus robustes | L | prévu |
+| G3 | Séries temporelles (tendance, saisonnalité, rupture) | Évolutions interannuelles | M | prévu |
+| G4 | ACP / classification des navires ou marées | Typologies de flottilles | M | prévu |
+| G5 | Plans de sondage et estimateurs (enquêtes, campagnes) | Extrapoler des enquêtes partielles | L | travaux sur l'échantillonnage VALPENA ([résumé](https://toltex.imag.fr/users/RCqls/Workshop/sondages2018/resumesLongs/subm42.pdf)) |
+| G6 | Moteur R facultatif | Méthodes avancées si R est installé | M | prévu |
+
+### H. Graphiques et composition
+| N° | Fonction | Ce que ça apporte | Taille | Dépend de / source |
+|---|---|---|---|---|
+| H1 | **Plusieurs axes verticaux** (jusqu'à 4), réglages par axe (titre, échelle, bornes, unité) | Mettre des grandeurs différentes sur une même figure | M | **en cours** |
+| H2 | **Style par mesure** : barres / courbe / aire / points, couleur de la palette, tirets, valeurs affichées | Composer librement dans tout graphique agrégé | M | **en cours** |
+| H3 | **Lignes et zones de référence** (quota, moyenne, seuil, période de fermeture) et annotations | Lecture guidée, comme dans les outils de datajournalisme ([Datawrapper](https://www.datawrapper.de/blog/dual-axis-charts), [Flourish](https://flourish.studio/2020/11/17/introducing-annotations/)) | M | **en cours** |
+| H4 | **Formats prédéfinis** (rapport A4, diapositive 16:9, carré), légende, format des nombres | Export directement utilisable | S | **en cours** |
+| H5 | Petits multiples : échelle commune ou indépendante, nombre de colonnes | Comparaisons justes entre panneaux | S | **en cours** ([Datawrapper](https://www.datawrapper.de/blog/small-multiple-line-charts)) |
+| H6 | Planches : assembler plusieurs graphiques et cartes sur une page, export PNG / SVG / PDF | Pages de rapport prêtes | L | à valider |
+| H7 | Styles enregistrés par structure (modèles de graphiques) | Cohérence visuelle entre auteurs | S | idée sans source |
+| H8 | Graphiques en cascade (écarts N / N-1 par espèce), pyramides, diagrammes de Sankey (port → espèce → acheteur) | Types utiles aux bilans | M | [Datawrapper](https://www.datawrapper.de/blog/waterfall-charts) |
+
+### I. Restitution et rapports
+| N° | Fonction | Ce que ça apporte | Taille | Dépend de / source |
+|---|---|---|---|---|
+| I1 | Rapports PDF / Word à la charte (graphiques, cartes, tableaux, fiche méthode en annexe) | Livrable final sans copier-coller | L | prévu |
+| I2 | Modèles « bilan annuel », « note de conjoncture », « fiche port » | Rapports récurrents automatisés | M | dépend de I1 |
+| I3 | Export PowerPoint des graphiques | Réunions et conseils | M | idée sans source |
+| I4 | Publication d'un tableau de bord consultable hors de l'appli (HTML autonome) | Diffusion aux adhérents | M | inspiré des tableaux de bord publics ([Pêches et Océans Canada](https://www.dfo-mpo.gc.ca/stats/commercial/sea-maritimes-eng.htm)) |
+
+### J. Plateforme
+| N° | Fonction | Ce que ça apporte | Taille | Dépend de / source |
+|---|---|---|---|---|
+| J1 | Signature de l'exécutable (supprime l'avertissement SmartScreen) | Installation sans alerte | M | offres et éligibilité à confirmer : [options Microsoft](https://learn.microsoft.com/windows/apps/package-and-deploy/code-signing-options), SignPath Foundation pour projets libres (le dépôt n'a pas encore de licence) |
+| J2 | Sauvegarde / restauration de l'espace, transfert vers un autre poste | Sécurité des données | S | prévu |
+| J3 | Mode serveur partagé par structure, comptes centralisés | Travail à plusieurs | L | financement |
+| J4 | Version macOS | Postes Mac | M | prévu |
+| J5 | Journal d'audit exportable (qui a fait quoi, quand) | Traçabilité pour les financeurs | S | journal existant |
