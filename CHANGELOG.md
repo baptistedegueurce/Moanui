@@ -5,6 +5,9 @@ publiée automatiquement ; au passage d'une version stable, elle est renommée `
 
 ## Non publié
 
+- **Graphiques conservés d'une page à l'autre** : en revenant sur Graphiques, le dernier graphique (même non
+  enregistré) réapparaît immédiatement, puis ses données sont revérifiées. Mémoire vidée à la déconnexion et au
+  changement de structure, jamais écrite sur le disque.
 - **Graphiques, composition** : jusqu'à 4 axes verticaux (gauche, droite, second gauche, second droit) avec titre,
   échelle, bornes et unité propres à chaque axe ; pour chaque mesure, forme (barres, courbe, aire, points),
   couleur de la palette, tirets et valeurs affichées, dans tous les graphiques en barres, courbes et aires ;

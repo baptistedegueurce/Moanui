@@ -1,5 +1,6 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
 import { api } from './api';
+import { memoClear, memoScope } from './memo';
 import type { Me, Meta, Structure } from './types';
 
 interface AuthState {
@@ -43,13 +44,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     refresh();
-    const onLogout = () => setMe(null);
+    const onLogout = () => {
+      memoClear();
+      setMe(null);
+    };
     window.addEventListener('moanui:logout', onLogout);
     return () => window.removeEventListener('moanui:logout', onLogout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const structure = me?.structures.find((s) => s.id === me.active_structure_id) || me?.structures[0] || null;
+  memoScope(me?.id, structure?.id);
 
   const value: AuthState = {
     me,
@@ -64,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     logout: async () => {
       await api.post('/api/auth/logout');
+      memoClear();
       setMe(null);
     },
     canWrite: !!structure && (structure.role === 'admin' || structure.role === 'analyste'),

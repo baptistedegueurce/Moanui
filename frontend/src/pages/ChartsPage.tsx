@@ -33,6 +33,7 @@ import { AXES, axisCfg, AxisCfg, AxisId, buildFigure, CHART_TYPES, chartAdvice, 
 import { fmtNumber, isNumericType } from '../lib/format';
 import { fail, ok } from '../lib/notify';
 import { NEUTRAL } from '../lib/theme';
+import { cacheGet, cacheSet, recall, remember } from '../lib/memo';
 import type { Column, DatasetSummary } from '../lib/types';
 import { AGGS, Conditions } from '../components/StepForm';
 
@@ -51,13 +52,17 @@ export default function ChartsPage() {
   const [params, setParams] = useSearchParams();
   const [datasets, setDatasets] = useState<DatasetSummary[]>([]);
   const dsId = params.get('dataset');
+  // travail en cours conservé quand on change de page (même jeu de données)
+  const saved0 = recall<{ dsId: string; spec: ChartSpec; current: Saved | null }>('graphique');
+  const restore = saved0 && (!dsId || saved0.dsId === dsId) && !params.get('chart') ? saved0 : null;
+  const restoring = useRef(!!restore);
   const [columns, setColumns] = useState<Column[]>([]);
-  const [spec, setSpec] = useState<ChartSpec>(() => defaultSpec(me?.display_name || '', theme.chart.default_source));
+  const [spec, setSpec] = useState<ChartSpec>(() => restore?.spec || defaultSpec(me?.display_name || '', theme.chart.default_source));
   const [data, setData] = useState<any>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState<Saved[]>([]);
-  const [current, setCurrent] = useState<Saved | null>(null);
+  const [current, setCurrent] = useState<Saved | null>(restore?.current || null);
   const [showTable, setShowTable] = useState(false);
   const plotRef = useRef<HTMLDivElement>(null);
   const canWrite = datasets.find((d) => d.id === dsId)?.mode === 'ecriture';
@@ -65,6 +70,16 @@ export default function ChartsPage() {
   useEffect(() => {
     api.get<DatasetSummary[]>('/api/datasets').then(setDatasets).catch(fail);
   }, [structure?.id]);
+
+  // retour sur la page sans jeu dans l'adresse : on reprend le dernier graphique
+  useEffect(() => {
+    if (!dsId && restore) setParams({ dataset: restore.dsId }, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (dsId) remember('graphique', { dsId, spec, current });
+  }, [dsId, spec, current]);
 
   useEffect(() => {
     if (!dsId) return;
@@ -81,7 +96,8 @@ export default function ChartsPage() {
         }
       })
       .catch(() => setSaved([]));
-    setCurrent(null);
+    if (restoring.current) restoring.current = false;
+    else setCurrent(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dsId]);
 
@@ -131,18 +147,27 @@ export default function ChartsPage() {
   const reqKey = JSON.stringify(ready ? dataRequest(spec) : null);
   useEffect(() => {
     if (!ready || !dsId) return setData(null);
-    const t = setTimeout(async () => {
-      setLoading(true);
-      setErr(null);
-      try {
-        setData(await api.post(`/api/datasets/${dsId}/chart-data`, JSON.parse(reqKey)));
-      } catch (e: any) {
-        setErr(e.message);
-        setData(null);
-      } finally {
-        setLoading(false);
-      }
-    }, 300);
+    // affichage immédiat depuis le cache, puis revalidation (la recette a pu changer entre-temps)
+    const ck = `chart-data:${dsId}:${reqKey}`;
+    const hit = cacheGet<any>(ck);
+    if (hit) setData(hit);
+    const t = setTimeout(
+      async () => {
+        setLoading(true);
+        setErr(null);
+        try {
+          const d = await api.post(`/api/datasets/${dsId}/chart-data`, JSON.parse(reqKey));
+          cacheSet(ck, d);
+          if (!hit || JSON.stringify(hit) !== JSON.stringify(d)) setData(d);
+        } catch (e: any) {
+          setErr(e.message);
+          setData(null);
+        } finally {
+          setLoading(false);
+        }
+      },
+      hit ? 0 : 300,
+    );
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reqKey, dsId]);
