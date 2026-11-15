@@ -5,6 +5,14 @@ publiée automatiquement ; au passage d'une version stable, elle est renommée `
 
 ## Non publié
 
+- **Graphiques, composition** : jusqu'à 4 axes verticaux (gauche, droite, second gauche, second droit) avec titre,
+  échelle, bornes et unité propres à chaque axe ; pour chaque mesure, forme (barres, courbe, aire, points),
+  couleur de la palette, tirets et valeurs affichées, dans tous les graphiques en barres, courbes et aires ;
+  repères (ligne de seuil ou de quota, ligne sur une date, zone de période, note) ; légende en haut, à droite,
+  en bas ou masquée ; formats prédéfinis (rapport, A4, diapositive, carré, bandeau) ; décimales ; petits
+  multiples à échelle commune ou indépendante et nombre de panneaux par ligne. Nombres affichés en entier
+  (600 000 € au lieu de 600k), titre sur deux lignes plus rogné. Les graphiques déjà enregistrés s'ouvrent
+  comme avant ; la fiche méthode décrit les axes et les repères.
 - **Installateur Windows** (`Moanui-installation.exe`) : installation pour l'utilisateur courant, sans droits
   administrateur, raccourcis menu Démarrer et bureau, mise à jour en relançant l'installateur. Corrige la fenêtre
   qui se fermait aussitôt (« Failed to load Python DLL ») après extraction du zip téléchargé ; le zip portable

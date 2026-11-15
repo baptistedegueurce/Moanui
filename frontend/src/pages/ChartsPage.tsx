@@ -23,11 +23,13 @@ import {
   Loader,
   Center,
   Modal,
+  ColorSwatch,
+  CheckIcon,
 } from '@mantine/core';
 import { IconPlus, IconTrash, IconPhoto, IconFileText, IconDeviceFloppy, IconTable, IconBulb, IconVectorBezier } from '@tabler/icons-react';
 import { api, downloadPost } from '../lib/api';
 import { useAuth } from '../lib/auth';
-import { buildFigure, CHART_TYPES, chartAdvice, ChartSpec, dataRequest, defaultSpec, measureLabel, RAW_TYPES } from '../lib/chart';
+import { AXES, axisCfg, AxisCfg, AxisId, buildFigure, CHART_TYPES, chartAdvice, ChartSpec, dataRequest, defaultSpec, Measure, MARKS, markOf, measureLabel, RAW_TYPES, RefMark, SIZE_PRESETS, usedAxes } from '../lib/chart';
 import { fmtNumber, isNumericType } from '../lib/format';
 import { fail, ok } from '../lib/notify';
 import { NEUTRAL } from '../lib/theme';
@@ -85,6 +87,24 @@ export default function ChartsPage() {
 
   const set = (patch: Partial<ChartSpec>) => setSpec((s) => ({ ...s, ...patch }));
   const setT = (patch: Partial<ChartSpec['template']>) => setSpec((s) => ({ ...s, template: { ...s.template, ...patch } }));
+  const setM = (i: number, patch: Partial<Measure>) => setSpec((s) => ({ ...s, measures: s.measures.map((x, j) => (j === i ? { ...x, ...patch } : x)) }));
+  const setAxis = (a: AxisId, patch: Partial<AxisCfg>) =>
+    setSpec((s) => {
+      // l'axe principal garde ses anciens champs (graphiques déjà enregistrés)
+      if (a === 'y') {
+        const legacy: Partial<ChartSpec> = {};
+        if ('title' in patch) legacy.y_title = patch.title || undefined;
+        if ('scale' in patch) legacy.y_scale = patch.scale;
+        if ('min' in patch) legacy.y_min = patch.min ?? null;
+        if ('max' in patch) legacy.y_max = patch.max ?? null;
+        const rest = { ...patch };
+        delete rest.title; delete rest.scale; delete rest.min; delete rest.max;
+        return { ...s, ...legacy, axes: { ...s.axes, y: { ...s.axes?.y, ...rest } } };
+      }
+      if (a === 'y2' && 'title' in patch) return { ...s, y2_title: patch.title || undefined, axes: { ...s.axes, y2: { ...s.axes?.y2, ...patch } } };
+      return { ...s, axes: { ...s.axes, [a]: { ...s.axes?.[a], ...patch } } };
+    });
+  const setRef = (i: number, patch: Partial<RefMark>) => setSpec((s) => ({ ...s, refs: (s.refs || []).map((r, j) => (j === i ? { ...r, ...patch } : r)) }));
 
   const raw = RAW_TYPES.includes(spec.type);
   const ready = useMemo(() => {
@@ -192,6 +212,11 @@ export default function ChartsPage() {
   const cols = columns.map((c) => c.name);
   const numCols = columns.filter((c) => isNumericType(c.type)).map((c) => c.name);
   const advice = chartAdvice(spec, data);
+  const xValues: string[] = useMemo(() => {
+    if (!data || raw || !spec.x) return [];
+    const i = data.columns.indexOf(spec.x);
+    return i < 0 ? [] : [...new Set<string>(data.rows.map((r: any[]) => (r[i] == null ? '' : String(r[i]))))].filter(Boolean).slice(0, 500);
+  }, [data, raw, spec.x]);
   const typeInfo = CHART_TYPES.find((t) => t.value === spec.type);
 
   return (
@@ -278,34 +303,44 @@ export default function ChartsPage() {
                                 </ActionIcon>
                               )}
                             </Group>
-                            {['barres', 'lignes', 'combine', 'aires'].includes(spec.type) && (
-                              <Group gap={6} mt={4}>
-                                {spec.type === 'combine' && (
-                                  <SegmentedControl
-                                    size="xs"
-                                    value={m.mark || 'barres'}
-                                    onChange={(v) => set({ measures: spec.measures.map((x, j) => (j === i ? { ...x, mark: v as any } : x)) })}
-                                    data={[
-                                      { value: 'barres', label: 'Barres' },
-                                      { value: 'lignes', label: 'Courbe' },
-                                    ]}
-                                  />
-                                )}
-                                <SegmentedControl
-                                  size="xs"
-                                  value={m.axis || 'y'}
-                                  onChange={(v) => set({ measures: spec.measures.map((x, j) => (j === i ? { ...x, axis: v as any } : x)) })}
-                                  data={[
-                                    { value: 'y', label: 'Axe gauche' },
-                                    { value: 'y2', label: 'Axe droit' },
-                                  ]}
-                                />
-                              </Group>
+                            {['barres', 'barres_h', 'lignes', 'combine', 'aires'].includes(spec.type) && (
+                              <Stack gap={4} mt={4}>
+                                <Group gap={4} wrap="nowrap">
+                                  {spec.type !== 'barres_h' && (
+                                    <Select size="xs" style={{ flex: 1 }} aria-label="Forme" data={MARKS} value={markOf(spec, m)} onChange={(v) => v && setM(i, { mark: v as any })} allowDeselect={false} />
+                                  )}
+                                  {spec.type !== 'barres_h' && (
+                                    <Select size="xs" style={{ flex: 1 }} aria-label="Axe" data={AXES} value={m.axis || 'y'} onChange={(v) => v && setM(i, { axis: v as AxisId })} allowDeselect={false} />
+                                  )}
+                                </Group>
+                                <Group gap={6} wrap="nowrap" justify="space-between">
+                                  {!spec.series ? (
+                                    <Group gap={3} wrap="nowrap">
+                                      {theme.palette.map((c, ci) => {
+                                        const cur = m.color || theme.palette[i % theme.palette.length];
+                                        return (
+                                          <ColorSwatch key={c} component="button" type="button" color={c} size={16} aria-label={`Couleur ${ci + 1}`} onClick={() => setM(i, { color: c })} style={{ cursor: 'pointer', color: '#fff' }}>
+                                            {cur === c && <CheckIcon style={{ width: 9, height: 9 }} />}
+                                          </ColorSwatch>
+                                        );
+                                      })}
+                                    </Group>
+                                  ) : (
+                                    <Text size="xs" c="dimmed">Couleurs : une par valeur de série</Text>
+                                  )}
+                                </Group>
+                                <Group gap="sm">
+                                  {['lignes', 'points', 'aires'].includes(markOf(spec, m)) && markOf(spec, m) !== 'points' && (
+                                    <Switch size="xs" label="Tirets" checked={!!m.dash} onChange={(e) => setM(i, { dash: e.currentTarget.checked })} />
+                                  )}
+                                  <Switch size="xs" label="Valeurs" checked={!!m.show_values} onChange={(e) => setM(i, { show_values: e.currentTarget.checked })} />
+                                </Group>
+                              </Stack>
                             )}
                           </Paper>
                         ))}
                         {['barres', 'barres_h', 'lignes', 'aires', 'combine'].includes(spec.type) && (
-                          <Button size="xs" variant="default" leftSection={<IconPlus size={14} />} onClick={() => set({ measures: [...spec.measures, { agg: 'somme', axis: 'y', mark: 'lignes' }] })}>
+                          <Button size="xs" variant="default" leftSection={<IconPlus size={14} />} onClick={() => set({ measures: [...spec.measures, { agg: 'somme', axis: spec.measures.length && spec.type !== 'barres_h' ? 'y2' : 'y', mark: spec.type === 'barres_h' ? 'barres' : 'lignes' }] })}>
                             Ajouter une mesure
                           </Button>
                         )}
@@ -367,24 +402,26 @@ export default function ChartsPage() {
                         ]}
                       />
                     )}
-                    <SegmentedControl
-                      size="xs"
-                      value={spec.y_scale || 'lineaire'}
-                      onChange={(v) => set({ y_scale: v as any })}
-                      data={[
-                        { value: 'lineaire', label: 'Échelle linéaire' },
-                        { value: 'log', label: 'Logarithmique' },
-                      ]}
-                    />
-                    <Group grow>
-                      <NumberInput size="xs" label="Minimum" placeholder="auto" value={spec.y_min ?? ''} onChange={(v) => set({ y_min: v === '' ? null : Number(v) })} />
-                      <NumberInput size="xs" label="Maximum" placeholder="auto" value={spec.y_max ?? ''} onChange={(v) => set({ y_max: v === '' ? null : Number(v) })} />
-                    </Group>
                     <TextInput size="xs" label="Titre de l’axe horizontal" placeholder={spec.x} value={spec.x_title ?? ''} onChange={(e) => set({ x_title: e.currentTarget.value || undefined })} />
-                    <TextInput size="xs" label="Titre de l’axe vertical (avec l’unité)" placeholder="ex. Débarquements (t)" value={spec.y_title ?? ''} onChange={(e) => set({ y_title: e.currentTarget.value || undefined })} />
-                    {spec.measures.some((m) => m.axis === 'y2') && (
-                      <TextInput size="xs" label="Titre de l’axe droit" value={spec.y2_title ?? ''} onChange={(e) => set({ y2_title: e.currentTarget.value || undefined })} />
-                    )}
+                    {usedAxes(spec).map((a) => {
+                      const c = axisCfg(spec, a);
+                      return (
+                        <Paper key={a} withBorder p={6}>
+                          <Text size="xs" fw={600} mb={4}>
+                            {spec.type === 'barres_h' ? 'Axe des valeurs' : AXES.find((x) => x.value === a)?.label}
+                          </Text>
+                          <Stack gap={4}>
+                            <TextInput size="xs" placeholder="Titre avec l’unité, ex. Débarquements (t)" value={c.title ?? ''} onChange={(e) => setAxis(a, { title: e.currentTarget.value })} />
+                            <SegmentedControl size="xs" value={c.scale || 'lineaire'} onChange={(v) => setAxis(a, { scale: v as any })} data={[{ value: 'lineaire', label: 'Linéaire' }, { value: 'log', label: 'Logarithmique' }]} />
+                            <Group grow gap={4}>
+                              <NumberInput size="xs" placeholder="Min auto" value={c.min ?? ''} onChange={(v) => setAxis(a, { min: v === '' ? null : Number(v) })} />
+                              <NumberInput size="xs" placeholder="Max auto" value={c.max ?? ''} onChange={(v) => setAxis(a, { max: v === '' ? null : Number(v) })} />
+                              <TextInput size="xs" placeholder="Unité (t, €, %)" value={c.suffix ?? ''} onChange={(e) => setAxis(a, { suffix: e.currentTarget.value || undefined })} />
+                            </Group>
+                          </Stack>
+                        </Paper>
+                      );
+                    })}
                     {!raw && (
                       <Select
                         size="xs"
@@ -402,6 +439,105 @@ export default function ChartsPage() {
                   </Stack>
                 </Accordion.Panel>
               </Accordion.Item>
+              {!raw && !['secteurs', 'chaleur', 'surface3d'].includes(spec.type) && (
+                <Accordion.Item value="reperes">
+                  <Accordion.Control>Repères et annotations</Accordion.Control>
+                  <Accordion.Panel>
+                    <Stack gap="xs">
+                      {(spec.refs || []).map((r, i) => (
+                        <Paper key={i} withBorder p={6}>
+                          <Group gap={4} wrap="nowrap">
+                            <Select
+                              size="xs"
+                              style={{ flex: 1 }}
+                              data={[
+                                { value: 'ligne_h', label: spec.type === 'barres_h' ? 'Ligne de valeur' : 'Ligne horizontale (seuil, quota, moyenne)' },
+                                { value: 'ligne_v', label: 'Ligne sur une catégorie (date, événement)' },
+                                { value: 'zone_v', label: 'Zone entre deux catégories (période)' },
+                                { value: 'note', label: 'Note sur une catégorie' },
+                              ]}
+                              value={r.kind}
+                              onChange={(v) => v && setRef(i, { kind: v as any, value: null, value2: null })}
+                              allowDeselect={false}
+                            />
+                            <ActionIcon variant="subtle" color="red" onClick={() => set({ refs: (spec.refs || []).filter((_, j) => j !== i) })}>
+                              <IconTrash size={14} />
+                            </ActionIcon>
+                          </Group>
+                          <Group gap={4} mt={4} grow>
+                            {r.kind === 'ligne_h' ? (
+                              <NumberInput size="xs" placeholder="Valeur" value={(r.value as any) ?? ''} onChange={(v) => setRef(i, { value: v === '' ? null : Number(v) })} />
+                            ) : (
+                              <Select size="xs" searchable placeholder={r.kind === 'zone_v' ? 'Début' : 'Catégorie'} data={xValues} value={r.value == null ? null : String(r.value)} onChange={(v) => setRef(i, { value: v })} />
+                            )}
+                            {r.kind === 'zone_v' && <Select size="xs" searchable placeholder="Fin" data={xValues} value={r.value2 ?? null} onChange={(v) => setRef(i, { value2: v })} />}
+                            {r.kind === 'ligne_h' && usedAxes(spec).length > 1 && (
+                              <Select size="xs" data={AXES.filter((x) => usedAxes(spec).includes(x.value))} value={r.axis || 'y'} onChange={(v) => v && setRef(i, { axis: v as AxisId })} allowDeselect={false} />
+                            )}
+                          </Group>
+                          <TextInput size="xs" mt={4} placeholder={r.kind === 'note' ? 'Texte de la note' : 'Libellé (facultatif)'} value={r.label ?? ''} onChange={(e) => setRef(i, { label: e.currentTarget.value })} />
+                        </Paper>
+                      ))}
+                      <Button size="xs" variant="default" leftSection={<IconPlus size={14} />} onClick={() => set({ refs: [...(spec.refs || []), { kind: 'ligne_h', value: null, label: '' }] })}>
+                        Ajouter un repère
+                      </Button>
+                      <Text size="xs" c="dimmed">
+                        Quota ou seuil, moyenne de référence, période de fermeture, événement (tempête, changement de réglementation)…
+                      </Text>
+                    </Stack>
+                  </Accordion.Panel>
+                </Accordion.Item>
+              )}
+              <Accordion.Item value="mise_en_page">
+                <Accordion.Control>Mise en page</Accordion.Control>
+                <Accordion.Panel>
+                  <Stack gap="xs">
+                    <Select
+                      size="xs"
+                      label="Format"
+                      placeholder="Personnalisé"
+                      data={SIZE_PRESETS.map((p) => ({ value: p.value, label: `${p.label} (${p.width} × ${p.height})` }))}
+                      value={SIZE_PRESETS.find((p) => p.width === spec.template.width && p.height === spec.template.height)?.value || null}
+                      onChange={(v) => {
+                        const p = SIZE_PRESETS.find((x) => x.value === v);
+                        if (p) setT({ width: p.width, height: p.height });
+                      }}
+                    />
+                    <Group grow>
+                      <NumberInput size="xs" label="Largeur (px)" min={400} max={3000} value={spec.template.width} onChange={(v) => setT({ width: Number(v) || 1100 })} />
+                      <NumberInput size="xs" label="Hauteur (px)" min={300} max={2000} value={spec.template.height} onChange={(v) => setT({ height: Number(v) || 620 })} />
+                    </Group>
+                    <Select
+                      size="xs"
+                      label="Légende"
+                      data={[
+                        { value: 'haut', label: 'En haut' },
+                        { value: 'droite', label: 'À droite' },
+                        { value: 'bas', label: 'En bas' },
+                        { value: 'aucune', label: 'Masquée' },
+                      ]}
+                      value={spec.legend || 'haut'}
+                      onChange={(v) => v && set({ legend: v as any })}
+                      allowDeselect={false}
+                    />
+                    <NumberInput size="xs" label="Décimales (infobulles et valeurs)" min={0} max={4} value={spec.decimals ?? 2} onChange={(v) => set({ decimals: v === '' ? null : Number(v) })} />
+                    {spec.facet && (
+                      <>
+                        <SegmentedControl
+                          size="xs"
+                          value={spec.facet_scale || 'independante'}
+                          onChange={(v) => set({ facet_scale: v as any })}
+                          data={[
+                            { value: 'commune', label: 'Échelle commune' },
+                            { value: 'independante', label: 'Échelles indépendantes' },
+                          ]}
+                        />
+                        <NumberInput size="xs" label="Panneaux par ligne" placeholder="auto" min={1} max={8} value={spec.facet_cols ?? ''} onChange={(v) => set({ facet_cols: v === '' ? null : Number(v) })} />
+                      </>
+                    )}
+                  </Stack>
+                </Accordion.Panel>
+              </Accordion.Item>
               <Accordion.Item value="gabarit">
                 <Accordion.Control>Titre, source, auteur</Accordion.Control>
                 <Accordion.Panel>
@@ -414,10 +550,6 @@ export default function ChartsPage() {
                     <Group>
                       <Switch size="xs" label="Date" checked={spec.template.show_date} onChange={(e) => setT({ show_date: e.currentTarget.checked })} />
                       <Switch size="xs" label="Logo" checked={spec.template.show_logo} disabled={!structure?.has_logo} onChange={(e) => setT({ show_logo: e.currentTarget.checked })} />
-                    </Group>
-                    <Group grow>
-                      <NumberInput size="xs" label="Largeur (px)" min={400} max={3000} value={spec.template.width} onChange={(v) => setT({ width: Number(v) || 1100 })} />
-                      <NumberInput size="xs" label="Hauteur (px)" min={300} max={2000} value={spec.template.height} onChange={(v) => setT({ height: Number(v) || 620 })} />
                     </Group>
                   </Stack>
                 </Accordion.Panel>

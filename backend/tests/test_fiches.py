@@ -47,3 +47,29 @@ def test_chart_and_map_fiches(client):
     m = client.post("/api/geo/maps/method.md", json={"spec": mspec})
     assert m.status_code == 200, m.text
     assert "secret statistique" in m.text and "Natural Earth" in m.text and "CIEM / ICES" in m.text
+
+
+def test_chart_fiche_multi_axes_and_refs(client):
+    did = upload(client, "logbook_2023.csv")["id"]
+    spec = {"type": "combine", "x": "engin_cod", "measures": [
+        {"agg": "somme", "column": "debarquement_Kg", "mark": "barres"},
+        {"agg": "somme", "column": "debarquement_euros", "mark": "lignes", "axis": "y2"},
+        {"agg": "moyenne", "column": "duree_maree", "mark": "points", "axis": "y3"}],
+        "axes": {"y": {"suffix": "kg"}, "y3": {"title": "Durée (j)", "scale": "log"}},
+        "y_title": "Débarquements", "y2_title": "Valeur (€)",
+        "refs": [{"kind": "ligne_h", "value": 5000, "label": "Seuil", "axis": "y"},
+                 {"kind": "zone_v", "value": "GNS", "value2": "OTB", "label": "Arts dormants"}],
+        "template": {"title": "Débarquements, valeur et durée"}}
+    md = client.post(f"/api/datasets/{did}/charts/method.md", json={"name": "g", "spec": spec}).text
+    assert "axe droit" in md and "second axe gauche" in md and "« Durée (j) »" in md and "unité kg" in md
+    assert "ligne de référence à 5000 : Seuil" in md and "zone de « GNS » à « OTB »" in md
+    assert "3 axes verticaux" in md and "logarithmique" in md
+    # ancien format (axe secondaire y2 + y2_title) toujours décrit
+    old = {"type": "combine", "x": "engin_cod", "measures": [{"agg": "somme", "column": "debarquement_Kg"},
+           {"agg": "somme", "column": "debarquement_euros", "axis": "y2", "mark": "lignes"}], "y2_title": "Valeur",
+           "template": {"title": "Ancien"}}
+    md = client.post(f"/api/datasets/{did}/charts/method.md", json={"name": "g", "spec": old}).text
+    assert "« Valeur »" in md and "axe droit" in md
+    # chart-data : le style des mesures n'est pas envoyé, mais des champs en plus ne gênent pas
+    r = client.post(f"/api/datasets/{did}/chart-data", json={"x": "engin_cod", "measures": spec["measures"], "filters": []})
+    assert r.status_code == 200, r.text

@@ -63,6 +63,9 @@ AGG_LABELS = {"somme": "somme", "moyenne": "moyenne", "mediane": "médiane", "mi
               "nombre_distinct": "nombre de valeurs distinctes", "ecart_type": "écart-type"}
 
 
+MARKS = {"barres": "barres", "lignes": "courbe", "aires": "aire", "points": "points"}
+AXIS_LABELS = {"y": "axe gauche", "y2": "axe droit", "y3": "second axe gauche", "y4": "second axe droit"}
+
 CHART_INFO = {
     "barres": ("Barres verticales", "Les longueurs se comparent précisément à partir d'une base commune : l'axe doit partir de zéro."),
     "barres_h": ("Barres horizontales", "Adaptées aux libellés longs et aux classements ; l'axe part de zéro."),
@@ -102,23 +105,54 @@ def _chart_fiche(ds: dict, body: ChartIn, user: User):
     enc = [("Type", kind)]
     if s.get("x"):
         enc.append(("Axe horizontal", f"« {s['x']} »"))
+    axes_used = set()
     for m in s.get("measures") or []:
-        axis = " (axe secondaire)" if m.get("axis") == "y2" else ""
-        enc.append(("Mesure", f"{AGG_LABELS.get(m.get('agg'), m.get('agg'))} de « {m.get('column') or 'lignes'} »{axis}"))
+        ax = "y" if s.get("type") == "barres_h" else (m.get("axis") or "y")
+        axes_used.add(ax)
+        mark = MARKS.get(m.get("mark") or "", "")
+        extra = ", ".join(x for x in (mark, AXIS_LABELS.get(ax) if ax != "y" else "") if x)
+        enc.append(("Mesure", f"{AGG_LABELS.get(m.get('agg'), m.get('agg'))} de « {m.get('column') or 'lignes'} »"
+                    + (f" ({extra})" if extra else "")))
+    axes = s.get("axes") or {}
+    for ax in sorted(axes_used):
+        cfg = axes.get(ax) or {}
+        title = cfg.get("title") or (s.get("y_title") if ax == "y" else s.get("y2_title") if ax == "y2" else None)
+        scale = cfg.get("scale") or (s.get("y_scale") if ax == "y" else None)
+        bits = [f"titre « {title} »" if title else None, "échelle logarithmique" if scale == "log" else None,
+                f"unité {cfg['suffix']}" if cfg.get("suffix") else None]
+        lo = cfg.get("min", s.get("y_min") if ax == "y" else None)
+        hi = cfg.get("max", s.get("y_max") if ax == "y" else None)
+        if lo is not None or hi is not None:
+            bits.append(f"bornes {lo if lo is not None else 'auto'} à {hi if hi is not None else 'auto'}")
+        if len(axes_used) > 1 or any(bits):
+            enc.append((AXIS_LABELS[ax].capitalize(), ", ".join(b for b in bits if b) or "réglages automatiques"))
+    for r in s.get("refs") or []:
+        if r.get("value") in (None, "") and r.get("kind") != "note":
+            continue
+        what = {"ligne_h": f"ligne de référence à {r.get('value')}",
+                "ligne_v": f"ligne verticale sur « {r.get('value')} »",
+                "zone_v": f"zone de « {r.get('value')} » à « {r.get('value2') or r.get('value')} »",
+                "note": f"note sur « {r.get('value')} »"}.get(r.get("kind"), "repère")
+        enc.append(("Repère", what + (f" : {r['label']}" if r.get("label") else "")))
     if s.get("series"):
         enc.append(("Couleur / séries", f"« {s['series']} »"))
     if s.get("facet"):
         enc.append(("Petits multiples", f"un panneau par valeur de « {s['facet']} »"))
     if s.get("filters"):
         enc.append(("Filtres propres au graphique", " ET ".join(describe_condition(x) for x in s["filters"])))
-    if s.get("y_scale") == "log":
-        enc.append(("Échelle verticale", "logarithmique : les écarts se lisent en rapports (× 10), pas en différences"))
+    if s.get("y_scale") == "log" or any((c or {}).get("scale") == "log" for c in (s.get("axes") or {}).values()):
+        enc.append(("Échelle logarithmique", "les écarts se lisent en rapports (× 10), pas en différences"))
+    if s.get("facet") and s.get("facet_scale") == "commune":
+        enc.append(("Échelle des panneaux", "commune : les hauteurs se comparent d'un panneau à l'autre"))
     f.kv(enc)
     f.h("Calcul")
     f.p("Les valeurs sont calculées sur le résultat de la recette du jeu de données (jamais sur le fichier brut modifié), "
         "après application des filtres du graphique. Chaque mesure est agrégée par modalité de l'axe horizontal"
         + (" et de la série" if s.get("series") else "") + (" et par panneau" if s.get("facet") else "") + ".")
     f.h("Choix de représentation")
+    if len(axes_used) > 1:
+        advice += (f" Le graphique utilise {len(axes_used)} axes verticaux : chaque axe a sa propre échelle, la position "
+                   "relative des courbes ne signifie donc rien en elle-même ; les titres d'axes portent l'unité.")
     f.p(f"{advice} Ce choix suit les résultats de perception graphique : on compare mieux des positions sur une échelle "
         f"commune que des longueurs, des angles ou des surfaces {f.cite('cleveland1984')}. La palette catégorielle utilisée "
         f"est distinguable par les personnes daltoniennes et chaque élément non essentiel (fond, quadrillage) est atténué "
