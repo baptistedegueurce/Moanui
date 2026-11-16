@@ -10,3 +10,7 @@
 6. **À chaque push** : compléter la section « Non publié » de `CHANGELOG.md` (texte pour les utilisateurs, en français) ;
    chaque push publie un exe en pré-version. Version stable : retirer `.dev0` de `backend/moanui/__init__.py`
    (et renommer la section en `[x.y.z] — date`) uniquement sur accord de l'utilisateur, puis passer à `x.y+1.0.dev0`.
+7. **Guide utilisateur** (`docs/guide/guide.md` + `docs/guide/images/`) : toute fonction ajoutée ou ergonomie modifiée
+   entraîne la mise à jour du texte et des captures. Captures : `node outils/captures_guide.js <url> docs/guide/images 2
+   [filtre]` sur un espace vide (données de démo) ; construction : `cd backend && uv run python ../outils/construire_guide.py`
+   (Word + PDF, non versionnés, joints aux releases par la CI). Vérifier le rendu (pdftoppm) avant de pousser.

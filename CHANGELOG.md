@@ -5,6 +5,10 @@ publiée automatiquement ; au passage d'une version stable, elle est renommée `
 
 ## Non publié
 
+- **Guide d'utilisation complet** (Word et PDF, joints à chaque version) : installation, interface, import, traitements,
+  SACROIS, jointures et empilements, export et fiches, graphiques (axes multiples, repères, petits multiples),
+  cartographie et VMS, statistiques, gestion des quotas et des limitations, réglages, problèmes fréquents ;
+  48 figures tirées des données de démonstration, sommaire, index des figures et tableaux.
 - **Nouvelle partie Gestion** :
   - *tableau de bord des quotas* : consommation de chaque quota enregistré (jauge colorée selon les seuils d'alerte),
     dernière donnée, projection de fin de période ; import d'une liste de quotas (CSV) ;

@@ -112,6 +112,8 @@ def notes(info: dict) -> str:
               "**Version portable : Moanui-windows.zip.** Avant d'extraire, clic droit sur le zip > Propriétés > "
               "cocher « Débloquer » > OK (sinon Windows refuse de charger les fichiers extraits et la fenêtre se "
               "referme aussitôt). Puis Extraire tout et lancer Moanui.exe.", "",
+              "**Guide d'utilisation** : Moanui-guide.pdf (à lire) et Moanui-guide.docx (modifiable), à jour de cette "
+              "version.", "",
               "Dans les deux cas, les données restent dans `%LOCALAPPDATA%\\Moanui` et sont conservées d'une "
               "version à l'autre (la désinstallation n'y touche pas).", ""]
     return "\n".join(lines)

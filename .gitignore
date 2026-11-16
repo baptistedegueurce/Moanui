@@ -13,3 +13,7 @@ build/*.spec
 *.egg-info/
 *.tsbuildinfo
 packaging/duckdb_ext/
+docs/guide/Moanui-guide.docx
+docs/guide/Moanui-guide.pdf
+docs/guide/ids.json
+docs/guide/images/_echec_*

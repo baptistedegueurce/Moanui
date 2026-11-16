@@ -37,6 +37,7 @@ class DocOptions:
     toc: bool = False  # table des matières
     figure_index: bool = False  # index des figures et tableaux en fin de document
     running_title: str = ""  # titre courant en haut des pages
+    preface: list = field(default_factory=list)  # blocs placés avant la table des matières (avant-propos)
 
 
 # ---------------------------------------------------------------------------------------------- utilitaires
@@ -203,22 +204,23 @@ def to_docx(blocks: list[tuple], o: DocOptions) -> bytes:
     if o.cover:
         c = o.cover
         sec.different_first_page_header_footer = True
-        t = doc.add_table(rows=1, cols=2)
-        t.alignment = WD_TABLE_ALIGNMENT.CENTER
-        left, right = t.rows[0].cells
-        left.width, right.width = Cm(9), usable - Cm(9)
-        p = left.paragraphs[0]
+        p = doc.add_paragraph()
         r = p.add_run(c.get("title", o.title))
         r.bold, r.font.size, r.font.color.rgb = True, Pt(40), RGBColor(*NAVY)
         for line, size in ((c.get("subtitle", ""), 16), (c.get("version", ""), 16)):
             if line:
-                q = left.add_paragraph()
+                q = doc.add_paragraph()
                 rr = q.add_run(line)
                 rr.bold, rr.font.size, rr.font.color.rgb = True, Pt(size), RGBColor(*NAVY)
         if c.get("image"):
-            right.paragraphs[0].add_run().add_picture(io.BytesIO(c["image"]), width=usable - Cm(9.4))
-        for _ in range(6):
-            doc.add_paragraph()
+            q = doc.add_paragraph()
+            q.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+            iw, ih = png_size(c["image"])
+            q.add_run().add_picture(io.BytesIO(c["image"]), height=Cm(min(11.0, 7.0 * ih / iw)))
+        else:
+            for _ in range(6):
+                doc.add_paragraph()
+        _ = WD_TABLE_ALIGNMENT
         band = doc.add_table(rows=1, cols=1)
         cell = band.rows[0].cells[0]
         shade(cell, "%02X%02X%02X" % NAVY)
@@ -244,6 +246,84 @@ def to_docx(blocks: list[tuple], o: DocOptions) -> bytes:
                 add_runs(cells[1].paragraphs[0], v)
             doc.add_paragraph()
 
+    def emit(blocks):
+        for b in blocks:
+            t = b[0]
+            if t == "part":
+                doc.add_paragraph().add_run().add_break(WD_BREAK.PAGE)
+                for _ in range(10):
+                    doc.add_paragraph()
+                p = doc.add_paragraph()
+                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                r = p.add_run(plain(b[1]))
+                r.bold, r.font.size, r.font.color.rgb = True, Pt(30), RGBColor(*NAVY)
+                doc.add_paragraph().add_run().add_break(WD_BREAK.PAGE)
+            elif t == "pagebreak":
+                doc.add_paragraph().add_run().add_break(WD_BREAK.PAGE)
+            elif t in ("h1", "h2", "h3"):
+                doc.add_heading(plain(b[1]), level=levels[t])
+            elif t == "p":
+                p = add_runs(doc.add_paragraph(), b[1])
+                p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+            elif t in ("ul", "ol"):
+                style = "List Bullet" if t == "ul" else "List Number"
+                for item in b[1]:
+                    add_runs(doc.add_paragraph(style=style), item)
+            elif t == "note":
+                tb = doc.add_table(rows=1, cols=1)
+                shade(tb.rows[0].cells[0], "%02X%02X%02X" % SOFT)
+                add_runs(tb.rows[0].cells[0].paragraphs[0], b[1])
+                doc.add_paragraph()
+            elif t == "code":
+                p = doc.add_paragraph()
+                r = p.add_run(b[1])
+                r.font.name, r.font.size = "Consolas", Pt(8.5)
+            elif t == "kv":
+                tb = doc.add_table(rows=0, cols=2)
+                tb.style = "Table Grid"
+                for k, v in b[1]:
+                    cells = tb.add_row().cells
+                    add_runs(cells[0].paragraphs[0], k).runs[0].bold = True
+                    add_runs(cells[1].paragraphs[0], v)
+                doc.add_paragraph()
+            elif t == "table":
+                _, hd, rows, cap_, al = b
+                if cap_:
+                    caption(cap_, "Tableau")
+                tb = doc.add_table(rows=1, cols=len(hd))
+                tb.style = "Table Grid"
+                for i, h in enumerate(hd):
+                    c = tb.rows[0].cells[i]
+                    shade(c, "%02X%02X%02X" % SOFT)
+                    rr = c.paragraphs[0].add_run(plain(h))
+                    rr.bold, rr.font.size = True, Pt(9.5)
+                for row in rows:
+                    cells = tb.add_row().cells
+                    for i, v in enumerate(row):
+                        par = cells[i].paragraphs[0]
+                        add_runs(par, v, size=9.5)
+                        if i < len(al) and al[i] == "r":
+                            par.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+                doc.add_paragraph()
+            elif t in ("fig", "img"):
+                png, cap_, rel = _figure_png(b)
+                w, h = png_size(png)
+                width = int(usable * rel)
+                max_h = Cm(19)
+                if width * h / w > max_h:
+                    width = int(max_h * w / h)
+                p = doc.add_paragraph()
+                p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                p.paragraph_format.keep_with_next = True
+                p.add_run().add_picture(io.BytesIO(png), width=width)
+                if cap_:
+                    caption(cap_, "Figure").alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+
+    if o.preface:
+        emit(o.preface)
+        doc.add_paragraph().add_run().add_break(WD_BREAK.PAGE)
+
     if o.toc:
         doc.add_paragraph("Table des matières", style="Heading 1")
         field(doc.add_paragraph(), 'TOC \\o "1-3" \\h \\z \\u', "Clic droit > Mettre à jour les champs pour afficher la table.")
@@ -253,77 +333,7 @@ def to_docx(blocks: list[tuple], o: DocOptions) -> bytes:
         upd.set(qn("w:val"), "true")
         doc.settings.element.append(upd)
 
-    for b in blocks:
-        t = b[0]
-        if t == "part":
-            doc.add_paragraph().add_run().add_break(WD_BREAK.PAGE)
-            for _ in range(10):
-                doc.add_paragraph()
-            p = doc.add_paragraph()
-            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            r = p.add_run(plain(b[1]))
-            r.bold, r.font.size, r.font.color.rgb = True, Pt(30), RGBColor(*NAVY)
-            doc.add_paragraph().add_run().add_break(WD_BREAK.PAGE)
-        elif t == "pagebreak":
-            doc.add_paragraph().add_run().add_break(WD_BREAK.PAGE)
-        elif t in ("h1", "h2", "h3"):
-            doc.add_heading(plain(b[1]), level=levels[t])
-        elif t == "p":
-            p = add_runs(doc.add_paragraph(), b[1])
-            p.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
-        elif t in ("ul", "ol"):
-            style = "List Bullet" if t == "ul" else "List Number"
-            for item in b[1]:
-                add_runs(doc.add_paragraph(style=style), item)
-        elif t == "note":
-            tb = doc.add_table(rows=1, cols=1)
-            shade(tb.rows[0].cells[0], "%02X%02X%02X" % SOFT)
-            add_runs(tb.rows[0].cells[0].paragraphs[0], b[1])
-            doc.add_paragraph()
-        elif t == "code":
-            p = doc.add_paragraph()
-            r = p.add_run(b[1])
-            r.font.name, r.font.size = "Consolas", Pt(8.5)
-        elif t == "kv":
-            tb = doc.add_table(rows=0, cols=2)
-            tb.style = "Table Grid"
-            for k, v in b[1]:
-                cells = tb.add_row().cells
-                add_runs(cells[0].paragraphs[0], k).runs[0].bold = True
-                add_runs(cells[1].paragraphs[0], v)
-            doc.add_paragraph()
-        elif t == "table":
-            _, hd, rows, cap_, al = b
-            if cap_:
-                caption(cap_, "Tableau")
-            tb = doc.add_table(rows=1, cols=len(hd))
-            tb.style = "Table Grid"
-            for i, h in enumerate(hd):
-                c = tb.rows[0].cells[i]
-                shade(c, "%02X%02X%02X" % SOFT)
-                rr = c.paragraphs[0].add_run(plain(h))
-                rr.bold, rr.font.size = True, Pt(9.5)
-            for row in rows:
-                cells = tb.add_row().cells
-                for i, v in enumerate(row):
-                    par = cells[i].paragraphs[0]
-                    add_runs(par, v, size=9.5)
-                    if i < len(al) and al[i] == "r":
-                        par.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-            doc.add_paragraph()
-        elif t in ("fig", "img"):
-            png, cap_, rel = _figure_png(b)
-            w, h = png_size(png)
-            width = int(usable * rel)
-            max_h = Cm(19)
-            if width * h / w > max_h:
-                width = int(max_h * w / h)
-            p = doc.add_paragraph()
-            p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            p.paragraph_format.keep_with_next = True
-            p.add_run().add_picture(io.BytesIO(png), width=width)
-            if cap_:
-                caption(cap_, "Figure").alignment = WD_ALIGN_PARAGRAPH.CENTER
+    emit(blocks)
 
     if o.refs:
         doc.add_heading("Références", level=1)
@@ -358,10 +368,12 @@ def to_pdf(blocks: list[tuple], o: DocOptions) -> bytes:
             if self.page_no() == 1 and o.cover:
                 return
             if o.running_title:
+                y = self.get_y()
+                self.set_y(7)  # dans la marge haute : ne chevauche jamais le contenu
                 self.set_font("Plex", "", 8)
                 self.set_text_color(*MUTED)
-                self.cell(0, 6, o.running_title, align="R", new_x="LMARGIN", new_y="NEXT")
-                self.ln(2)
+                self.cell(0, 6, o.running_title, align="R")
+                self.set_xy(self.l_margin, max(y, self.t_margin))
 
         def footer(self):
             if self.page_no() == 1 and o.cover:
@@ -497,8 +509,89 @@ def to_pdf(blocks: list[tuple], o: DocOptions) -> bytes:
         if o.meta:
             table([], [[k, v] for k, v in o.meta], "ll", kv=True)
 
+    def emit(blocks):
+        for b in blocks:
+            t = b[0]
+            if t == "part":
+                pdf.add_page()
+                if o.toc:
+                    pdf.start_section(plain(b[1]), level=0)
+                pdf.set_y(pdf.h / 2 - 25)
+                pdf.set_font("Plex", "B", 32)
+                pdf.set_text_color(*NAVY)
+                pdf.multi_cell(0, 15, plain(b[1]), align="C", new_x="LMARGIN", new_y="NEXT")
+                pdf.add_page()
+            elif t == "pagebreak":
+                pdf.add_page()
+            elif t in ("h1", "h2", "h3"):
+                heading(b[1], levels[t])
+            elif t == "p":
+                para(b[1], align="J")
+            elif t in ("ul", "ol"):
+                for n, item in enumerate(b[1], 1):
+                    mark = "•" if t == "ul" else f"{n}."
+                    pdf.set_font("Plex", "", 10.5)
+                    pdf.set_text_color(*INK)
+                    x0 = pdf.l_margin
+                    pdf.set_x(x0 + 2)
+                    pdf.cell(5, 5.4, mark)
+                    pdf.set_left_margin(x0 + 7)
+                    write_runs(item)
+                    pdf.ln(5.4)
+                    pdf.set_left_margin(x0)
+                    pdf.ln(1)
+                pdf.ln(1.5)
+            elif t == "note":
+                y0 = pdf.get_y()
+                pdf.set_fill_color(*SOFT)
+                pdf.set_font("Plex", "", 10)
+                pdf.set_text_color(*INK)
+                pdf.set_x(pdf.l_margin + 3)
+                pdf.multi_cell(W - 3, 5.2, plain(b[1]), fill=True, padding=2, new_x="LMARGIN", new_y="NEXT")
+                pdf.set_draw_color(*NAVY)
+                pdf.set_line_width(0.8)
+                pdf.line(pdf.l_margin + 1, y0, pdf.l_margin + 1, pdf.get_y())
+                pdf.set_line_width(0.2)
+                pdf.ln(3)
+            elif t == "code":
+                pdf.set_font("Mono", "", 8)
+                pdf.set_fill_color(*SOFT)
+                pdf.set_text_color(*INK)
+                pdf.multi_cell(0, 4, b[1], fill=True, padding=2, new_x="LMARGIN", new_y="NEXT")
+                pdf.ln(3)
+            elif t == "kv":
+                table([], [[k, v] for k, v in b[1]], "ll", kv=True)
+            elif t == "table":
+                _, hd, rows, cap_, al = b
+                if cap_:
+                    if pdf.get_y() + 25 > pdf.h - pdf.b_margin:
+                        pdf.add_page()
+                    caption(cap_)
+                table(hd, rows, al)
+            elif t in ("fig", "img"):
+                png, cap_, rel = _figure_png(b)
+                iw, ih = png_size(png)
+                w = W * rel
+                h = w * ih / iw
+                max_h = pdf.h - pdf.t_margin - pdf.b_margin - 20
+                if h > max_h:
+                    h = max_h
+                    w = h * iw / ih
+                if pdf.get_y() + h + 12 > pdf.h - pdf.b_margin:
+                    pdf.add_page()
+                pdf.image(io.BytesIO(png), x=pdf.l_margin + (W - w) / 2, w=w, h=h)
+                pdf.ln(2)
+                if cap_:
+                    caption(cap_, center=True)
+
+
+    if o.preface:
+        emit(o.preface)
+        pdf.add_page()
+
     if o.toc:
         def render_toc(p, outline):
+            p.set_x(p.l_margin)
             p.set_font("Plex", "B", 17)
             p.set_text_color(*NAVY)
             p.cell(0, 10, "Table des matières", new_x="LMARGIN", new_y="NEXT")
@@ -519,79 +612,7 @@ def to_pdf(blocks: list[tuple], o: DocOptions) -> bytes:
         pdf.insert_toc_placeholder(render_toc, pages=max(1, (n_sec + 39) // 40))
         pdf.add_page()
 
-    for b in blocks:
-        t = b[0]
-        if t == "part":
-            pdf.add_page()
-            if o.toc:
-                pdf.start_section(plain(b[1]), level=0)
-            pdf.set_y(pdf.h / 2 - 25)
-            pdf.set_font("Plex", "B", 32)
-            pdf.set_text_color(*NAVY)
-            pdf.multi_cell(0, 15, plain(b[1]), align="C", new_x="LMARGIN", new_y="NEXT")
-            pdf.add_page()
-        elif t == "pagebreak":
-            pdf.add_page()
-        elif t in ("h1", "h2", "h3"):
-            heading(b[1], levels[t])
-        elif t == "p":
-            para(b[1], align="J")
-        elif t in ("ul", "ol"):
-            for n, item in enumerate(b[1], 1):
-                mark = "•" if t == "ul" else f"{n}."
-                pdf.set_font("Plex", "", 10.5)
-                pdf.set_text_color(*INK)
-                x0 = pdf.l_margin
-                pdf.set_x(x0 + 2)
-                pdf.cell(5, 5.4, mark)
-                pdf.set_left_margin(x0 + 7)
-                write_runs(item)
-                pdf.ln(5.4)
-                pdf.set_left_margin(x0)
-                pdf.ln(1)
-            pdf.ln(1.5)
-        elif t == "note":
-            y0 = pdf.get_y()
-            pdf.set_fill_color(*SOFT)
-            pdf.set_font("Plex", "", 10)
-            pdf.set_text_color(*INK)
-            pdf.set_x(pdf.l_margin + 3)
-            pdf.multi_cell(W - 3, 5.2, plain(b[1]), fill=True, padding=2, new_x="LMARGIN", new_y="NEXT")
-            pdf.set_draw_color(*NAVY)
-            pdf.set_line_width(0.8)
-            pdf.line(pdf.l_margin + 1, y0, pdf.l_margin + 1, pdf.get_y())
-            pdf.set_line_width(0.2)
-            pdf.ln(3)
-        elif t == "code":
-            pdf.set_font("Mono", "", 8)
-            pdf.set_fill_color(*SOFT)
-            pdf.set_text_color(*INK)
-            pdf.multi_cell(0, 4, b[1], fill=True, padding=2, new_x="LMARGIN", new_y="NEXT")
-            pdf.ln(3)
-        elif t == "kv":
-            table([], [[k, v] for k, v in b[1]], "ll", kv=True)
-        elif t == "table":
-            _, hd, rows, cap_, al = b
-            if cap_:
-                if pdf.get_y() + 25 > pdf.h - pdf.b_margin:
-                    pdf.add_page()
-                caption(cap_)
-            table(hd, rows, al)
-        elif t in ("fig", "img"):
-            png, cap_, rel = _figure_png(b)
-            iw, ih = png_size(png)
-            w = W * rel
-            h = w * ih / iw
-            max_h = pdf.h - pdf.t_margin - pdf.b_margin - 20
-            if h > max_h:
-                h = max_h
-                w = h * iw / ih
-            if pdf.get_y() + h + 12 > pdf.h - pdf.b_margin:
-                pdf.add_page()
-            pdf.image(io.BytesIO(png), x=pdf.l_margin + (W - w) / 2, w=w, h=h)
-            pdf.ln(2)
-            if cap_:
-                caption(cap_, center=True)
+    emit(blocks)
 
     if o.refs:
         heading("Références", 1)

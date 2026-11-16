@@ -180,6 +180,13 @@ jobs:
         if: github.event_name == 'push' && steps.v.outputs.publier == 'true'
         run: python outils/notes_de_version.py notes notes.md
 
+      - name: Guide utilisateur (Word et PDF, construits depuis docs/guide)
+        if: github.event_name == 'push' && steps.v.outputs.publier == 'true'
+        run: |
+          python outils/construire_guide.py
+          Copy-Item docs/guide/Moanui-guide.pdf Moanui-guide.pdf
+          Copy-Item docs/guide/Moanui-guide.docx Moanui-guide.docx
+
       - name: Release
         if: github.event_name == 'push' && steps.v.outputs.publier == 'true'
         uses: softprops/action-gh-release@v2
@@ -191,5 +198,7 @@ jobs:
           files: |
             Moanui-installation.exe
             Moanui-windows.zip
+            Moanui-guide.pdf
+            Moanui-guide.docx
           prerelease: ${{ steps.v.outputs.kind == 'dev' }}
           make_latest: ${{ steps.v.outputs.kind == 'stable' }}

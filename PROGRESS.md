@@ -171,6 +171,12 @@ cd frontend && npm run dev                                  # dev avec proxy /ap
   résumé et discussion conditionnés (`stats.finalize`), reproductibilité.
 - **Cache des graphiques** : `lib/memo.ts` (mémoire par utilisateur et structure, jamais sur disque).
 
+- **Guide utilisateur (nov. 2026)** : `docs/guide/guide.md` (source, conventions en tête de
+  `outils/construire_guide.py`), captures `docs/guide/images` produites par `outils/captures_guide.js` (Playwright,
+  données de démo, échelle 2), Word + PDF construits par `outils/construire_guide.py` (page de garde, avant-propos,
+  sommaire, parties, index des figures) et joints aux releases. Forme reprise du guide de l'appli R v0.1 (fourni par
+  l'utilisateur, non versionné).
+
 ## 6. En cours / à faire (ordre proposé)
 
 1. Carto suite : bande des 3 milles (licence OFB/CNSP à vérifier), étiquettes (polices embarquées),
