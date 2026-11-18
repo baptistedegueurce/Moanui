@@ -27,6 +27,11 @@ export function shades(hex: string): MantineColorsTuple {
 export const FONT = "'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif";
 export const fontOf = (t: Theme) => (!t.font || t.font.startsWith('Inter') ? FONT : t.font);
 
+/**
+ * Thème de l'interface. Règles reprises de systèmes de design publics et éprouvés (pas de leur identité) :
+ * échelle typographique « productive » et espacements de 2 / 4 / 8 px de Carbon (IBM), contrastes WCAG 2.1 AA
+ * (4,5:1 pour le texte, 3:1 pour les bordures de champs), focus toujours visible (GOV.UK), angles quasi droits.
+ */
 export function mantineTheme(t: Theme) {
   const font = fontOf(t);
   return createTheme({
@@ -35,24 +40,42 @@ export function mantineTheme(t: Theme) {
     colors: { charte: shades(t.colors.primary), accent: shades(t.colors.accent) },
     fontFamily: font,
     fontFamilyMonospace: "'IBM Plex Mono', Consolas, monospace",
+    fontSizes: { xs: '12px', sm: '14px', md: '14px', lg: '16px', xl: '20px' },
+    lineHeights: { xs: '1.34', sm: '1.43', md: '1.43', lg: '1.5', xl: '1.4' },
+    spacing: { xs: '8px', sm: '12px', md: '16px', lg: '24px', xl: '32px' },
+    focusRing: 'auto',
     headings: {
       fontFamily: font,
       fontWeight: '600',
-      sizes: { h1: { fontSize: '26px', lineHeight: '1.25' }, h2: { fontSize: '22px', lineHeight: '1.3' }, h3: { fontSize: '18px', lineHeight: '1.35' }, h4: { fontSize: '15px', lineHeight: '1.4' } },
+      sizes: {
+        h1: { fontSize: '28px', lineHeight: '1.29', fontWeight: '400' },
+        h2: { fontSize: '24px', lineHeight: '1.33', fontWeight: '400' },
+        h3: { fontSize: '20px', lineHeight: '1.4', fontWeight: '400' },
+        h4: { fontSize: '16px', lineHeight: '1.375', fontWeight: '600' },
+        h5: { fontSize: '14px', lineHeight: '1.29', fontWeight: '600' },
+      },
     },
     defaultRadius: 'sm',
-    radius: { xs: '2px', sm: '4px', md: '6px', lg: '8px', xl: '12px' },
+    radius: { xs: '0px', sm: '2px', md: '2px', lg: '4px', xl: '4px' },
+    shadows: { xs: 'none', sm: '0 1px 2px rgba(0,0,0,.12)', md: '0 2px 6px rgba(0,0,0,.18)', lg: '0 2px 6px rgba(0,0,0,.18)', xl: '0 4px 12px rgba(0,0,0,.2)' },
     components: {
-      Button: { defaultProps: { radius: 'sm' }, styles: { root: { fontWeight: 500 } } },
-      Card: { defaultProps: { radius: 'sm', withBorder: true, shadow: undefined } },
-      Paper: { defaultProps: { radius: 'sm' } },
-      Badge: { defaultProps: { radius: 'sm' }, styles: { root: { textTransform: 'none', fontWeight: 500, letterSpacing: 0 } } },
-      Modal: { defaultProps: { radius: 'sm', overlayProps: { backgroundOpacity: 0.35 } } },
+      Button: { defaultProps: { size: 'sm' }, styles: { root: { fontWeight: 500 } } },
+      ActionIcon: { defaultProps: { variant: 'subtle', color: 'gray' } },
+      Card: { defaultProps: { withBorder: true, shadow: undefined, padding: 'md' } },
+      Badge: { defaultProps: { variant: 'light' }, styles: { root: { textTransform: 'none', fontWeight: 500, letterSpacing: 0 } } },
+      Modal: { defaultProps: { overlayProps: { backgroundOpacity: 0.5 }, shadow: 'xl' } },
+      Menu: { defaultProps: { shadow: 'md' } },
+      Popover: { defaultProps: { shadow: 'md' } },
       Tabs: { styles: { tab: { fontWeight: 500 } } },
       Tooltip: { defaultProps: { withArrow: true, openDelay: 300, multiline: true, maw: 320 } },
+      Alert: { defaultProps: { variant: 'light' } },
+      Table: { defaultProps: { verticalSpacing: 8, horizontalSpacing: 12 } },
     },
   });
 }
+
+/** Barre du haut : la couleur principale de la charte, assombrie (texte blanc toujours lisible). */
+export const headerOf = (t: Theme) => mix(t.colors.primary, '#000000', 0.35);
 
 export function cssVars(t: Theme): Record<string, string> {
   return {
@@ -65,6 +88,8 @@ export function cssVars(t: Theme): Record<string, string> {
     '--mo-primary-contrast': t.colors.primary_contrast,
     '--mo-accent': t.colors.accent,
     '--mo-mono': "'IBM Plex Mono', Consolas, monospace",
+    '--mo-header': headerOf(t),
+    '--mo-primary-soft': mix(t.colors.primary, '#ffffff', 0.9),
   };
 }
 
@@ -73,17 +98,17 @@ export const NEUTRAL: Theme = {
   colors: {
     primary: '#2F4858',
     primary_contrast: '#FFFFFF',
-    accent: '#3A7CA5',
-    background: '#F6F7F9',
+    accent: '#1F5F8B',
+    background: '#F4F4F4',
     surface: '#FFFFFF',
-    text: '#1C2430',
-    muted: '#5F6B7A',
-    border: '#DDE2E8',
+    text: '#161616',
+    muted: '#525252',
+    border: '#E0E0E0',
   },
   // palette catégorielle validée (daltonisme, contraste) : l'ordre compte, ne pas le mélanger
   palette: ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#6250d6', '#e34948'],
   sequential: ['#cde2fb', '#9ec5f4', '#6da7ec', '#3987e5', '#256abf', '#184f95', '#0d366b'],
   diverging: ['#184f95', '#3987e5', '#9ec5f4', '#f0efec', '#f2a3a2', '#e34948', '#a32f2f'],
   font: "'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif",
-  chart: { show_logo: true, logo_position: 'bas-droite', default_source: '', background: '#FFFFFF', grid: '#E6E9EE' },
+  chart: { show_logo: true, logo_position: 'bas-droite', default_source: '', background: '#FFFFFF', grid: '#E0E0E0' },
 };

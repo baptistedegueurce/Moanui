@@ -135,7 +135,7 @@ export default function StructurePage() {
   if (!structure || !isStructureAdmin) return <Alert>Réservé aux administrateurs de la structure.</Alert>;
   return (
     <Stack maw={1100}>
-      <Title order={2}>Charte de {structure.short_name}</Title>
+      <Title order={1}>Charte de {structure.short_name}</Title>
       <ThemeEditor structure={structure} onSaved={refresh} />
     </Stack>
   );

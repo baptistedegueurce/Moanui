@@ -35,7 +35,7 @@ export default function DatasetsPage() {
   return (
     <Stack maw={1200}>
       <Group justify="space-between">
-        <Title order={2}>Données</Title>
+        <Title order={1}>Données</Title>
         {canWrite && (
           <Button leftSection={<IconUpload size={16} />} onClick={() => setImporting(true)}>
             Importer un fichier

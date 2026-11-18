@@ -24,7 +24,7 @@ import {
 import { IconCheck, IconAlertTriangle, IconBan, IconInfoCircle, IconDeviceFloppy, IconPlayerPlay } from '@tabler/icons-react';
 import { api, downloadPost } from '../lib/api';
 import { useAuth } from '../lib/auth';
-import { isNumericType } from '../lib/format';
+import { fmtNumber, isNumericType } from '../lib/format';
 import { fail, ok } from '../lib/notify';
 import { NEUTRAL, fontOf } from '../lib/theme';
 import type { Column, DatasetSummary } from '../lib/types';
@@ -464,7 +464,7 @@ export default function StatsPage() {
               <div>
                 <Title order={3}>{res.titre}</Title>
                 <Text c="dimmed" size="sm">
-                  {res.test_label} · {res.effectifs.lignes_utilisees} observations
+                  {res.test_label} · {fmtNumber(res.effectifs.lignes_utilisees)} observations
                 </Text>
               </div>
               <Group gap="xs">

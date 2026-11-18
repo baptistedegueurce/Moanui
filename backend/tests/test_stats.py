@@ -1,4 +1,4 @@
-from conftest import upload
+from conftest import r_ready, upload
 
 
 def _run(client, did, **body):
@@ -135,7 +135,6 @@ def test_mode_expert_seuil_et_correction(client):
 
 def test_code_r_des_analyses(client, tmp_path):
     import io
-    import shutil
     import subprocess
     import zipfile
 
@@ -160,7 +159,7 @@ def test_code_r_des_analyses(client, tmp_path):
         z = client.post(f"/api/datasets/{did}/stats/r.zip", json=body)
         zf = zipfile.ZipFile(io.BytesIO(z.content))
         assert set(zf.namelist()) == {"analyse.R", "analyse_donnees.csv", "LISEZMOI.txt"}
-        if not shutil.which("Rscript"):
+        if not r_ready():
             continue
         d = tmp_path / str(i)
         zf.extractall(d)

@@ -277,7 +277,7 @@ export default function GuidePage() {
         </a>
       </nav>
       <article className="mo-doc" ref={box}>
-        <Title order={2}>Bonnes pratiques</Title>
+        <Title order={1}>Bonnes pratiques</Title>
         <Text c="dimmed" mb="lg">
           Les règles que Moanui applique ou vérifie, et les références sur lesquelles elles reposent. Les fiches méthode citent les mêmes sources.
         </Text>

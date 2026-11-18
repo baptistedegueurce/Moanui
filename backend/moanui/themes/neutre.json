@@ -3,12 +3,12 @@
   "colors": {
     "primary": "#2F4858",
     "primary_contrast": "#FFFFFF",
-    "accent": "#3A7CA5",
-    "background": "#F6F7F9",
+    "accent": "#1F5F8B",
+    "background": "#F4F4F4",
     "surface": "#FFFFFF",
-    "text": "#1C2430",
-    "muted": "#5F6B7A",
-    "border": "#DDE2E8"
+    "text": "#161616",
+    "muted": "#525252",
+    "border": "#E0E0E0"
   },
   "palette": [
     "#2a78d6",
@@ -44,6 +44,6 @@
     "logo_position": "bas-droite",
     "default_source": "",
     "background": "#FFFFFF",
-    "grid": "#E6E9EE"
+    "grid": "#E0E0E0"
   }
 }

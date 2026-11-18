@@ -99,7 +99,7 @@ export default function AdminPage() {
 
   return (
     <Stack maw={1200}>
-      <Title order={2}>Administration</Title>
+      <Title order={1}>Administration</Title>
       <Tabs defaultValue="structures" onChange={(t) => t === 'journal' && api.get('/api/admin/journal').then(setJournal).catch(fail)}>
         <Tabs.List>
           <Tabs.Tab value="structures">Structures</Tabs.Tab>

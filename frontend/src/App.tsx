@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { MantineProvider, Center, Loader } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { Navigate, Route, Routes } from 'react-router-dom';
@@ -22,6 +22,11 @@ export default function App() {
   const { me, loading, needsSetup, structure } = useAuth();
   const theme = structure?.theme || NEUTRAL;
   const mtheme = useMemo(() => mantineTheme(theme), [theme]);
+  // variables de la charte sur la racine : elles valent aussi dans les fenêtres et menus (portails)
+  useEffect(() => {
+    const root = document.documentElement;
+    Object.entries(cssVars(theme)).forEach(([k, v]) => root.style.setProperty(k, v));
+  }, [theme]);
 
   let content;
   if (loading) {
@@ -65,7 +70,7 @@ export default function App() {
   return (
     <MantineProvider theme={mtheme}>
       <Notifications position="bottom-right" limit={4} />
-      <div style={{ ...cssVars(theme), height: '100%' } as React.CSSProperties}>{content}</div>
+      <div style={{ height: '100%' }}>{content}</div>
     </MantineProvider>
   );
 }

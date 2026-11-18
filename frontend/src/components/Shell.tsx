@@ -34,12 +34,12 @@ export default function Shell({ children }: { children: ReactNode }) {
   );
 
   return (
-    <AppShell header={{ height: 52 }} navbar={{ width: 216, breakpoint: 'sm' }} padding="md">
+    <AppShell header={{ height: 48 }} navbar={{ width: 224, breakpoint: 'sm' }} padding="lg">
       <AppShell.Header className="mo-header">
         <Group h="100%" px="md" justify="space-between" wrap="nowrap">
           <Group gap="lg" wrap="nowrap">
             <Link to="/" className="mo-brand">
-              <img src="/favicon.svg" width={24} height={24} alt="" />
+              <img src="/favicon.svg" width={22} height={22} alt="" />
               <span>Moanui</span>
             </Link>
             <span className="mo-header-sep" />
@@ -54,22 +54,20 @@ export default function Shell({ children }: { children: ReactNode }) {
                 allowDeselect={false}
               />
             ) : (
-              <Text size="sm" fw={500} c="dimmed">
-                {structure?.name}
-              </Text>
+              <span className="mo-header-ctx">{structure?.name}</span>
             )}
           </Group>
           <Group gap="md" wrap="nowrap">
             {structure && (
               <Box>
-                <StructureLogo id={structure.id} has={structure.has_logo} height={30} />
+                <StructureLogo id={structure.id} has={structure.has_logo} height={28} />
               </Box>
             )}
             <Menu position="bottom-end" withinPortal>
               <Menu.Target>
-                <UnstyledButton style={{ color: 'inherit' }}>
-                  <Group gap={6} wrap="nowrap">
-                    <Avatar size={26} color="charte" radius="xl" variant="light">
+                <UnstyledButton className="mo-user">
+                  <Group gap={8} wrap="nowrap">
+                    <Avatar size={26} radius="xl" color="gray" variant="filled">
                       {me?.display_name.slice(0, 2).toUpperCase()}
                     </Avatar>
                     <Text size="sm">{me?.display_name}</Text>
@@ -90,7 +88,7 @@ export default function Shell({ children }: { children: ReactNode }) {
         </Group>
       </AppShell.Header>
 
-      <AppShell.Navbar py="xs" px={8} className="mo-navbar">
+      <AppShell.Navbar py="sm" px={0} className="mo-navbar">
         <ScrollArea style={{ flex: 1 }}>
           {nav('/', 'Accueil', <IconHome size={17} />)}
           <div className="mo-nav-section">Travailler</div>
@@ -109,7 +107,7 @@ export default function Shell({ children }: { children: ReactNode }) {
             </>
           )}
         </ScrollArea>
-        <Text size="xs" c="dimmed" px="sm" py="xs">
+        <Text size="xs" c="dimmed" px={14} py="sm" style={{ borderTop: '1px solid var(--mo-border)' }}>
           Moanui {meta?.version}
         </Text>
       </AppShell.Navbar>

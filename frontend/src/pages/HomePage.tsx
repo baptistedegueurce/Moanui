@@ -55,11 +55,12 @@ export default function HomePage() {
 
   return (
     <Stack maw={1180} gap="lg">
-      <Group justify="space-between" align="flex-end">
+      <div className="mo-page-head">
         <div>
-          <Title order={2}>Bonjour {me?.display_name.split(' ')[0]}</Title>
-          <Text c="dimmed" size="sm">
-            {structure?.name} · {datasets.length} jeu{datasets.length > 1 ? 'x' : ''} de données
+          <div className="mo-page-eyebrow">{structure?.name}</div>
+          <Title order={1}>Tableau de bord</Title>
+          <Text c="dimmed" size="sm" mt={4}>
+            {datasets.length} jeu{datasets.length > 1 ? 'x' : ''} de données · connecté en tant que {me?.display_name}
           </Text>
         </div>
         <Group gap="xs">
@@ -78,7 +79,7 @@ export default function HomePage() {
             Statistiques
           </Button>
         </Group>
-      </Group>
+      </div>
 
       <div className="mo-panel">
         <Group className="mo-panel-head" justify="space-between">

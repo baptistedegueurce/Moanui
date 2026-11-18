@@ -24,6 +24,24 @@ def default_theme() -> dict:
     return json.loads(json.dumps(presets()["neutre"]))
 
 
+# Couleurs de l'ancienne charte « Neutre » (avant la refonte de novembre 2026) : une structure qui les a gardées telles
+# quelles reçoit la nouvelle charte par défaut ; une charte personnalisée n'est jamais modifiée.
+OLD_NEUTRE = {"primary": "#2F4858", "primary_contrast": "#FFFFFF", "accent": "#3A7CA5", "background": "#F6F7F9",
+              "surface": "#FFFFFF", "text": "#1C2430", "muted": "#5F6B7A", "border": "#DDE2E8"}
+
+
+def refresh_default(theme: dict) -> dict | None:
+    """Nouvelle version de la charte si elle est restée l'ancienne charte par défaut, sinon None."""
+    cols = {k: str(v).upper() for k, v in (theme.get("colors") or {}).items()}
+    if cols != {k: v.upper() for k, v in OLD_NEUTRE.items()}:
+        return None
+    new = default_theme()
+    out = {**theme, "colors": new["colors"], "chart": {**(theme.get("chart") or {}), "grid": new["chart"]["grid"]}}
+    if str(theme.get("name", "")).startswith("Neutre"):
+        out["name"] = new["name"]
+    return out
+
+
 def validate_theme(theme: dict) -> dict:
     """Complète une charte avec les valeurs par défaut et vérifie les couleurs."""
     base = default_theme()

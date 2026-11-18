@@ -472,7 +472,7 @@ export function buildFigure(s: ChartSpec, d: Data, theme: Theme, opts: { logoUrl
   const t = s.template;
   const legendPos = s.legend || 'haut';
   const top = 64 + (t.subtitle ? 22 : 0) + (nf > 1 && legendPos === 'haut' ? 40 : 0);
-  const bottom = 70 + (t.caption ? 18 : 0) + (legendPos === 'bas' ? 40 : 0);
+  const bottom = 92 + (t.caption ? 18 : 0) + (legendPos === 'bas' ? 40 : 0);
   const rightAxes = used.filter((a) => a === 'y2' || a === 'y4').length;
   const layout: any = {
     width: t.width,
@@ -491,7 +491,8 @@ export function buildFigure(s: ChartSpec, d: Data, theme: Theme, opts: { logoUrl
       yanchor: t.subtitle ? 'middle' : 'top',
       font: { size: 18 },
     },
-    showlegend: legendPos !== 'aucune',
+    // une seule série : pas de légende, le titre de l'axe suffit
+    showlegend: legendPos !== 'aucune' && (s.type === 'secteurs' || traces.filter((tr) => tr.showlegend !== false).length > 1),
     legend:
       legendPos === 'droite'
         ? { orientation: 'v', x: rightAxes ? 1.1 : 1.02, xanchor: 'left', y: 1, yanchor: 'top', font: { size: 12, color: ink } }

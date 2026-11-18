@@ -178,6 +178,21 @@ class Database:
                 "INSERT OR IGNORE INTO meta(key, value) VALUES ('schema_version', ?)",
                 (str(SCHEMA_VERSION),),
             )
+            self._refresh_default_themes()
+
+    def _refresh_default_themes(self) -> None:
+        """Les structures restées sur l'ancienne charte par défaut passent à la nouvelle (une seule fois)."""
+        import json
+
+        from .themes import refresh_default
+
+        for row in self._conn.execute("SELECT id, theme FROM structures").fetchall():
+            try:
+                new = refresh_default(json.loads(row["theme"]))
+            except (ValueError, TypeError):
+                continue
+            if new is not None:
+                self._conn.execute("UPDATE structures SET theme = ? WHERE id = ?", (json.dumps(new), row["id"]))
 
     def close(self) -> None:
         self._conn.close()

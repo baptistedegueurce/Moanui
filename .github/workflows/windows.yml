@@ -56,8 +56,12 @@ jobs:
           python-version: "3.12"
       - name: Dépendances Python
         run: pip install "./backend[dev]" pyinstaller
+      - name: Paquets R (le code R généré par Moanui est exécuté par les tests)
+        run: Rscript -e "install.packages(c('ggplot2', 'scales'), repos = 'https://cloud.r-project.org')"
       - name: Tests
         working-directory: backend
+        env:
+          MOANUI_EXIGER_R: "1"
         run: python -m pytest -q
 
       - name: Extension spatiale DuckDB (cartographie, embarquée pour fonctionner hors ligne)

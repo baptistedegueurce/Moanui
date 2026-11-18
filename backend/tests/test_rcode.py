@@ -1,12 +1,11 @@
 """Code R équivalent des graphiques : un script par type, exécuté avec Rscript quand R est installé."""
 
 import io
-import shutil
 import subprocess
 import zipfile
 
 import pytest
-from conftest import upload
+from conftest import r_ready, upload
 
 K, E, D = "debarquement_Kg", "debarquement_euros", "duree_maree"
 TPL = {"title": "Essai", "subtitle": "Sous-titre", "source": "SACROIS fictif", "author": "Équipe", "show_date": True,
@@ -77,7 +76,7 @@ def test_script_par_type(client, did, name, tmp_path):
     head = csv_text.splitlines()[0]
     if name in ("barres", "barres_h", "facettes"):
         assert "somme_debarquement_kg" in head
-    if not shutil.which("Rscript") or name == "nuage3d":
+    if not r_ready("ggplot2", "scales") or name == "nuage3d":
         return
     zf.extractall(tmp_path)
     run = subprocess.run(["Rscript", "graphique.R"], cwd=tmp_path, capture_output=True, text=True, timeout=180)
