@@ -9,7 +9,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from ..db import Database, new_id, now
-from .deps import User, current_user, dataset_access, get_db, writable_dataset
+from .deps import User, Workspace, current_user, dataset_access, get_db, get_settings, writable_dataset
 
 router = APIRouter(prefix="/api", tags=["charts"])
 
@@ -183,6 +183,45 @@ def chart_method_export(did: str, fmt: str, body: ChartIn, user: User = Depends(
     """Fiche méthode du graphique en Word (docx) ou PDF."""
     ds, _ = dataset_access(db, user, did)
     return _chart_fiche(ds, body, user).response(fmt, "graphique_methode")
+
+
+def _chart_r(db: Database, settings, user: User, did: str, spec: dict):
+    """Données du graphique (même requête que l'affichage) + script R équivalent."""
+    from ..engine import pipeline
+    from ..engine.sql import RecipeError
+    from ..rcode import chart_r, chart_request, named_data, to_csv
+    from ..themes import default_theme
+
+    ds, _ = dataset_access(db, user, did)
+    with Workspace(db, settings, user) as ws:
+        try:
+            data = pipeline.chart_data(ws.con, ws.plan(ds), chart_request(spec))
+        except RecipeError as e:
+            raise HTTPException(400, str(e)) from e
+    st = db.one("SELECT theme FROM structures WHERE id = ?", (ds["structure_id"],))
+    theme = json.loads(st["theme"]) if st else default_theme()
+    script, notes = chart_r(spec, data, theme)
+    cols, rows, _ = named_data(spec, data)
+    return script, notes, to_csv(cols, rows)
+
+
+@router.post("/datasets/{did}/charts/r")
+def chart_r_code(did: str, body: ChartIn, user: User = Depends(current_user), db: Database = Depends(get_db),
+                 settings=Depends(get_settings)):
+    """Code R équivalent (ggplot2) du graphique, à afficher et copier."""
+    script, notes, _ = _chart_r(db, settings, user, did, body.spec)
+    return {"script": script, "avertissements": notes}
+
+
+@router.post("/datasets/{did}/charts/r.zip")
+def chart_r_zip(did: str, body: ChartIn, user: User = Depends(current_user), db: Database = Depends(get_db),
+                settings=Depends(get_settings)):
+    """Script R + données agrégées du graphique (CSV) dans une archive."""
+    from ..rcode import chart_zip
+
+    script, _, csv_bytes = _chart_r(db, settings, user, did, body.spec)
+    return Response(chart_zip(script, csv_bytes), media_type="application/zip",
+                    headers={"Content-Disposition": 'attachment; filename="graphique_R.zip"'})
 
 
 @router.get("/recent")

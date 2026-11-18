@@ -5,10 +5,23 @@ publiée automatiquement ; au passage d'une version stable, elle est renommée `
 
 ## Non publié
 
+- **Graphiques : modes Simple et Avancé.** Le mode simple n'affiche que l'essentiel (données, séries, petits
+  multiples, filtres, titre et source) ; le mode avancé donne tous les réglages. Changer de mode ne modifie pas le
+  graphique.
+- **Code R équivalent** (comme dans la version 0.1) : bouton « Code R » sur les graphiques et les analyses
+  statistiques. Le script ggplot2 refait le graphique (séries, axes, repères, couleurs de la charte, titre, source,
+  export PNG) ; celui des statistiques refait l'analyse avec les fonctions de base de R. Archive à télécharger : script,
+  données en CSV et mode d'emploi pour RStudio. Ce que R ne reproduit pas à l'identique (plus d'un axe secondaire, 3D)
+  est signalé en tête du script.
+- **Statistiques : modes Guidé et Expert.** En mode guidé, trois étapes numérotées et la question reformulée en une
+  phrase avec vos colonnes ; le résultat commence par « Ce qu'il faut retenir ». En mode expert, vous imposez le test,
+  le seuil de significativité (0,10, 0,05 ou 0,01) et la correction des comparaisons deux à deux (Holm, Bonferroni,
+  Benjamini-Hochberg ou aucune) ; interprétation, résumé et fiche méthode suivent ces choix, et les conditions
+  d'application restent vérifiées.
 - **Guide d'utilisation complet** (Word et PDF, joints à chaque version) : installation, interface, import, traitements,
   SACROIS, jointures et empilements, export et fiches, graphiques (axes multiples, repères, petits multiples),
   cartographie et VMS, statistiques, gestion des quotas et des limitations, réglages, problèmes fréquents ;
-  48 figures tirées des données de démonstration, sommaire, index des figures et tableaux.
+  52 figures tirées des données de démonstration, sommaire, index des figures et tableaux.
 - **Nouvelle partie Gestion** :
   - *tableau de bord des quotas* : consommation de chaque quota enregistré (jauge colorée selon les seuils d'alerte),
     dernière donnée, projection de fin de période ; import d'une liste de quotas (CSV) ;

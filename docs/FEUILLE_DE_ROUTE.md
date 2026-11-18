@@ -109,7 +109,8 @@ Plateforme :
 
 Liste ouverte, numérotée pour pouvoir répondre « on garde 3, 7, 12… ». Taille : **S** (≤ 1 jour), **M** (2 à 4 jours),
 **L** (1 semaine et plus). « Dépend de » = format, accès ou règle à obtenir avant de coder. Les sources servent
-d'inspiration ; aucun chiffre ni règle n'en est repris sans lecture du document original.
+d'inspiration ; aucun chiffre ni règle n'en est repris sans lecture du document original. Rôles des structures et
+calendrier réglementaire : `docs/STRUCTURES.md`.
 
 ### A. Prise en main et accompagnement
 | N° | Fonction | Ce que ça apporte | Taille | Dépend de / source |
@@ -175,6 +176,9 @@ d'inspiration ; aucun chiffre ni règle n'en est repris sans lecture du document
 | F4 | Calendrier des mesures (fermetures, tailles, zones) et contrôle des déclarations | Repérer les déclarations hors règles | M | textes réglementaires par structure |
 | F5 | Captures accidentelles et espèces protégées : saisie et synthèse | Obligations de suivi | M | dépend de B5 |
 | F6 | Suivi des engins perdus / macrodéchets | Programmes environnementaux | S | idée sans source |
+| F7 | **Contrôle de la marge de tolérance** journal de bord / pesée (10 % par espèce, 20 % sous 100 kg) | Prévenir les adhérents avant un contrôle | M | règlement (UE) 2023/2842, voir `docs/STRUCTURES.md` |
+| F8 | Sous-quotas OP / hors OP, import des attributions publiées au JO, stocks sensibles | Quotas tels qu'ils sont gérés en France | M | `docs/STRUCTURES.md` (seuil des stocks sensibles à confirmer) |
+| F9 | Module pêche à pied : licences, gisements, biomasse (reprise de l'ancienne appli) | Contrôle de la pêche sans navire en 2028 | L | `docs/STRUCTURES.md` |
 
 ### G. Statistiques
 | N° | Fonction | Ce que ça apporte | Taille | Dépend de / source |

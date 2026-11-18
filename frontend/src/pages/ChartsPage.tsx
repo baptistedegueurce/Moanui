@@ -36,6 +36,7 @@ import { NEUTRAL } from '../lib/theme';
 import { cacheGet, cacheSet, recall, remember } from '../lib/memo';
 import type { Column, DatasetSummary } from '../lib/types';
 import FicheMenu from '../components/FicheMenu';
+import RCodeModal, { RIcon } from '../components/RCodeModal';
 import { loadPlotly } from '../lib/plotly';
 import { AGGS, Conditions } from '../components/StepForm';
 
@@ -64,6 +65,24 @@ export default function ChartsPage() {
   const [saved, setSaved] = useState<Saved[]>([]);
   const [current, setCurrent] = useState<Saved | null>(restore?.current || null);
   const [showTable, setShowTable] = useState(false);
+  const [showR, setShowR] = useState(false);
+  // Simple : l'essentiel ; Avancé : tous les réglages. Préférence d'affichage seulement (le graphique garde tout).
+  const [mode, setModeState] = useState<'simple' | 'avance'>(() => {
+    try {
+      return localStorage.getItem('moanui.graphiques.mode') === 'avance' ? 'avance' : 'simple';
+    } catch {
+      return 'simple';
+    }
+  });
+  const setMode = (m: 'simple' | 'avance') => {
+    setModeState(m);
+    try {
+      localStorage.setItem('moanui.graphiques.mode', m);
+    } catch {
+      /* stockage indisponible : la préférence ne sera pas retenue */
+    }
+  };
+  const pro = mode === 'avance';
   const plotRef = useRef<HTMLDivElement>(null);
   const canWrite = datasets.find((d) => d.id === dsId)?.mode === 'ecriture';
 
@@ -279,6 +298,23 @@ export default function ChartsPage() {
               onChange={(v) => v && set({ type: v as any })}
               allowDeselect={false}
             />
+            <div>
+              <SegmentedControl
+                fullWidth
+                size="xs"
+                value={mode}
+                onChange={(v) => setMode(v as any)}
+                data={[
+                  { value: 'simple', label: 'Simple' },
+                  { value: 'avance', label: 'Avancé' },
+                ]}
+              />
+              <Text size="xs" c="dimmed" mt={4}>
+                {pro
+                  ? 'Tous les réglages : forme et axe de chaque mesure, échelles, repères, mise en page.'
+                  : 'L’essentiel pour un graphique propre. Passer en « Avancé » ne change rien au graphique.'}
+              </Text>
+            </div>
             <Accordion multiple defaultValue={['donnees', 'gabarit']} variant="contained">
               <Accordion.Item value="donnees">
                 <Accordion.Control>Données représentées</Accordion.Control>
@@ -328,7 +364,7 @@ export default function ChartsPage() {
                                 </ActionIcon>
                               )}
                             </Group>
-                            {['barres', 'barres_h', 'lignes', 'combine', 'aires'].includes(spec.type) && (
+                            {pro && ['barres', 'barres_h', 'lignes', 'combine', 'aires'].includes(spec.type) && (
                               <Stack gap={4} mt={4}>
                                 <Group gap={4} wrap="nowrap">
                                   {spec.type !== 'barres_h' && (
@@ -371,6 +407,18 @@ export default function ChartsPage() {
                         )}
                       </>
                     )}
+                    {!pro && spec.series && ['barres', 'barres_h', 'aires', 'combine'].includes(spec.type) && (
+                      <SegmentedControl
+                        size="xs"
+                        value={spec.stack || 'groupe'}
+                        onChange={(v) => set({ stack: v as any })}
+                        data={[
+                          { value: 'groupe', label: 'Côte à côte' },
+                          { value: 'empile', label: 'Empilé' },
+                          { value: 'pourcent', label: '100 %' },
+                        ]}
+                      />
+                    )}
                     {spec.type !== 'secteurs' && spec.type !== 'histogramme' && (
                       <Select
                         label={spec.type === 'chaleur' || spec.type === 'surface3d' ? 'Axe vertical (Y)' : 'Couleur / séries'}
@@ -411,6 +459,7 @@ export default function ChartsPage() {
                   </Text>
                 </Accordion.Panel>
               </Accordion.Item>
+              {pro && (
               <Accordion.Item value="axes">
                 <Accordion.Control>Axes et échelles</Accordion.Control>
                 <Accordion.Panel>
@@ -464,7 +513,8 @@ export default function ChartsPage() {
                   </Stack>
                 </Accordion.Panel>
               </Accordion.Item>
-              {!raw && !['secteurs', 'chaleur', 'surface3d'].includes(spec.type) && (
+              )}
+              {pro && !raw && !['secteurs', 'chaleur', 'surface3d'].includes(spec.type) && (
                 <Accordion.Item value="reperes">
                   <Accordion.Control>Repères et annotations</Accordion.Control>
                   <Accordion.Panel>
@@ -513,6 +563,7 @@ export default function ChartsPage() {
                   </Accordion.Panel>
                 </Accordion.Item>
               )}
+              {pro && (
               <Accordion.Item value="mise_en_page">
                 <Accordion.Control>Mise en page</Accordion.Control>
                 <Accordion.Panel>
@@ -563,6 +614,7 @@ export default function ChartsPage() {
                   </Stack>
                 </Accordion.Panel>
               </Accordion.Item>
+              )}
               <Accordion.Item value="gabarit">
                 <Accordion.Control>Titre, source, auteur</Accordion.Control>
                 <Accordion.Panel>
@@ -594,6 +646,11 @@ export default function ChartsPage() {
             <Tooltip label="Voir les chiffres sous forme de tableau">
               <Button size="xs" variant="default" leftSection={<IconTable size={14} />} disabled={!data} onClick={() => setShowTable(true)}>
                 Tableau
+              </Button>
+            </Tooltip>
+            <Tooltip label="Le même graphique en code R (ggplot2), avec ses données">
+              <Button size="xs" variant="default" leftSection={<RIcon size={14} />} disabled={!figure} onClick={() => setShowR(true)}>
+                Code R
               </Button>
             </Tooltip>
             <FicheMenu disabled={!figure} onExport={exportMethod} />
@@ -645,6 +702,16 @@ export default function ChartsPage() {
           )}
         </ScrollArea>
       </Stack>
+
+      {dsId && (
+        <RCodeModal
+          opened={showR}
+          onClose={() => setShowR(false)}
+          url={`/api/datasets/${dsId}/charts/r`}
+          body={{ name: spec.template.title || 'graphique', spec }}
+          zipName="graphique_R.zip"
+        />
+      )}
 
       <Modal opened={showTable} onClose={() => setShowTable(false)} title="Données du graphique" size="xl">
         {data && (

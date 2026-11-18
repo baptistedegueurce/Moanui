@@ -10,12 +10,14 @@ import {
   MultiSelect,
   Paper,
   ScrollArea,
+  SegmentedControl,
   Select,
   Stack,
   Table,
   Text,
   Textarea,
   ThemeIcon,
+  Tooltip,
   Title,
   UnstyledButton,
 } from '@mantine/core';
@@ -27,6 +29,7 @@ import { fail, ok } from '../lib/notify';
 import { NEUTRAL, fontOf } from '../lib/theme';
 import type { Column, DatasetSummary } from '../lib/types';
 import FicheMenu from '../components/FicheMenu';
+import RCodeModal, { RIcon } from '../components/RCodeModal';
 import { loadPlotly } from '../lib/plotly';
 import { Conditions } from '../components/StepForm';
 
@@ -62,6 +65,33 @@ interface Res {
   graph: any;
   effectifs: Record<string, number>;
 }
+
+// La question reformulée avec les colonnes choisies (mode guidé)
+function sentence(kind: string | null, v: Record<string, any>): string | null {
+  const c = (x: any) => (Array.isArray(x) ? x.map((s) => `« ${s} »`).join(', ') : x ? `« ${x} »` : '…');
+  switch (kind) {
+    case 'comparer_groupes':
+      return `Vous demandez si ${c(v.y)} diffère d’un groupe à l’autre de ${c(v.groupe)}.`;
+    case 'association':
+      return `Vous demandez si ${c(v.x)} et ${c(v.y)} sont liés (la répartition de l’un change-t-elle avec l’autre ?).`;
+    case 'correlation':
+      return `Vous demandez si ${c(v.y)} augmente ou diminue quand ${c(v.x)} augmente.`;
+    case 'regression':
+      return `Vous demandez ce qui explique ${c(v.y)} parmi ${c(v.x)}, chacun à autres facteurs égaux.`;
+    case 'glm':
+      return `Vous modélisez ${c(v.y)} selon ${c(v.x)}${v.effort ? `, rapporté à l’effort ${c(v.effort)}` : ''}.`;
+    default:
+      return null;
+  }
+}
+
+const readMode = (): 'guide' | 'expert' => {
+  try {
+    return localStorage.getItem('moanui.stats.mode') === 'expert' ? 'expert' : 'guide';
+  } catch {
+    return 'guide';
+  }
+};
 
 // Guides pas à pas (vulgarisation), affichés avant de lancer l'analyse
 const GUIDES: Record<string, string[]> = {
@@ -156,11 +186,34 @@ export default function StatsPage() {
   const [busy, setBusy] = useState(false);
   const [justif, setJustif] = useState('');
   const [history, setHistory] = useState<any[]>([]);
+  const [mode, setModeState] = useState<'guide' | 'expert'>(readMode);
+  const [alpha, setAlpha] = useState('0.05');
+  const [correction, setCorrection] = useState('holm');
+  const [corrections, setCorrections] = useState<{ value: string; label: string }[]>([]);
+  const [showR, setShowR] = useState(false);
   const { structure } = useAuth();
+  const expert = mode === 'expert';
+  const setMode = (m: 'guide' | 'expert') => {
+    setModeState(m);
+    if (m === 'guide') {
+      setTest(null);
+      setAlpha('0.05');
+      setCorrection('holm');
+    }
+    try {
+      localStorage.setItem('moanui.stats.mode', m);
+    } catch {
+      /* préférence non retenue */
+    }
+  };
 
   useEffect(() => {
     api.get('/api/datasets').then(setDatasets).catch(fail);
     api.get('/api/stats/catalogue').then(setCatalogue).catch(fail);
+    api
+      .get('/api/stats/options')
+      .then((o) => setCorrections(o.corrections))
+      .catch(() => setCorrections([]));
   }, [structure?.id]);
   useEffect(() => {
     setRes(null);
@@ -174,7 +227,14 @@ export default function StatsPage() {
     columns.filter((c) => (t === 'num' ? isNumericType(c.type) : true)).map((c) => ({ value: c.name, label: `${c.name}${isNumericType(c.type) ? '' : ' (catégories)'}` }));
   const complete = a?.variables.every((v) => v.optional || (v.multiple ? (vars[v.role] || []).length : vars[v.role]));
   const validFilters = filters.filter((c) => c.column && (['is_null', 'not_null'].includes(c.op) || (['in', 'not_in'].includes(c.op) ? c.values?.length : c.value !== '')));
-  const body = (extra: any = {}) => ({ analyse: kind, variables: vars, test, filters: validFilters, ...extra });
+  const options = expert && (alpha !== '0.05' || correction !== 'holm') ? { alpha: Number(alpha), correction } : undefined;
+  const body = (extra: any = {}) => ({ analyse: kind, variables: vars, test, filters: validFilters, options, ...extra });
+  const pick = (k: string) => {
+    setKind(k);
+    setVars({});
+    setTest(null);
+    setRes(null);
+  };
 
   const run = async (extra: any = {}) => {
     setBusy(true);
@@ -200,21 +260,40 @@ export default function StatsPage() {
         <ScrollArea style={{ flex: 1 }} offsetScrollbars>
           <Stack gap="sm">
             <Title order={4}>Statistiques</Title>
+            <div>
+              <SegmentedControl
+                fullWidth
+                size="xs"
+                value={mode}
+                onChange={(v) => setMode(v as any)}
+                data={[
+                  { value: 'guide', label: 'Guidé' },
+                  { value: 'expert', label: 'Expert' },
+                ]}
+              />
+              <Text size="xs" c="dimmed" mt={4}>
+                {expert
+                  ? 'Vous choisissez le test, le seuil et la correction ; les conditions restent vérifiées et tracées dans la fiche.'
+                  : 'Posez votre question : Moanui vérifie les conditions et choisit le test adapté.'}
+              </Text>
+            </div>
             <Select label="Jeu de données" searchable data={datasets.map((d) => ({ value: d.id, label: d.name }))} value={dsId} onChange={(v) => v && setParams({ dataset: v })} />
             <Text size="sm" fw={600}>
-              Quelle est votre question ?
+              {expert ? 'Analyse' : '1. Quelle est votre question ?'}
             </Text>
-            <Stack gap={6}>
+            {expert && (
+              <Select
+                aria-label="Analyse"
+                data={Object.entries(catalogue).map(([k, c]) => ({ value: k, label: c.titre }))}
+                value={kind}
+                onChange={(v) => v && pick(v)}
+                allowDeselect={false}
+                placeholder="Choisir une analyse"
+              />
+            )}
+            <Stack gap={6} display={expert ? 'none' : undefined}>
               {Object.entries(catalogue).map(([k, c]) => (
-                <UnstyledButton
-                  key={k}
-                  onClick={() => {
-                    setKind(k);
-                    setVars({});
-                    setTest(null);
-                    setRes(null);
-                  }}
-                >
+                <UnstyledButton key={k} onClick={() => pick(k)}>
                   <Paper withBorder p="xs" style={{ borderColor: kind === k ? 'var(--mo-accent)' : undefined, borderWidth: kind === k ? 2 : 1 }}>
                     <Text size="sm" fw={600}>
                       {c.titre}
@@ -228,7 +307,13 @@ export default function StatsPage() {
             </Stack>
             {a && dsId && (
               <>
-                <Accordion variant="contained">
+                {!expert && (
+                  <Text size="sm" fw={600}>
+                    2. Quelles colonnes ?
+                  </Text>
+                )}
+                {!expert && (
+                <Accordion variant="contained" defaultValue="guide">
                   <Accordion.Item value="guide">
                     <Accordion.Control>Pas à pas</Accordion.Control>
                     <Accordion.Panel>
@@ -240,6 +325,7 @@ export default function StatsPage() {
                     </Accordion.Panel>
                   </Accordion.Item>
                 </Accordion>
+                )}
                 {a.variables.map((v) =>
                   v.multiple ? (
                     <MultiSelect key={v.role} label={v.label} searchable data={opts(v.type)} value={vars[v.role] || []} onChange={(x) => setVars({ ...vars, [v.role]: x })} />
@@ -247,14 +333,52 @@ export default function StatsPage() {
                     <Select key={v.role} label={v.label} searchable clearable={!!v.optional} data={opts(v.type)} value={vars[v.role] || null} onChange={(x) => setVars({ ...vars, [v.role]: x })} />
                   ),
                 )}
-                <Select
-                  label="Test"
-                  description="Automatique : Moanui choisit selon les conditions vérifiées"
-                  data={[{ value: '', label: 'Automatique (recommandé)' }, ...Object.entries(a.tests).map(([k2, l]) => ({ value: k2, label: l }))]}
-                  value={test || ''}
-                  onChange={(x) => setTest(x || null)}
-                  allowDeselect={false}
-                />
+                {!expert && complete && (
+                  <Paper withBorder p="xs" bg="var(--mo-surface, #f8fafc)">
+                    <Text size="sm">{sentence(kind, vars)}</Text>
+                    <Text size="xs" c="dimmed" mt={2}>
+                      Le test est choisi automatiquement. Pour l’imposer, passez en mode Expert.
+                    </Text>
+                  </Paper>
+                )}
+                {expert && (
+                  <>
+                    <Select
+                      label="Test"
+                      description="Automatique : choisi d’après les conditions ; sinon le test que vous imposez"
+                      data={[{ value: '', label: 'Automatique' }, ...Object.entries(a.tests).map(([k2, l]) => ({ value: k2, label: l }))]}
+                      value={test || ''}
+                      onChange={(x) => setTest(x || null)}
+                      allowDeselect={false}
+                    />
+                    <div>
+                      <Text size="sm" fw={500}>
+                        Seuil de significativité (α)
+                      </Text>
+                      <SegmentedControl
+                        fullWidth
+                        size="xs"
+                        value={alpha}
+                        onChange={setAlpha}
+                        data={[
+                          { value: '0.1', label: '0,10' },
+                          { value: '0.05', label: '0,05' },
+                          { value: '0.01', label: '0,01' },
+                        ]}
+                      />
+                    </div>
+                    {kind === 'comparer_groupes' && (
+                      <Select
+                        label="Comparaisons deux à deux"
+                        description="Correction des p-values quand plus de deux groupes sont comparés"
+                        data={corrections}
+                        value={correction}
+                        onChange={(v) => v && setCorrection(v)}
+                        allowDeselect={false}
+                      />
+                    )}
+                  </>
+                )}
                 <Accordion variant="contained">
                   <Accordion.Item value="filtres">
                     <Accordion.Control>Restreindre les données ({validFilters.length})</Accordion.Control>
@@ -264,7 +388,7 @@ export default function StatsPage() {
                   </Accordion.Item>
                 </Accordion>
                 <Button leftSection={<IconPlayerPlay size={16} />} disabled={!complete} loading={busy} onClick={() => run()}>
-                  Lancer l’analyse
+                  {expert ? 'Lancer' : '3. Lancer l’analyse'}
                 </Button>
               </>
             )}
@@ -281,6 +405,11 @@ export default function StatsPage() {
                       setVars(h.spec.variables);
                       setTest(h.spec.test);
                       setFilters(h.spec.filters || []);
+                      if (h.spec.options) {
+                        setMode('expert');
+                        setAlpha(String(h.spec.options.alpha ?? 0.05));
+                        setCorrection(h.spec.options.correction || 'holm');
+                      }
                       setRes(null);
                     }}
                   >
@@ -338,6 +467,12 @@ export default function StatsPage() {
                   {res.test_label} · {res.effectifs.lignes_utilisees} observations
                 </Text>
               </div>
+              <Group gap="xs">
+                <Tooltip label="La même analyse en code R, avec ses données">
+                  <Button variant="default" leftSection={<RIcon size={16} />} onClick={() => setShowR(true)}>
+                    Code R
+                  </Button>
+                </Tooltip>
               {(!res.bloque || res.force) && (
                 <Group gap="xs">
                   <FicheMenu size="sm" onExport={(fmt) => downloadPost(`/api/datasets/${dsId}/stats/method.${fmt}`, body(forced), `analyse_${kind}.${fmt}`)} />
@@ -346,7 +481,14 @@ export default function StatsPage() {
                   </Button>
                 </Group>
               )}
+              </Group>
             </Group>
+            {options && (
+              <Text size="xs" c="dimmed">
+                Réglages expert : α = {alpha.replace('.', ',')}
+                {kind === 'comparer_groupes' ? ` ; comparaisons deux à deux : ${corrections.find((c) => c.value === correction)?.label || correction}` : ''}.
+              </Text>
+            )}
 
             {res.bloque && !res.force && (
               <Alert color="red" icon={<IconBan />} title="Analyse bloquée : une condition n’est pas remplie">
@@ -408,6 +550,17 @@ export default function StatsPage() {
               </Alert>
             )}
 
+            {res.interpretation.length > 0 && (
+              <Alert color="blue" variant="light" title="Ce qu’il faut retenir">
+                <Stack gap={4}>
+                  {res.interpretation.map((p) => (
+                    <Text size="sm" key={p}>
+                      {p}
+                    </Text>
+                  ))}
+                </Stack>
+              </Alert>
+            )}
             <Paper withBorder p="md">
               <Text fw={600} mb="xs">
                 Conditions vérifiées
@@ -426,17 +579,6 @@ export default function StatsPage() {
               </Stack>
             </Paper>
 
-            {res.interpretation.length > 0 && (
-              <Alert color="blue" variant="light" title="Ce qu’il faut retenir">
-                <Stack gap={4}>
-                  {res.interpretation.map((p) => (
-                    <Text size="sm" key={p}>
-                      {p}
-                    </Text>
-                  ))}
-                </Stack>
-              </Alert>
-            )}
 
             {res.resultats.length > 0 && (
               <Group gap="xs">
@@ -528,6 +670,16 @@ export default function StatsPage() {
           </Stack>
         )}
       </ScrollArea>
+      {dsId && kind && (
+        <RCodeModal
+          opened={showR}
+          onClose={() => setShowR(false)}
+          url={`/api/datasets/${dsId}/stats/r`}
+          body={body(forced)}
+          zipName="analyse_R.zip"
+          what="l’analyse"
+        />
+      )}
     </div>
   );
 }

@@ -26,11 +26,19 @@ class StatIn(BaseModel):
     force: bool = False
     justification: str | None = None
     save: bool = False
+    options: dict | None = None  # mode expert : {"alpha": 0.05, "correction": "holm"}
 
 
 @router.get("/stats/catalogue")
 def catalogue(_: User = Depends(current_user)):
     return stats.ANALYSES
+
+
+@router.get("/stats/options")
+def stat_options(_: User = Depends(current_user)):
+    """Réglages du mode expert."""
+    return {"alphas": list(stats.ALPHAS),
+            "corrections": [{"value": k, "label": v[0]} for k, v in stats.CORRECTIONS.items()]}
 
 
 def _run(db, settings, user, did: str, body: StatIn) -> tuple[dict, dict, dict]:
@@ -119,3 +127,44 @@ def stat_method_export(did: str, fmt: str, body: StatIn, user: User = Depends(cu
                        db: Database = Depends(get_db), settings=Depends(get_settings)):
     """Fiche méthode statistique en Word (docx) ou PDF."""
     return _stat_fiche(db, settings, user, did, body).response(fmt, "analyse_methode")
+
+
+def _stat_r(db, settings, user, did: str, body: StatIn):
+    from ..engine.sql import is_numeric_type
+    from ..rcode import stat_columns, stat_r, to_csv
+
+    ds, res, _ = _run(db, settings, user, did, body)
+    with Workspace(db, settings, user) as ws:
+        plan = ws.plan(ds)
+        cols = stat_columns(body.model_dump())
+        where = pipeline._view_filters(plan.schema, body.filters, None)
+        try:
+            data, _, n = stats.fetch(ws.con, plan.sql, plan.schema, cols, where)
+        except RecipeError as e:
+            raise HTTPException(400, str(e)) from e
+        cat = {c for c in cols if not is_numeric_type(plan.schema[c])}
+    script = stat_r(body.model_dump(), res["test"], cat, stats.clean_options(body.options))
+    if res["bloque"]:
+        bl = [c["nom"] for c in res["checks"] if not c["ok"] and c["niveau"] == "bloquant"]
+        script = (f"# Attention : Moanui a bloqué cette analyse (condition non remplie : {', '.join(dict.fromkeys(bl))}).\n"
+                  "# Le script est fourni pour vérification ; interprétez les résultats avec prudence.\n") + script
+    rows = [[(v.item() if hasattr(v, "item") else v) for v in r] for r in zip(*(data[c] for c in cols))] if n else []
+    return script, to_csv(cols, rows)
+
+
+@router.post("/datasets/{did}/stats/r")
+def stat_r_code(did: str, body: StatIn, user: User = Depends(current_user), db: Database = Depends(get_db),
+                settings=Depends(get_settings)):
+    """Code R équivalent de l'analyse."""
+    script, _ = _stat_r(db, settings, user, did, body)
+    return {"script": script, "avertissements": []}
+
+
+@router.post("/datasets/{did}/stats/r.zip")
+def stat_r_zip(did: str, body: StatIn, user: User = Depends(current_user), db: Database = Depends(get_db),
+               settings=Depends(get_settings)):
+    from ..rcode import stat_zip
+
+    script, csv_bytes = _stat_r(db, settings, user, did, body)
+    return Response(stat_zip(script, csv_bytes), media_type="application/zip",
+                    headers={"Content-Disposition": 'attachment; filename="analyse_R.zip"'})

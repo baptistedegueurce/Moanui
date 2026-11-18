@@ -176,6 +176,20 @@ cd frontend && npm run dev                                  # dev avec proxy /ap
   données de démo, échelle 2), Word + PDF construits par `outils/construire_guide.py` (page de garde, avant-propos,
   sommaire, parties, index des figures) et joints aux releases. Forme reprise du guide de l'appli R v0.1 (fourni par
   l'utilisateur, non versionné).
+- **Code R équivalent (nov. 2026)** : `moanui/rcode.py`. Graphiques : `chart_request` (copie de `dataRequest`
+  du front), CSV `;`/virgule décimale avec mesures renommées (`somme_debarquement_kg`), script ggplot2 par type
+  (axe droit par `sec_axis` + coef ; y3/y4 ramenés sur y/y2 avec avertissement ; 3D en plotly) ; routes
+  `/charts/r` (JSON) et `/charts/r.zip`. Statistiques : `stat_r` (t.test, wilcox.test, aov/oneway.test/kruskal.test
+  + pairwise avec `p.adjust.method`, chisq.test/fisher.test, cor.test, lm, glm / MASS::glm.nb + offset) ; routes
+  `/stats/r` et `/stats/r.zip`. Tests `test_rcode.py` et `test_stats.py` exécutent les scripts avec Rscript s'il
+  est installé (R 4 + ggplot2 3.4 dans le conteneur de dev via apt). Composant `RCodeModal`.
+- **Modes (nov. 2026)** : Graphiques Simple / Avancé (préférence `localStorage`, ne touche pas la spec) ;
+  Statistiques Guidé / Expert. Expert : test imposé, `options.alpha` ∈ {0,10 ; 0,05 ; 0,01} et
+  `options.correction` ∈ {holm, bonferroni, bh, aucune}, portés par un `ContextVar` (`stats.options`) : décisions et
+  textes (sig_sentence, résumé, tableaux, fiche, références Dunn 1961 / Benjamini-Hochberg 1995). Les contrôles de
+  conditions gardent `ALPHA = 0,05` fixe.
+- **Structures de la pêche** : `docs/STRUCTURES.md` (rôles CNPMEM / CRPMEM / CDPMEM / OP / DGAMPA / SIH,
+  répartition des quotas, calendrier du règlement contrôle 2023/2842) ; items F7-F9 de la feuille de route.
 
 ## 6. En cours / à faire (ordre proposé)
 
@@ -185,7 +199,8 @@ cd frontend && npm run dev                                  # dev avec proxy /ap
    (base partagée), recettes enregistrables comme modèles, scripts CDP22 / DGAMPA.
 3. Stats suite : GLMM (effet navire), GAM, modèle delta assisté, séries temporelles, ACP ; R si installé.
 4. Composition de planches, rapports PDF / PPTX.
-5. macOS, signature Windows, mises à jour ; mode serveur ; export des recettes en R / Python.
+5. macOS, signature Windows, mises à jour ; mode serveur ; export des recettes en R / Python (graphiques et
+   statistiques : fait).
 
 Questions ouvertes à l'utilisateur : traitements SACROIS récurrents (scripts CDP22),
 vraies listes de corrections d'engins, retours de test de l'exécutable sur un poste.
@@ -219,3 +234,5 @@ vraies listes de corrections d'engins, retours de test de l'exécutable sur un p
 - 2026-11 : croisement VMS × SACROIS (répartition des captures) ; GLM guidés.
 - 2026-11 : panneau de traitement par colonnes / lignes (inspiré de l'appli R), fiches méthode avec figures et
   bibliographie, guide référencé, refonte visuelle (IBM Plex, accueil, navigation).
+- 2026-11 : Gestion, exports PDF / Word, guide complet ; puis code R équivalent, modes Simple / Avancé et
+  Guidé / Expert, document sur les structures de la pêche.

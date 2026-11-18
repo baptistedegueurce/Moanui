@@ -103,3 +103,72 @@ def test_tailles_effet_et_rapport_normalise():
     t0 = time.time()
     stats.finalize(stats.compare_groups(big_y, big_g, "cpue", "metier", None))
     assert time.time() - t0 < 8
+
+
+def test_correction_comme_p_adjust_de_r():
+    """Holm, Bonferroni et Benjamini-Hochberg donnent les mêmes p ajustées que p.adjust de R."""
+    from moanui.stats import adjust
+
+    ps = [0.01, 0.04, 0.03, 0.005]
+    # valeurs de R : p.adjust(c(0.01, 0.04, 0.03, 0.005), method = …)
+    assert [round(x, 6) for x in adjust(ps, "holm")] == [0.03, 0.06, 0.06, 0.02]
+    assert [round(x, 6) for x in adjust(ps, "bonferroni")] == [0.04, 0.16, 0.12, 0.02]
+    assert [round(x, 6) for x in adjust(ps, "bh")] == [0.02, 0.04, 0.04, 0.02]
+    assert adjust(ps, "aucune") == ps
+
+
+def test_mode_expert_seuil_et_correction(client):
+    did = upload(client, "logbook_2023.csv")["id"]
+    body = {"analyse": "comparer_groupes", "variables": {"y": "debarquement_Kg", "groupe": "engin_cod"}, "test": "kruskal",
+            "options": {"alpha": 0.01, "correction": "bonferroni"}, "force": True, "justification": "essai"}
+    res = _run(client, did, **body)
+    assert "seuil de 1 %" in res["resume"] or not res["resume"]
+    assert all("Holm" not in t["titre"] for t in res["tableaux"])
+    md = client.post(f"/api/datasets/{did}/stats/method.md", json=body).text
+    assert "Seuil de significativité : 1 % (choisi par l'analyste)" in md and "α = 0,01" in md
+    assert "correction de Bonferroni" in md and "Dunn O. J. (1961)" in md and "Holm S. (1979)" not in md
+    bad = client.post(f"/api/datasets/{did}/stats", json={**body, "options": {"alpha": 0.2}})
+    assert bad.status_code == 400
+    opts = client.get("/api/stats/options").json()
+    assert opts["alphas"] == [0.1, 0.05, 0.01] and {c["value"] for c in opts["corrections"]} == {"holm", "bonferroni", "bh", "aucune"}
+
+
+def test_code_r_des_analyses(client, tmp_path):
+    import io
+    import shutil
+    import subprocess
+    import zipfile
+
+    did = upload(client, "logbook_2023.csv")["id"]
+    cases = [
+        ({"analyse": "comparer_groupes", "variables": {"y": "duree_maree", "groupe": "quartier_cod"}, "test": "kruskal",
+          "options": {"correction": "bh"}}, "pairwise.wilcox.test(d$`duree_maree`, d$`quartier_cod`, p.adjust.method = \"BH\""),
+        ({"analyse": "comparer_groupes", "variables": {"y": "duree_maree", "groupe": "quartier_cod"},
+          "filters": [{"column": "quartier_cod", "op": "in", "values": ["BR", "LO"]}], "test": "t_welch"}, "t.test("),
+        ({"analyse": "association", "variables": {"x": "quartier_cod", "y": "engin_cod"}, "test": "chi2"}, "chisq.test(tab"),
+        ({"analyse": "correlation", "variables": {"x": "debarquement_Kg", "y": "debarquement_euros"}, "test": "pearson"},
+         "cor.test("),
+        ({"analyse": "regression", "variables": {"y": "debarquement_euros", "x": ["debarquement_Kg", "engin_cod"]},
+          "force": True, "justification": "essai"}, "lm(`debarquement_euros` ~ `debarquement_Kg` + `engin_cod`"),
+        ({"analyse": "glm", "variables": {"y": "debarquement_Kg", "x": ["engin_cod"], "effort": "duree_maree"},
+          "test": "gamma", "force": True, "justification": "essai"}, "offset(log(`duree_maree`))"),
+    ]
+    for i, (body, expect) in enumerate(cases):
+        r = client.post(f"/api/datasets/{did}/stats/r", json=body)
+        assert r.status_code == 200, r.text
+        assert expect in r.json()["script"], (expect, r.json()["script"])
+        z = client.post(f"/api/datasets/{did}/stats/r.zip", json=body)
+        zf = zipfile.ZipFile(io.BytesIO(z.content))
+        assert set(zf.namelist()) == {"analyse.R", "analyse_donnees.csv", "LISEZMOI.txt"}
+        if not shutil.which("Rscript"):
+            continue
+        d = tmp_path / str(i)
+        zf.extractall(d)
+        run = subprocess.run(["Rscript", "analyse.R"], cwd=d, capture_output=True, text=True, timeout=120)
+        assert run.returncode == 0, run.stderr[-2000:]
+        if body["analyse"] == "correlation":
+            moanui_r = _run(client, did, **body, force=True, justification="essai")["resultats"][0]["valeur"]
+            est = subprocess.run(["Rscript", "-e", "d <- read.csv2('analyse_donnees.csv', fileEncoding = 'UTF-8-BOM'); "
+                                  "cat(formatC(cor(d[[1]], d[[2]]), format = 'f', digits = 2))"],
+                                 cwd=d, capture_output=True, text=True).stdout
+            assert est.replace(".", ",") == moanui_r

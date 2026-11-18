@@ -82,6 +82,11 @@ REFS: dict[str, str] = {
                    "Statistical Association, 47(260), 583-621.",
     "holm1979": "Holm S. (1979). A simple sequentially rejective multiple test procedure. Scandinavian Journal of Statistics, "
                 "6(2), 65-70.",
+    "dunn1961": "Dunn O. J. (1961). Multiple comparisons among means. Journal of the American Statistical Association, "
+                "56(293), 52-64.",
+    "benjamini1995": "Benjamini Y., Hochberg Y. (1995). Controlling the false discovery rate: a practical and powerful "
+                     "approach to multiple testing. Journal of the Royal Statistical Society: Series B, 57(1), 289-300. "
+                     "https://doi.org/10.1111/j.2517-6161.1995.tb02031.x",
     "levene1960": "Levene H. (1960). Robust tests for equality of variances. In Olkin I. (dir.), Contributions to Probability and "
                   "Statistics, Stanford University Press, 278-292.",
     "brown1974": "Brown M. B., Forsythe A. B. (1974). Robust tests for the equality of variances. Journal of the American "

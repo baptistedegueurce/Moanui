@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import json
 import math
+from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -19,8 +21,60 @@ from scipy import stats as st
 
 from .engine.sql import RecipeError, ident, is_numeric_type
 
-ALPHA = 0.05
+ALPHA = 0.05  # seuil des vérifications de conditions (normalité, variances…) : fixe
 SHAPIRO_MAX = 5000
+
+# Options du mode expert : seuil de décision et correction des comparaisons multiples. Elles ne changent que la
+# décision « significatif ou non » et les textes qui en parlent ; les conditions d'application restent vérifiées.
+ALPHAS = (0.10, 0.05, 0.01)
+CORRECTIONS = {"holm": ("Holm", ("holm1979",)), "bonferroni": ("Bonferroni", ("dunn1961",)),
+               "bh": ("Benjamini-Hochberg (taux de fausses découvertes)", ("benjamini1995",)),
+               "aucune": ("aucune correction", ())}
+_OPTS: ContextVar[dict] = ContextVar("moanui_stat_opts", default={})
+
+
+def clean_options(raw: dict | None) -> dict:
+    raw = raw or {}
+    a = raw.get("alpha", ALPHA)
+    try:
+        a = float(a)
+    except (TypeError, ValueError):
+        a = ALPHA
+    if not any(abs(a - x) < 1e-9 for x in ALPHAS):
+        raise RecipeError("Seuil de significativité possible : 0,10, 0,05 ou 0,01.")
+    c = raw.get("correction") or "holm"
+    if c not in CORRECTIONS:
+        raise RecipeError("Correction inconnue (holm, bonferroni, bh ou aucune).")
+    return {"alpha": a, "correction": c}
+
+
+@contextmanager
+def options(raw: dict | None):
+    tok = _OPTS.set(clean_options(raw))
+    try:
+        yield _OPTS.get()
+    finally:
+        _OPTS.reset(tok)
+
+
+def alpha() -> float:
+    return _OPTS.get().get("alpha", ALPHA)
+
+
+def alpha_txt() -> str:
+    return f"{alpha():.2f}".replace(".", ",")
+
+
+def alpha_pct() -> str:
+    return f"{round(alpha() * 100)} %"
+
+
+def correction() -> str:
+    return _OPTS.get().get("correction", "holm")
+
+
+def correction_label() -> str:
+    return CORRECTIONS[correction()][0]
 
 
 # --------------------------------------------------------------------------- outils
@@ -241,9 +295,10 @@ def effect_words(v: float, seuils: tuple[float, float, float]) -> str:
 
 
 def sig_sentence(p: float) -> str:
-    if p < ALPHA:
-        return f"La probabilité d'observer un tel écart par simple hasard est faible ({fpe(p)}{'' if p < 0.001 else ' < 0,05'}) : le résultat est statistiquement significatif."
-    return (f"L'écart observé pourrait s'expliquer par le hasard ({fpe(p)} ≥ 0,05) : on ne peut pas conclure à une "
+    if p < alpha():
+        return (f"La probabilité d'observer un tel écart par simple hasard est faible ({fpe(p)}"
+                f"{'' if p < 0.001 else ' < ' + alpha_txt()}) : le résultat est statistiquement significatif.")
+    return (f"L'écart observé pourrait s'expliquer par le hasard ({fpe(p)} ≥ {alpha_txt()}) : on ne peut pas conclure à une "
             "différence. Attention, cela ne prouve pas que les groupes sont identiques.")
 
 
@@ -408,16 +463,21 @@ def compare_groups(y: np.ndarray, g: np.ndarray, yname: str, gname: str, force: 
             sig_sentence(p).replace("un tel écart", "de tels écarts entre groupes")]
         if eff != "–":
             r.interpretation.append(f"Taille d'effet : {eff}.")
-        if p < ALPHA:
+        if p < alpha():
             pairs = pairwise(groups, levels, parametric)
-            r.tableaux.append({"titre": "Comparaisons deux à deux (correction de Holm) avec taille d'effet de chaque paire",
+            corr = "sans correction" if correction() == "aucune" else f"correction de {correction_label()}"
+            r.tableaux.append({"titre": f"Comparaisons deux à deux ({corr}) avec taille d'effet de chaque paire",
                                "colonnes": ["Groupe A", "Groupe B", "Taille d'effet", "p ajusté", "Différent ?"],
                                "lignes": pairs})
             diff = [f"{a} / {b}" for a, b, _, _, ok in pairs if ok == "oui"]
             r.interpretation.append(
                 "Paires de groupes qui diffèrent : " + (", ".join(diff[:12]) + (" …" if len(diff) > 12 else "")
                                                        if diff else "aucune après correction des comparaisons multiples."))
-    r.limites = COMMON_LIMITS + (["Les comparaisons deux à deux sont corrigées (Holm) pour éviter les faux positifs."] if k > 2 else [])
+    r.limites = COMMON_LIMITS + ([
+        "Les comparaisons deux à deux ne sont pas corrigées (choix de l'analyste) : avec beaucoup de paires, certaines "
+        "différences « significatives » sont des faux positifs." if correction() == "aucune" else
+        f"Les comparaisons deux à deux sont corrigées ({correction_label()}) pour limiter les faux positifs."]
+        if k > 2 else [])
     return r
 
 
@@ -448,8 +508,27 @@ def holm(ps: list[float]) -> list[float]:
     return adj
 
 
+def adjust(ps: list[float], method: str | None = None) -> list[float]:
+    """p-values ajustées : Holm, Bonferroni, Benjamini-Hochberg ou aucune (comme p.adjust de R)."""
+    method = method or correction()
+    m = len(ps)
+    if method == "aucune" or m == 0:
+        return list(ps)
+    if method == "bonferroni":
+        return [min(1.0, p * m) for p in ps]
+    if method == "bh":
+        order = np.argsort(ps)[::-1]
+        adj = [0.0] * m
+        running = 1.0
+        for rank, i in zip(range(m, 0, -1), order):
+            running = min(running, ps[i] * m / rank)
+            adj[i] = min(1.0, running)
+        return adj
+    return holm(ps)
+
+
 def pairwise(groups, levels, parametric: bool):
-    """Comparaisons deux à deux (Welch ou Mann-Whitney), p corrigées par Holm, avec la taille d'effet de chaque paire
+    """Comparaisons deux à deux (Welch ou Mann-Whitney), p corrigées (Holm par défaut), avec la taille d'effet de chaque paire
     (d de Cohen ou corrélation rang-bisériale)."""
     pairs, ps, effs = [], [], []
     for i in range(len(groups)):
@@ -464,8 +543,8 @@ def pairwise(groups, levels, parametric: bool):
                 effs.append(f"r = {fr(e, 2)} ({effect_words(e, (0.1, 0.3, 0.5))})")
             pairs.append((str(levels[i]), str(levels[j])))
             ps.append(float(p))
-    adj = holm(ps)
-    return [[a, b, ef, fp(p), "oui" if p < ALPHA else "non"] for (a, b), ef, p in zip(pairs, effs, adj)]
+    adj = adjust(ps)
+    return [[a, b, ef, fp(p), "oui" if p < alpha() else "non"] for (a, b), ef, p in zip(pairs, effs, adj)]
 
 
 def association(x: np.ndarray, y: np.ndarray, xname: str, yname: str, force: str | None) -> Result:
@@ -535,12 +614,12 @@ def association(x: np.ndarray, y: np.ndarray, xname: str, yname: str, force: str
     r.fd = {"kind": "empile", "xs": [str(a) for a in xs], "ys": [str(b) for b in ys], "table": table, "x": xname, "y": yname,
             "resid": resid}
     strong = [(str(xs[i]), str(ys[j]), resid[i, j]) for i in range(len(xs)) for j in range(len(ys)) if abs(resid[i, j]) > 2]
-    r.interpretation = [sig_sentence(p).replace("un tel écart", "une telle répartition") if p < ALPHA else
+    r.interpretation = [sig_sentence(p).replace("un tel écart", "une telle répartition") if p < alpha() else
                         f"Rien n'indique que « {xname} » et « {yname} » soient liés ({fpe(p)})."]
     if test == "chi2":
         r.interpretation.append(f"Intensité du lien (V de Cramér) : {fr(v, 2)}, soit un lien {effect_words(v, (0.1, 0.3, 0.5))} "
                                 f"({fr(int(n))} observations, tableau {table.shape[0]} × {table.shape[1]}).")
-    if p < ALPHA and strong:
+    if p < alpha() and strong:
         r.interpretation.append("Combinaisons plus (+) ou moins (−) fréquentes qu'attendu : " + ", ".join(
             f"{a} × {b} ({'+' if v_ > 0 else '−'})" for a, b, v_ in sorted(strong, key=lambda t: -abs(t[2]))[:10]) + ".")
     r.limites = COMMON_LIMITS[:1] + ["Un lien statistique n'indique pas de relation de cause à effet."]
@@ -700,8 +779,8 @@ def regression(data: dict, yname: str, xnames: list[str], cat: set[str], force: 
              "n": n, "boot": False}
     r.tableaux.append({"titre": "Coefficients", "colonnes": ["Terme", "Estimation", "IC 95 %", "p", "Significatif ?"],
                        "lignes": [[nm, fr(float(b)), f"[{fr(float(b - tcrit * s))} ; {fr(float(b + tcrit * s))}]", fp(float(pv)),
-                                   "oui" if pv < ALPHA else "non"] for nm, b, s, pv in zip(names, beta, se, pvals)]})
-    sig = [(nm, b) for nm, b, pv in zip(names[1:], beta[1:], pvals[1:]) if pv < ALPHA]
+                                   "oui" if pv < alpha() else "non"] for nm, b, s, pv in zip(names, beta, se, pvals)]})
+    sig = [(nm, b) for nm, b, pv in zip(names[1:], beta[1:], pvals[1:]) if pv < alpha()]
     r.interpretation = [f"Le modèle explique {pc(r2, 0)} des variations de « {yname} »."]
     for nm, b in sig[:8]:
         if " = " in nm:
@@ -729,12 +808,12 @@ def finalize(r: Result) -> Result:
     if not sci or not r.rapport:
         return r
     p, eff, n = sci.get("p", 1.0), sci.get("effet"), sci.get("n", 0)
-    signif = p < ALPHA
+    signif = p < alpha()
     concl = r.interpretation[0] if r.interpretation else ""
     r.resume = (f"{r.titre}. Méthode : {r.test_label[0].lower() + r.test_label[1:] if r.test_label else r.test} sur "
                 f"{fr(n)} observations. Résultat : {r.rapport[0]} {concl}"
-                + (" Le résultat est statistiquement significatif au seuil de 5 %" if signif else
-                   " Le résultat n'est pas statistiquement significatif au seuil de 5 %")
+                + (f" Le résultat est statistiquement significatif au seuil de {alpha_pct()}" if signif else
+                   f" Le résultat n'est pas statistiquement significatif au seuil de {alpha_pct()}")
                 + (f", pour un effet {eff}." if eff else "."))
     d = []
     if signif and eff in ("négligeable", "faible"):
@@ -817,6 +896,11 @@ ANALYSES = {
 
 
 def run(con, plan, spec: dict, filters_sql: str = "") -> Result:
+    with options(spec.get("options")):
+        return _run(con, plan, spec, filters_sql)
+
+
+def _run(con, plan, spec: dict, filters_sql: str = "") -> Result:
     kind = spec.get("analyse")
     if kind not in ANALYSES:
         raise RecipeError("Analyse inconnue.")
@@ -961,6 +1045,23 @@ STATUS = {True: "Respectée", "bloquant": "Non respectée (bloquante)", "avertis
 
 
 def method_fiche(res: dict, spec: dict, dataset_name: str, author: str, justification: str | None, fd: dict | None = None):
+    with options(spec.get("options")):
+        return _method_fiche(res, spec, dataset_name, author, justification, fd)
+
+
+def _test_info(test: str | None) -> tuple[str, tuple[str, ...]]:
+    """Texte et références du test, avec la correction des comparaisons multiples réellement employée."""
+    text, refs = TEST_INFO.get(test, ("", ()))
+    if "correction de Holm" in text and correction() != "holm":
+        label, new = CORRECTIONS[correction()]
+        text = text.replace("avec correction de Holm", "sans correction (choix de l'analyste)" if correction() == "aucune"
+                            else f"avec correction de {label}")
+        refs = tuple(r for r in refs if r != "holm1979") + new
+    return text, refs
+
+
+def _method_fiche(res: dict, spec: dict, dataset_name: str, author: str, justification: str | None,
+                  fd: dict | None = None):
     from . import figures
     from .fiche import Fiche
 
@@ -985,9 +1086,10 @@ def method_fiche(res: dict, spec: dict, dataset_name: str, author: str, justific
 
     f.h("Méthode")
     chosen = "imposé par l'analyste" if spec.get("test") else "choisi automatiquement d'après les conditions vérifiées"
-    info = TEST_INFO.get(res.get("test"), ("", ()))
+    info = _test_info(res.get("test"))
     f.p(f"Test retenu : **{res['test_label']}** ({chosen}). {info[0]} {f.cite(*info[1])}.".replace(" .", "."))
-    f.p(f"Seuil de significativité : 5 %. Une p-value mesure la compatibilité des données avec l'absence d'effet ; elle "
+    f.p(f"Seuil de significativité : {alpha_pct()}"
+        + (" (choisi par l'analyste)" if alpha() != ALPHA else "") + ". Une p-value mesure la compatibilité des données avec l'absence d'effet ; elle "
         f"ne mesure ni la taille ni l'importance de l'effet, d'où le report systématique des tailles d'effet et des "
         f"intervalles de confiance {f.cite('wasserstein2016')}.")
 
@@ -1035,7 +1137,9 @@ def method_fiche(res: dict, spec: dict, dataset_name: str, author: str, justific
           ("Paramètres", json.dumps(spec.get("variables") or {}, ensure_ascii=False)
            + (f" ; test imposé : {spec['test']}" if spec.get("test") else "")),
           ("Aléa", f"bootstrap {BOOT_B} rééchantillonnages, graine {BOOT_SEED} ; sous-échantillon de Shapiro-Wilk : graine 0"),
-          ("Seuil", "α = 0,05 (bilatéral)")])
+          ("Seuil", f"α = {alpha_txt()} (bilatéral)"),
+          ("Comparaisons multiples", correction_label() if res.get("test") in ("anova", "welch_anova", "kruskal") else
+           "sans objet")])
     return f
 
 
@@ -1259,11 +1363,11 @@ def glm_analysis(data: dict, yname: str, xnames: list[str], cat: set[str], offse
         dd, k = max(d0 - m["dev"], 0.0), len(idx)
         if est_phi:
             stat, pv = dd / k / m["phi"], float(st.f.sf(dd / k / m["phi"], k, dof))
-            term_rows.append([name, k, f"F = {fr(stat)}", fp(pv), "oui" if pv < ALPHA else "non"])
+            term_rows.append([name, k, f"F = {fr(stat)}", fp(pv), "oui" if pv < alpha() else "non"])
             glm_rep.append((f"« {name} » : F({k} ; {dof}) = {fr(stat, 2)}, {p_txt(pv)}", pv))
         else:
             pv = float(st.chi2.sf(dd, k))
-            term_rows.append([name, k, f"χ² = {fr(dd)}", fp(pv), "oui" if pv < ALPHA else "non"])
+            term_rows.append([name, k, f"χ² = {fr(dd)}", fp(pv), "oui" if pv < alpha() else "non"])
             glm_rep.append((f"« {name} » : χ²({k}) = {fr(dd, 2)}, {p_txt(pv)}", pv))
     # déviance nulle (constante seule) : part de déviance expliquée
     if fam == "binomiale_negative":
@@ -1350,7 +1454,7 @@ def glm_analysis(data: dict, yname: str, xnames: list[str], cat: set[str], offse
                 + ("." if ix["factor"] in sig_terms else " ; cet écart n'est pas significatif."))
     unit = (f"« {yname} » par unité de « {offset_name} »" if offset_name else f"« {yname} »")
     for nm, b, pv in list(zip(names[1:], beta[1:], pvals[1:])):
-        if pv >= ALPHA or abs(b) > 50:
+        if pv >= alpha() or abs(b) > 50:
             continue
         f_ = math.exp(b)
         if fam == "logistique":

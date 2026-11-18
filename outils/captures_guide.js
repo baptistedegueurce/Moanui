@@ -240,6 +240,7 @@ const USER = { username: 'admin', password: 'motdepasse1' };
     // réglages : axes, repères, mise en page
     await page.goto(`${B}/graphiques?dataset=${S}&chart=${chartIds['24_graphique_trois_axes']}`);
     await page.locator('.mo-chart-frame .main-svg').first().waitFor();
+    await page.getByText('Avancé', { exact: true }).first().click();
     await page.getByText('Données représentées').first().click();
     await page.getByText('Axes et échelles').first().click();
     await shot('27_graphique_reglages_axes', { delay: 1200 });
@@ -250,6 +251,11 @@ const USER = { username: 'admin', password: 'motdepasse1' };
     await page.getByRole('button', { name: 'Fiche méthode' }).click();
     await shot('29_menu_fiche', { delay: 500 });
     await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: 'Code R' }).first().click();
+    await page.getByText('Télécharger le script et les données').first().waitFor({ timeout: 30000 });
+    await shot('29b_graphique_code_r', { locator: page.getByRole('dialog'), delay: 800 });
+    await page.keyboard.press('Escape');
+    await page.getByText('Simple', { exact: true }).first().click();
   });
 
   // ------------------------------------------------------------------ 4. cartographie
@@ -319,12 +325,27 @@ const USER = { username: 'admin', password: 'motdepasse1' };
     await top('Discussion');
     await shot('39b_stats_discussion', { delay: 1000 });
     await page.setViewportSize({ width: 1440, height: 900 });
+    // mode expert : seuil, correction, code R
+    await page.getByText('Expert', { exact: true }).first().click();
+    await pick('Test', 'Kruskal-Wallis');
+    await page.getByText('0,01', { exact: true }).first().click();
+    await pick('Comparaisons deux à deux', 'Benjamini-Hochberg (taux de fausses découvertes)');
+    await btn('Lancer');
+    await page.getByText('Réglages expert').first().waitFor({ timeout: 60000 });
+    await page.getByRole('heading', { level: 3 }).first().evaluate((el) => el.scrollIntoView({ block: 'start' }));
+    await shot('39c_stats_expert', { delay: 1500 });
+    await page.getByRole('button', { name: 'Code R' }).first().click();
+    await page.getByText('Télécharger le script et les données').first().waitFor({ timeout: 30000 });
+    await shot('39d_stats_code_r', { locator: page.getByRole('dialog'), delay: 800 });
+    await page.keyboard.press('Escape');
+    await page.getByText('Guidé', { exact: true }).first().click();
   });
 
   await section('stats glm', async () => {
     await page.goto(`${B}/statistiques?dataset=${ids['suivi_casiers_homard.csv']}`);
     await wait(1500);
-    await page.getByText('Modéliser des captures, comptages ou présences (GLM)').first().click();
+    await page.getByText('Expert', { exact: true }).first().click();
+    await pick('Analyse', 'Modéliser des captures, comptages ou présences (GLM)');
     await pick('Mesure à modéliser (captures, nombre, 0 / 1)', 'nb_homards');
     await page.getByLabel('Facteurs explicatifs').first().click();
     await page.getByRole('option', { name: 'zone (catégories)', exact: true }).click();
@@ -332,12 +353,12 @@ const USER = { username: 'admin', password: 'motdepasse1' };
     await page.keyboard.press('Escape');
     await pick('Effort (facultatif : jours de mer, heures, marées…)', 'nb_casiers');
     await pick('Test', 'Poisson (comptages)');
-    await btn('Lancer l’analyse');
+    await btn('Lancer');
     await page.getByText('Analyse bloquée').first().waitFor({ timeout: 60000 });
     await shot('40_stats_bloquee', { delay: 1000 });
     await page.getByLabel('Test').first().click();
     await page.getByRole('option', { name: 'Binomiale négative (comptages dispersés)', exact: true }).click();
-    await btn('Lancer l’analyse');
+    await btn('Lancer');
     await page.getByText('Écriture normalisée').first().waitFor({ timeout: 60000 });
     await page.setViewportSize({ width: 1440, height: 1300 });
     await page.getByText('Écriture normalisée (à reprendre telle quelle dans un rapport)', { exact: true }).first().evaluate((el) => el.scrollIntoView({ block: 'center' }));

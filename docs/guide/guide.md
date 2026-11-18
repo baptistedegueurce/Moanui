@@ -101,7 +101,7 @@ Tableau : Organisation de la barre latérale
 | Travailler | Données | Importer, contrôler et traiter les fichiers |
 | | Graphiques | Représenter les données |
 | | Cartographie | Cartes, couches SIG, VMS |
-| | Statistiques | Analyses guidées |
+| | Statistiques | Analyses guidées (ou en mode expert), code R |
 | | Gestion | Quotas, limitations de captures |
 | Aide | Bonnes pratiques | Règles appliquées par Moanui et références |
 | Réglages | Charte de la structure | Logo, couleurs, police (administrateurs) |
@@ -325,6 +325,13 @@ L'onglet **Import** rappelle à tout moment l'empreinte du fichier brut, les opt
 
 La page **Graphiques** se compose du panneau de réglages à gauche et du graphique à droite. Choisissez le jeu de données, le type de graphique, puis les données représentées : axe horizontal, mesures (agrégat et colonne), couleur ou séries, petits multiples. Le graphique se met à jour à chaque réglage.
 
+Sous le type, le sélecteur **Simple / Avancé** règle le nombre d'options affichées :
+
+- en **Simple** (par défaut), l'essentiel pour un graphique propre : données, séries (côte à côte, empilé ou 100 %), petits multiples, filtres, titre et source ;
+- en **Avancé**, tous les réglages : forme, axe et couleur de chaque mesure, axes et échelles, repères et annotations, mise en page.
+
+Passer d'un mode à l'autre ne change rien au graphique : le mode simple masque des réglages, il ne les efface pas. L'appli retient le mode choisi sur ce poste.
+
 ![Page Graphiques : réglages à gauche, graphique à droite](images/23_graphique_barres.png)
 
 Les données sont calculées sur le résultat de la recette du jeu. Les **filtres du graphique** ne concernent que ce graphique et sont indiqués dans sa fiche méthode. Le bouton *Tableau* affiche les chiffres représentés.
@@ -346,7 +353,7 @@ Des **conseils de lecture** s'affichent au-dessus du graphique : source manquant
 
 ### 9.2. Mesures, formes et axes multiples
 
-Chaque mesure se règle indépendamment : forme (barres, courbe, aire ou points), **axe** (gauche, droit, second gauche, second droit), couleur de la palette de la structure, tirets et valeurs affichées. On peut ainsi superposer jusqu'à **quatre axes verticaux**, chacun avec sa propre échelle : par exemple des tonnages en barres, une valeur en euros en courbe et un prix moyen en points.
+Les réglages de cette section et des deux suivantes sont en mode **Avancé**. Chaque mesure se règle indépendamment : forme (barres, courbe, aire ou points), **axe** (gauche, droit, second gauche, second droit), couleur de la palette de la structure, tirets et valeurs affichées. On peut ainsi superposer jusqu'à **quatre axes verticaux**, chacun avec sa propre échelle : par exemple des tonnages en barres, une valeur en euros en courbe et un prix moyen en points.
 
 ![Trois mesures sur trois axes, avec une zone (été), une ligne de référence et une note](images/24_graphique_trois_axes.png)
 
@@ -390,6 +397,14 @@ Les boîtes à moustaches, violons et histogrammes représentent les valeurs bru
 *Enregistrer* conserve le graphique (dans le jeu de données) pour le retrouver dans *Graphiques enregistrés* et sur la page d'accueil. *Exporter l'image* produit un PNG haute définition ou un SVG vectoriel, retouchable. *Fiche méthode* produit la fiche du graphique en PDF, Word ou archive : ce qui est représenté (type, axes, mesures, repères), le calcul et la justification du choix de représentation, avec le graphique lui-même.
 
 ![Menu de la fiche méthode du graphique](images/29_menu_fiche.png)
+
+### 10.1. Code R équivalent
+
+Le bouton **Code R** affiche le même graphique écrit en R (paquet ggplot2), comme dans la version 0.1 de l'outil. Le script reprend le type, les séries, les axes, les repères, les couleurs de la charte, le titre et la source, puis enregistre l'image en PNG. *Télécharger le script et les données* produit une archive avec le script, les données du graphique en CSV (après recette et filtres, exactement celles affichées) et un mode d'emploi : il suffit de l'ouvrir dans RStudio et de le lancer.
+
+![Code R équivalent d'un graphique à trois axes, avec l'avertissement sur ce que ggplot2 ne reproduit pas](images/29b_graphique_code_r.png)
+
+Ce que ggplot2 ne sait pas faire à l'identique est signalé en tête du script : il ne gère qu'un seul axe secondaire (les mesures placées sur un deuxième axe gauche ou droit sont ramenées sur l'axe principal correspondant), et la 3D passe par le paquet plotly. Le code se lit, se copie et se modifie librement : c'est le point de départ pour aller plus loin que l'appli.
 
 # Partie 4 : Cartographie et VMS
 
@@ -475,18 +490,20 @@ Avant validation, un bilan indique la part des captures attribuée (au niveau du
 
 # Partie 5 : Statistiques
 
-## 13. Analyses guidées
+## 13. Analyses statistiques
 
-### 13.1. Choisir sa question
+### 13.1. Choisir sa question (mode guidé)
 
-La page **Statistiques** part d'une question, et non d'un nom de test. Choisissez le jeu, la question, puis les colonnes concernées. Moanui vérifie les conditions d'application, choisit le test adapté et, si une condition n'est pas remplie, bloque en proposant une alternative.
+La page **Statistiques** a deux modes, au choix en haut du panneau : **Guidé** (par défaut) et **Expert** (section 13.6).
+
+En mode guidé, tout part d'une question, et non d'un nom de test, en trois étapes numérotées : *1. Quelle est votre question ?*, *2. Quelles colonnes ?*, *3. Lancer l'analyse*. Une fois les colonnes choisies, Moanui reformule la question en une phrase (« Vous demandez si « cpue_kg_jdm » diffère d'un groupe à l'autre de « metier » »), ce qui permet de vérifier qu'on pose la bonne. Moanui vérifie ensuite les conditions d'application, choisit le test adapté et, si une condition n'est pas remplie, bloque en proposant une alternative.
 
 ![Choix de la question et tests possibles](images/37_stats_questions.png)
 
 Tableau : Questions et tests
 | Question | Tests |
 |---|---|
-| Comparer une mesure entre groupes | t de Welch, Mann-Whitney, ANOVA, ANOVA de Welch, Kruskal-Wallis (comparaisons deux à deux corrigées par Holm) |
+| Comparer une mesure entre groupes | t de Welch, Mann-Whitney, ANOVA, ANOVA de Welch, Kruskal-Wallis (comparaisons deux à deux corrigées, par Holm par défaut) |
 | Lien entre deux catégories | χ² d'indépendance, test exact de Fisher (2 × 2) |
 | Relation entre deux mesures | Pearson, Spearman |
 | Expliquer une mesure par plusieurs facteurs | Régression linéaire |
@@ -496,7 +513,7 @@ Tableau : Questions et tests
 
 ### 13.2. Conditions, résultats et interprétation
 
-Le résultat présente d'abord les **conditions vérifiées** (effectifs, normalité, égalité des variances…, avec leur statut), puis *Ce qu'il faut retenir* (interprétation en langage clair), les chiffres clés, l'**écriture normalisée** (statistique, degrés de liberté, p exacte, taille d'effet et son intervalle de confiance à 95 %, à reprendre telle quelle dans un rapport), le graphique, les tableaux, la **discussion** et les limites.
+Le résultat commence par *Ce qu'il faut retenir* (interprétation en langage clair), puis les **conditions vérifiées** (effectifs, normalité, égalité des variances…, avec leur statut), les chiffres clés, l'**écriture normalisée** (statistique, degrés de liberté, p exacte, taille d'effet et son intervalle de confiance à 95 %, à reprendre telle quelle dans un rapport), le graphique, les tableaux, la **discussion** et les limites.
 
 ![Comparaison de la CPUE entre métiers : conditions et interprétation](images/38_stats_resultats.png)
 
@@ -510,7 +527,7 @@ La discussion dépend des résultats : un effet significatif mais faible sur un 
 
 Quand une condition bloquante n'est pas remplie, les résultats ne s'affichent pas : Moanui explique le problème et propose une alternative en un clic. Vous pouvez aussi **passer outre**, à condition d'écrire une justification, reprise dans la fiche méthode.
 
-![Analyse bloquée : modèle de Poisson surdispersé, alternative proposée](images/40_stats_bloquee.png)
+![Analyse bloquée (mode expert, Poisson imposé) : modèle surdispersé, alternative proposée](images/40_stats_bloquee.png)
 
 ### 13.4. Modèles de captures (GLM) et indice standardisé
 
@@ -522,7 +539,23 @@ Le résultat donne l'effet de chaque facteur (test par rapport de vraisemblance)
 
 ### 13.5. Enregistrer et documenter
 
-*Enregistrer* garde l'analyse dans l'historique du jeu. *Fiche méthode* produit une fiche de niveau « article » : résumé, question et données, méthode et références, conditions, résultats et figures (boîtes, nuage, résidus, diagramme quantile-quantile, indice), interprétation, discussion, limites et reproductibilité (versions, paramètres, graine).
+*Enregistrer* garde l'analyse dans l'historique du jeu. *Fiche méthode* produit une fiche de niveau « article » : résumé, question et données, méthode et références, conditions, résultats et figures (boîtes, nuage, résidus, diagramme quantile-quantile, indice), interprétation, discussion, limites et reproductibilité (versions, paramètres, seuil, correction, graine).
+
+### 13.6. Mode expert
+
+Le mode **Expert** s'adresse à ceux qui savent quel test ils veulent. L'analyse se choisit dans une liste, et trois réglages apparaissent :
+
+- **Test** : *Automatique* (comme en mode guidé) ou le test que vous imposez ;
+- **Seuil de significativité (α)** : 0,10, 0,05 (par défaut) ou 0,01 ;
+- **Comparaisons deux à deux** (comparaison de plus de deux groupes) : correction de Holm (par défaut), de Bonferroni, de Benjamini-Hochberg (taux de fausses découvertes) ou aucune.
+
+![Mode expert : Kruskal-Wallis imposé, seuil de 1 %, correction de Benjamini-Hochberg](images/39c_stats_expert.png)
+
+Les conditions d'application restent vérifiées et affichées ; une analyse bloquée le reste, et passer outre demande toujours une justification. Le seuil et la correction choisis changent la décision « significatif ou non », et tous les textes qui en parlent : interprétation, résumé, tableaux, fiche méthode (avec la référence de la correction utilisée). Ils sont rappelés sous le titre du résultat. Le seuil ne concerne que la question posée : les vérifications de conditions gardent leur propre seuil de 5 %.
+
+Le bouton **Code R**, disponible dans les deux modes, donne le script R qui refait l'analyse (même test, même seuil, même correction), avec les lignes utilisées en CSV : tests de base de R (`t.test`, `wilcox.test`, `kruskal.test`, `chisq.test`, `cor.test`, `lm`, `glm`, et `MASS::glm.nb` pour la binomiale négative). Les résultats doivent être identiques à ceux de Moanui, aux arrondis près ; seuls les intervalles obtenus par bootstrap peuvent légèrement différer.
+
+![Code R équivalent de l'analyse](images/39d_stats_code_r.png)
 
 # Partie 6 : Gestion des pêcheries
 
