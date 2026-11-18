@@ -38,6 +38,30 @@ class DocOptions:
     figure_index: bool = False  # index des figures et tableaux en fin de document
     running_title: str = ""  # titre courant en haut des pages
     preface: list = field(default_factory=list)  # blocs placés avant la table des matières (avant-propos)
+    org: str = ""  # organisme producteur (structure)
+    doc_type: str = ""  # nature du document (fiche méthode, fiche de suivi…)
+    citation: str = ""  # « Pour citer ce document »
+
+
+# ---------------------------------------------------------------------------------------------- typographie
+NBSP = "\u00a0"
+_UNITS = (r"(?:kg|t|g|€|k€|M€|km|m|cm|mm|nds|h|j|kW|ans?|jours?|mois|navires?|lignes?|observations?|marées?|"
+          r"positions?|groupes?|espèces?|casiers?)")
+_TYPO = [
+    (re.compile(r"(?<![\w\-/.,:])-(?=\d)"), "\u2212"),  # vrai signe moins devant un nombre
+    (re.compile(r" ([:;!?%»])"), NBSP + r"\1"),  # espace insécable avant les signes doubles (règle française)
+    (re.compile(r"« "), "«" + NBSP),
+    (re.compile(r"(\d) (?=" + _UNITS + r"\b)"), r"\1" + NBSP),  # nombre et unité sur la même ligne
+    (re.compile(r"\b(Figure|Tableau|Table|Équation|Annexe|section|p\.) (?=\d)"), r"\1" + NBSP),
+    (re.compile(r" ([=<>≤≥]) (?=[\d\u2212])"), NBSP + r"\1" + NBSP),
+]
+
+
+def typo(text: str) -> str:
+    """Règles typographiques françaises (Lexique de l'Imprimerie nationale) : espaces insécables, signe moins."""
+    for rx, rep in _TYPO:
+        text = rx.sub(rep, text)
+    return text
 
 
 # ---------------------------------------------------------------------------------------------- utilitaires
@@ -74,7 +98,7 @@ def runs(text: str) -> list[tuple[str, bool, bool, bool]]:
             out.append((part[1:-1], False, True, False))
         else:
             out.append((part, False, False, False))
-    return out
+    return [(t if code else typo(t), b, i, code) for t, b, i, code in out]
 
 
 def plain(text: str) -> str:
@@ -194,7 +218,12 @@ def to_docx(blocks: list[tuple], o: DocOptions) -> bytes:
     # pied de page : numéro de page
     fp = sec.footer.paragraphs[0]
     fp.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+    left = " · ".join(x for x in (o.org, o.doc_type) if x)
+    if left:
+        add_runs(fp, left + "    ", size=8, color=MUTED)
     field(fp, "PAGE", "1")
+    add_runs(fp, " / ", size=8, color=MUTED)
+    field(fp, "NUMPAGES", "1")
     if o.running_title:
         hp = sec.header.paragraphs[0]
         hp.alignment = WD_ALIGN_PARAGRAPH.RIGHT
@@ -234,17 +263,25 @@ def to_docx(blocks: list[tuple], o: DocOptions) -> bytes:
             cell.add_paragraph()
         doc.add_paragraph().add_run().add_break(WD_BREAK.PAGE)
     else:
-        doc.add_paragraph(o.title, style="Title")
+        if o.org or o.doc_type:
+            add_runs(doc.add_paragraph(), "**" + " · ".join(x for x in (o.org, o.doc_type) if x).upper() + "**",
+                     size=8.5, color=MUTED)
+        doc.add_paragraph(typo(_display_title(o)), style="Title")
         if o.subtitle:
             add_runs(doc.add_paragraph(), o.subtitle, color=MUTED)
-        if o.meta:
-            t = doc.add_table(rows=0, cols=2)
-            t.style = "Table Grid"
-            for k, v in o.meta:
-                cells = t.add_row().cells
-                add_runs(cells[0].paragraphs[0], k, color=MUTED)
-                add_runs(cells[1].paragraphs[0], v)
-            doc.add_paragraph()
+        meta = ([("Organisme", o.org)] if o.org else []) + list(o.meta) + [("Logiciel", f"Moanui {_version()}")]
+        t = doc.add_table(rows=0, cols=2)
+        t.style = "Table Grid"
+        for k, v in meta:
+            cells = t.add_row().cells
+            add_runs(cells[0].paragraphs[0], f"**{k}**", size=9.5, color=MUTED)
+            add_runs(cells[1].paragraphs[0], v, size=9.5)
+        if o.citation:
+            q = doc.add_paragraph()
+            q.paragraph_format.space_before = Pt(8)
+            add_runs(q, "**Pour citer ce document**", size=8.5, color=MUTED)
+            add_runs(doc.add_paragraph(), o.citation, size=9.5)
+        doc.add_paragraph()
 
     def emit(blocks):
         for b in blocks:
@@ -379,9 +416,15 @@ def to_pdf(blocks: list[tuple], o: DocOptions) -> bytes:
             if self.page_no() == 1 and o.cover:
                 return
             self.set_y(-13)
-            self.set_font("Plex", "", 8.5)
+            self.set_draw_color(*LINE)
+            self.line(self.l_margin, self.get_y(), self.w - self.r_margin, self.get_y())
+            self.set_font("Plex", "", 8)
             self.set_text_color(*MUTED)
-            self.cell(0, 6, str(self.page_no()), align="R")
+            left = " · ".join(x for x in (o.org, o.doc_type) if x)
+            if left:
+                self.cell(self.epw / 2, 6, left, align="L")
+            self.set_x(self.l_margin + self.epw / 2)
+            self.cell(self.epw / 2, 6, f"{self.page_no()} / {{nb}}", align="R")
 
     levels = _levels(blocks)
     pdf = PDF(format="A4")
@@ -422,9 +465,12 @@ def to_pdf(blocks: list[tuple], o: DocOptions) -> bytes:
             pdf.set_left_margin(pdf.l_margin - indent)
         pdf.ln(after)
 
-    def heading(text: str, level: int):
+    def heading(text: str, level: int, follow: str = ""):
         size = {1: 17, 2: 13.5, 3: 11.5}[level]
         need = {1: 30, 2: 22, 3: 16}[level]
+        # un titre ne reste jamais seul en bas de page : il emporte le début du tableau ou de la figure qui suit
+        if follow in ("table", "kv", "fig", "img"):
+            need += 45
         if pdf.get_y() + need > pdf.h - pdf.b_margin:
             pdf.add_page()
         pdf.ln({1: 4, 2: 3, 3: 1.5}[level])
@@ -501,17 +547,29 @@ def to_pdf(blocks: list[tuple], o: DocOptions) -> bytes:
                 pdf.cell(90, 7, line, new_x="LMARGIN", new_y="NEXT")
         pdf.add_page()
     else:
+        if o.org or o.doc_type:
+            pdf.set_font("Plex", "B", 8.5)
+            pdf.set_text_color(*MUTED)
+            pdf.cell(0, 5, " · ".join(x for x in (o.org, o.doc_type) if x).upper(), new_x="LMARGIN", new_y="NEXT")
+            pdf.ln(1)
         pdf.set_font("Plex", "B", 19)
         pdf.set_text_color(*INK)
-        pdf.multi_cell(0, 9, o.title, new_x="LMARGIN", new_y="NEXT")
+        pdf.multi_cell(0, 9, typo(_display_title(o)), align="L", new_x="LMARGIN", new_y="NEXT")
         if o.subtitle:
             para(o.subtitle, 11, MUTED)
-        if o.meta:
-            table([], [[k, v] for k, v in o.meta], "ll", kv=True)
+        pdf.ln(1)
+        meta = ([("Organisme", o.org)] if o.org else []) + list(o.meta) + [("Logiciel", f"Moanui {_version()}")]
+        table([], [[k, v] for k, v in meta], "ll", kv=True)
+        if o.citation:
+            pdf.set_font("Plex", "B", 8.5)
+            pdf.set_text_color(*MUTED)
+            pdf.cell(0, 5, "Pour citer ce document", new_x="LMARGIN", new_y="NEXT")
+            para(o.citation, 9.5, INK, after=5)
 
     def emit(blocks):
-        for b in blocks:
+        for k, b in enumerate(blocks):
             t = b[0]
+            nxt = blocks[k + 1][0] if k + 1 < len(blocks) else ""
             if t == "part":
                 pdf.add_page()
                 if o.toc:
@@ -524,7 +582,7 @@ def to_pdf(blocks: list[tuple], o: DocOptions) -> bytes:
             elif t == "pagebreak":
                 pdf.add_page()
             elif t in ("h1", "h2", "h3"):
-                heading(b[1], levels[t])
+                heading(b[1], levels[t], nxt)
             elif t == "p":
                 para(b[1], align="J")
             elif t in ("ul", "ol"):
@@ -635,6 +693,18 @@ def to_pdf(blocks: list[tuple], o: DocOptions) -> bytes:
         pdf.ln(4)
         para(f"*{o.footer}*", 9, MUTED)
     return bytes(pdf.output())
+
+
+def _display_title(o: DocOptions) -> str:
+    """Le bandeau donne déjà la nature du document : le titre n'en garde que l'objet."""
+    kind, _, subject = o.title.partition(" : ")
+    return subject[:1].upper() + subject[1:] if subject and o.doc_type and kind == o.doc_type else o.title
+
+
+def _version() -> str:
+    from . import __version__
+
+    return __version__
 
 
 def stamp() -> str:

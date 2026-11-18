@@ -205,3 +205,10 @@ def layer_source(db: Database, settings, user: User, layer_id: str):
         raise RecipeError("La couche est introuvable ou inaccessible.") from e
     info = json.loads(row["info"])
     return settings.layers_dir / row["id"] / "couche.parquet", [c["name"] for c in info["columns"]], row["name"]
+
+
+def structure_name(db: Database, user: User) -> str:
+    """Nom de la structure active (organisme qui produit le document)."""
+    sid = user.active_structure_id
+    row = db.one("SELECT name FROM structures WHERE id = ?", (sid,)) if sid else None
+    return row["name"] if row else ""

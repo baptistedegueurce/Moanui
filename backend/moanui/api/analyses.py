@@ -13,7 +13,7 @@ from ..db import Database, new_id, now
 from ..engine.recipe import describe_condition
 from ..engine.sql import RecipeError
 from ..engine import pipeline
-from .deps import User, Workspace, current_user, dataset_access, get_db, get_settings
+from .deps import User, Workspace, current_user, dataset_access, get_db, get_settings, structure_name
 
 router = APIRouter(prefix="/api", tags=["statistiques"])
 
@@ -126,7 +126,7 @@ def stat_method_zip(did: str, body: StatIn, user: User = Depends(current_user), 
 def stat_method_export(did: str, fmt: str, body: StatIn, user: User = Depends(current_user),
                        db: Database = Depends(get_db), settings=Depends(get_settings)):
     """Fiche méthode statistique en Word (docx) ou PDF."""
-    return _stat_fiche(db, settings, user, did, body).response(fmt, "analyse_methode")
+    return _stat_fiche(db, settings, user, did, body).response(fmt, "analyse_methode", org=structure_name(db, user))
 
 
 def _stat_r(db, settings, user, did: str, body: StatIn):

@@ -23,6 +23,7 @@ from ..engine.formula import function_help
 from ..engine.recipe import CAST_TYPES, JOIN_KINDS, OPS, TRANSFORMS, describe_step, step_types
 from ..engine.sql import RecipeError, ident, string_lit
 from .deps import (
+    structure_name,
     User,
     Workspace,
     active_structure,
@@ -648,7 +649,7 @@ def method_export(did: str, fmt: str, user: User = Depends(current_user), db: Da
     """Fiche méthode du jeu en Word (docx) ou PDF."""
     ds, _ = dataset_access(db, user, did)
     fiche, _ = _method_md(db, settings, user, ds)
-    return fiche.response(fmt, f"{_safe_filename(ds['name'])}_methode")
+    return fiche.response(fmt, f"{_safe_filename(ds['name'])}_methode", org=structure_name(db, user))
 
 
 def _safe_filename(name: str) -> str:

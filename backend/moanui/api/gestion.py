@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 from .. import gestion
 from ..db import Database, new_id, now
 from ..engine.sql import RecipeError
-from .deps import User, Workspace, active_structure, current_user, dataset_access, get_db, get_settings, require_role
+from .deps import User, Workspace, active_structure, current_user, dataset_access, get_db, get_settings, require_role, structure_name
 
 router = APIRouter(prefix="/api/gestion", tags=["gestion"])
 
@@ -256,14 +256,14 @@ def _d(iso: str | None) -> str:
 def quota_fiche(fmt: str, body: CalcIn, user: User = Depends(current_user), db: Database = Depends(get_db),
                 settings=Depends(get_settings)):
     ds, res = _calc(db, settings, user, body, gestion.quota)
-    return _quota_fiche(ds, body, res, user).response(fmt, "suivi_quota")
+    return _quota_fiche(ds, body, res, user).response(fmt, "suivi_quota", org=structure_name(db, user))
 
 
 @router.post("/depassements/method.{fmt}")
 def overshoot_fiche(fmt: str, body: CalcIn, user: User = Depends(current_user), db: Database = Depends(get_db),
                     settings=Depends(get_settings)):
     ds, res = _calc(db, settings, user, body, gestion.overshoots)
-    return _overshoot_fiche(ds, body, res, user).response(fmt, "controle_limitations")
+    return _overshoot_fiche(ds, body, res, user).response(fmt, "controle_limitations", org=structure_name(db, user))
 
 
 def _xlsx(sheets: list[tuple[str, list[str], list[list]]]) -> bytes:

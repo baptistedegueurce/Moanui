@@ -5,6 +5,17 @@ publiée automatiquement ; au passage d'une version stable, elle est renommée `
 
 ## Non publié
 
+- **Nouvelle présentation de l'interface**, sur les règles de systèmes de design publics éprouvés (Carbon d'IBM,
+  GOV.UK) : barre du haut sombre à la couleur de la structure, navigation plus lisible, titres et textes sur une
+  échelle typographique unique, champs, boutons et tableaux homogènes (en-têtes de tableau marqués, lignes de 40 px),
+  angles droits, contrastes conformes WCAG 2.1 AA (texte 4,5:1, bordures de champs 3:1) et focus clavier toujours
+  visible. L'accueil devient un « Tableau de bord ». Les structures restées sur la charte par défaut passent à la
+  nouvelle ; les chartes personnalisées ne changent pas. Graphiques : plus de légende pour une seule série, titre de
+  l'axe horizontal qui ne chevauche plus la source.
+- **Rapports PDF et Word aux usages des publications** : bandeau « organisme · nature du document », bloc
+  documentaire (organisme, données, auteur, date, version du logiciel), ligne « Pour citer ce document » (modèle des
+  rapports du CIEM), pagination « 3 / 6 » avec l'organisme en pied de page, titres jamais isolés en bas de page,
+  typographie française (espaces insécables avant : ; % et entre nombre et unité, vrai signe moins).
 - **Graphiques : modes Simple et Avancé.** Le mode simple n'affiche que l'essentiel (données, séries, petits
   multiples, filtres, titre et source) ; le mode avancé donne tous les réglages. Changer de mode ne modifie pas le
   graphique.

@@ -86,7 +86,7 @@ Le cloisonnement est strict : une structure ne voit jamais les données d'une au
 
 ### 3.1. La page d'accueil
 
-La page d'accueil résume l'activité de la structure active : derniers jeux de données (avec leur nombre de lignes et d'opérations), derniers graphiques, analyses statistiques et cartes enregistrés. Les boutons du haut donnent un accès direct à l'import et aux principaux outils.
+La page d'accueil, intitulée **Tableau de bord**, résume l'activité de la structure active : derniers jeux de données (avec leur nombre de lignes et d'opérations), derniers graphiques, analyses statistiques et cartes enregistrés. Les boutons du haut donnent un accès direct à l'import et aux principaux outils.
 
 ![Page d'accueil : derniers jeux de données, graphiques, analyses et cartes](images/03_accueil.png)
 
@@ -312,6 +312,17 @@ Tableau : Formats des fiches méthode
 | Archive (zip) | Markdown modifiable, HTML imprimable et figures en SVG |
 
 Les mêmes formats existent pour les fiches des graphiques, des cartes, des analyses statistiques et des suivis de gestion. Les polices et figures sont intégrées : le rendu est identique sur tous les postes, sans Word ni logiciel à installer.
+
+Les fiches PDF et Word suivent les usages des rapports scientifiques et institutionnels :
+
+- un **bandeau** indique l'organisme (la structure active) et la nature du document ;
+- un **bloc documentaire** en tête donne l'organisme, le jeu de données, l'auteur, la date et la version du logiciel ;
+- la ligne **Pour citer ce document** donne la référence à reprendre (organisme, année, titre, nature du document), sur le modèle des rapports du CIEM ;
+- légende des tableaux au-dessus, légende des figures en dessous, numérotation continue, une seule liste de références en fin de document ;
+- typographie française : espace insécable avant les deux-points, le point-virgule et le signe %, entre un nombre et son unité, vrai signe moins (−0,14) ;
+- un titre de section n'est jamais laissé seul en bas de page, et chaque page porte l'organisme et sa pagination (« 3 / 6 »).
+
+Moanui n'invente aucune métadonnée : pas de numéro de rapport ni de niveau de diffusion, à ajouter dans la version Word si votre structure en utilise.
 
 L'onglet **Import** rappelle à tout moment l'empreinte du fichier brut, les options de lecture et le type reconnu pour chaque colonne.
 

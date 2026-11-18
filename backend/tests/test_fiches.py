@@ -96,3 +96,32 @@ def test_exports_word_et_pdf(client):
     assert client.post(f"/api/datasets/{did}/charts/method.pdf", json={"name": "g", "spec": spec, "svg": svg}).content[:4] == b"%PDF"
     assert client.post("/api/geo/maps/method.docx", json={"spec": {"layers": [], "template": {"title": "C"}}}).content[:2] == b"PK"
     assert client.post(f"/api/datasets/{did}/stats/method.exe", json=body).status_code == 404
+
+
+def test_typographie_et_bloc_documentaire():
+    from moanui.documents import DocOptions, to_pdf, typo
+    from moanui.themes import OLD_NEUTRE, refresh_default
+
+    assert typo("r = -0,14 (n = 10)") == "r = −0,14 (n = 10)"
+    assert typo("Taille : 12 kg, soit 5 %") == "Taille : 12 kg, soit 5 %"
+    assert typo("période 2001-2003 et 2025-01-01") == "période 2001-2003 et 2025-01-01"
+    assert typo("voir Figure 3") == "voir Figure 3"
+    pdf = to_pdf([("p", "Texte.")], DocOptions(title="Fiche méthode : essai", org="Comité test", doc_type="Fiche méthode",
+                                                 citation="Comité test. 2026. Essai."))
+    assert pdf[:4] == b"%PDF"
+    # la charte par défaut d'avant la refonte est mise à jour, une charte personnalisée non
+    assert refresh_default({"colors": dict(OLD_NEUTRE)})["colors"]["text"] == "#161616"
+    assert refresh_default({"colors": {**OLD_NEUTRE, "primary": "#123456"}}) is None
+
+
+def test_fiche_pdf_porte_organisme_et_citation(client):
+    did = upload(client, "logbook_2023.csv")["id"]
+    spec = {"type": "barres", "x": "engin_cod", "measures": [{"agg": "somme", "column": "debarquement_Kg"}],
+            "template": {"title": "Débarquements par engin"}}
+    r = client.post(f"/api/datasets/{did}/charts/method.docx", json={"name": "g", "spec": spec})
+    assert r.status_code == 200
+    import docx
+
+    d = docx.Document(io.BytesIO(r.content))
+    text = "\n".join(p.text for p in d.paragraphs)
+    assert "Pour citer ce document" in text and "Structure Test. 20" in text

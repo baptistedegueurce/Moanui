@@ -188,6 +188,17 @@ cd frontend && npm run dev                                  # dev avec proxy /ap
   `options.correction` ∈ {holm, bonferroni, bh, aucune}, portés par un `ContextVar` (`stats.options`) : décisions et
   textes (sig_sentence, résumé, tableaux, fiche, références Dunn 1961 / Benjamini-Hochberg 1995). Les contrôles de
   conditions gardent `ALPHA = 0,05` fixe.
+- **Refonte visuelle (nov. 2026)** : valeurs lues dans `@carbon/themes` (g10), `@carbon/type`, `@carbon/layout` et
+  `govuk-frontend` (règles seulement, pas d'identité ; DSFR exclu : réservé aux sites de l'État). `lib/theme.ts`
+  (échelle typo, espacements, rayons 0-2 px, `headerOf` = primaire assombrie), `styles.css` (surcharges Mantine :
+  champs bordure #8d8d8d 3,3:1, en-têtes de tableau, alertes à filet, focus visible), variables de charte posées sur
+  `:root` (valables dans les portails). Migration `themes.refresh_default` appelée à l'ouverture de la base :
+  seules les chartes identiques à l'ancien défaut (`OLD_NEUTRE`) sont mises à jour.
+- **Rapports (nov. 2026)** : `documents.typo` (règles typographiques françaises appliquées à tous les textes sauf le
+  code), `DocOptions.org / doc_type / citation`, bloc documentaire, citation recommandée (format CIEM : organisme.
+  année. titre.), pied « organisme · nature » + « x / N », titres gardés avec le tableau ou la figure qui suit.
+  `Fiche.response(fmt, base, org=…)`, organisme = `deps.structure_name`. Aucune métadonnée inventée (ni numéro, ni
+  diffusion). Tests R : exécutés seulement si R a les paquets (`conftest.r_ready`), la CI Windows a R sans ggplot2.
 - **Structures de la pêche** : `docs/STRUCTURES.md` (rôles CNPMEM / CRPMEM / CDPMEM / OP / DGAMPA / SIH,
   répartition des quotas, calendrier du règlement contrôle 2023/2842) ; items F7-F9 de la feuille de route.
 

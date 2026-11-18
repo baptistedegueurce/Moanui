@@ -21,6 +21,7 @@ from ..engine import geo
 from ..engine.geo_steps import SPEED_PRESETS
 from ..engine.sql import RecipeError, ident, string_lit
 from .deps import (
+    structure_name,
     BUILTIN_PREFIX,
     User,
     Workspace,
@@ -600,4 +601,4 @@ def map_method_md(body: MapMethodIn, user: User = Depends(current_user), db: Dat
 @router.post("/maps/method.{fmt}")
 def map_method_export(fmt: str, body: MapMethodIn, user: User = Depends(current_user), db: Database = Depends(get_db)):
     """Fiche méthode de la carte en Word (docx) ou PDF."""
-    return _map_fiche(db, user, body).response(fmt, "carte_methode")
+    return _map_fiche(db, user, body).response(fmt, "carte_methode", org=structure_name(db, user))

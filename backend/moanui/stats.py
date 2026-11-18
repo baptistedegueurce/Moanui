@@ -958,7 +958,7 @@ def _run(con, plan, spec: dict, filters_sql: str = "") -> Result:
     res.effectifs.update({"lignes_total": int(total), "lignes_utilisees": int(n)})
     if total > n:
         res.checks.insert(0, Check("Valeurs manquantes", True, "avertissement" if (total - n) / max(total, 1) > 0.1 else "info",
-                                   f"{total - n} ligne(s) sur {total} ignorée(s) car une des variables est vide."))
+                                   f"{fr(total - n)} ligne(s) sur {fr(total)} ignorée(s) car une des variables est vide."))
     return res
 
 
@@ -1081,7 +1081,7 @@ def _method_fiche(res: dict, spec: dict, dataset_name: str, author: str, justifi
     f.p(ANALYSES.get(spec.get("analyse"), {}).get("titre", "") + ".")
     f.kv([(var_labels.get(k, k), ", ".join(v) if isinstance(v, list) else str(v)) for k, v in vars_.items() if v]
          + [("Restriction des données", spec.get("filtres_desc") or "aucune"),
-            ("Observations utilisées", f"{eff.get('lignes_utilisees', '?')} sur {eff.get('lignes_total', '?')} lignes "
+            ("Observations utilisées", f"{fr(eff.get('lignes_utilisees', 0))} sur {fr(eff.get('lignes_total', 0))} lignes "
                                        "(lignes incomplètes pour ces variables écartées)")])
 
     f.h("Méthode")

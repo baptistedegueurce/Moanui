@@ -182,13 +182,22 @@ class Fiche:
         H.append(f'<p class="foot">Fiche générée par Moanui le {datetime.now().strftime("%d/%m/%Y à %H:%M")}.</p>')
         return HTML_HEAD.replace("{title}", escape(self.title)) + "\n".join(H) + "</main></body></html>"
 
+    org: str = ""
+
     def options(self, **kw):
+        from . import __version__
         from .documents import DocOptions
 
+        kind, _, subject = self.title.partition(" : ")
+        doc_type = kind if subject else "Fiche"
+        now = datetime.now()
+        # citation recommandée, sur le modèle des rapports du CIEM : auteur. année. titre. nature du document.
+        citation = (f"{self.org or 'Auteur'}. {now.year}. {self.title}. {doc_type} produite avec Moanui "
+                    f"{__version__}, {now.strftime('%d/%m/%Y')}.")
         return DocOptions(title=self.title, subtitle=self.subtitle, meta=self.meta,
                           refs=[r[2:] for r in refs_md(self.refs)],
-                          footer=f"Fiche générée par Moanui le {datetime.now().strftime('%d/%m/%Y à %H:%M')}.",
-                          running_title=self.title, **kw)
+                          footer=f"Fiche générée par Moanui le {now.strftime('%d/%m/%Y à %H:%M')}.",
+                          running_title=self.title, org=self.org, doc_type=doc_type, citation=citation, **kw)
 
     def docx(self) -> bytes:
         from .documents import to_docx
@@ -200,10 +209,13 @@ class Fiche:
 
         return to_pdf(self.blocks, self.options())
 
-    def response(self, fmt: str, base: str):
+    def response(self, fmt: str, base: str, org: str = ""):
         """Réponse HTTP d'export : md, html, zip, docx ou pdf."""
         from fastapi import HTTPException
         from fastapi.responses import Response
+
+        if org:
+            self.org = org
 
         kinds = {"md": ("text/markdown; charset=utf-8", lambda: self.markdown()),
                  "html": ("text/html; charset=utf-8", lambda: self.html()),

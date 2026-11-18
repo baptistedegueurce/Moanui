@@ -9,7 +9,7 @@ from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from ..db import Database, new_id, now
-from .deps import User, Workspace, current_user, dataset_access, get_db, get_settings, writable_dataset
+from .deps import User, Workspace, current_user, dataset_access, get_db, get_settings, writable_dataset, structure_name
 
 router = APIRouter(prefix="/api", tags=["charts"])
 
@@ -182,7 +182,7 @@ def chart_method_export(did: str, fmt: str, body: ChartIn, user: User = Depends(
                         db: Database = Depends(get_db)):
     """Fiche méthode du graphique en Word (docx) ou PDF."""
     ds, _ = dataset_access(db, user, did)
-    return _chart_fiche(ds, body, user).response(fmt, "graphique_methode")
+    return _chart_fiche(ds, body, user).response(fmt, "graphique_methode", org=structure_name(db, user))
 
 
 def _chart_r(db: Database, settings, user: User, did: str, spec: dict):
